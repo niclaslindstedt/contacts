@@ -96,7 +96,7 @@ see [docs/configuration.md](docs/configuration.md):
 | ----------------------- | ----------------------------------------------- |
 | `VITE_DROPBOX_APP_KEY`  | Dropbox app key (PKCE flow, no secret)          |
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth client id (GIS token flow)         |
-| `VITE_BASE`             | Deploy base path (`/contacts/` on GitHub Pages) |
+| `VITE_BASE`             | Deploy base path (`/` — served from the domain root) |
 
 ## Examples
 
