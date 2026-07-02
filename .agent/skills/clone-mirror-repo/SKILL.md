@@ -39,41 +39,40 @@ is `https://<MIRROR_BASE trimmed>/<repo>.git`.
 
 ## Recipe
 
+The skill ships a Node helper, [`clone.mjs`](clone.mjs), that does all of the
+above. Run it with the repo the user named and capture the printed path:
+
 ```sh
-# 1. Inputs — REPO comes from the user's request.
-REPO="notes"                       # <-- the repo the user named
-BASE="${MIRROR_BASE%/}"            # trim a trailing slash if present
-SHALLOW=""                         # set to "--depth 1 --no-single-branch" for a shallow clone
+# Deep clone (default) — full history, all branches.
+DEST="$(node .claude/skills/clone-mirror-repo/clone.mjs notes)"
 
-# 2. Preconditions.
-: "${MIRROR_BASE:?MIRROR_BASE is not set}"
-: "${MIRROR_TOKEN:?MIRROR_TOKEN is not set}"
-
-# 3. Build the URL (no credentials embedded) and a temp destination.
-URL="https://${BASE}/${REPO}.git"
-DEST="$(mktemp -d -t "mirror-${REPO}-XXXXXX")"
-
-# 4. Clone. The token is supplied via a one-shot credential helper, so it never
-#    touches the URL, the process's argv in a persisted config, or .git/config.
-#    `-c credential.helper=` first clears any inherited helper.
-git -c credential.helper= \
-    -c 'credential.helper=!f() { echo "username=oauth2"; echo "password=${MIRROR_TOKEN}"; }; f' \
-    clone ${SHALLOW} "$URL" "$DEST"
-
-echo "Cloned ${REPO} into ${DEST}"
+# Shallow clone — pass --shallow (or --depth N for a specific depth).
+DEST="$(node .claude/skills/clone-mirror-repo/clone.mjs notes --shallow)"
 ```
 
-- **Deep clone (default):** leave `SHALLOW` empty — this fetches full history
-  and all branches, which is what "clone" means unless the user says otherwise.
-- **Shallow clone (on request):** when the user says "shallow clone", set
-  `SHALLOW="--depth 1 --no-single-branch"`. Add `--depth N` instead of `1` if
-  they ask for a specific depth. `--no-single-branch` keeps every branch tip so
-  inspection isn't limited to the default branch.
+The script prints the temporary clone directory as its final stdout line, so
+`$(...)` captures exactly that path. Everything else — env-var validation, URL
+construction, the `mktemp` directory, and the token-safe credential helper —
+lives in the script.
 
-The `oauth2` username is the GitLab convention for authenticating with a
-personal access token over HTTPS; it works for any username the token accepts.
-If the mirror host uses a different scheme (e.g. an `ssh://` remote), adjust the
-URL accordingly — the credential-helper step only applies to HTTPS.
+### Flags
+
+| Flag         | Effect                                                     |
+| ------------ | ---------------------------------------------------------- |
+| _(none)_     | Deep clone: full history and every branch. The default.    |
+| `--shallow`  | Shallow clone at depth 1 (implies `--no-single-branch`).   |
+| `--depth N`  | Shallow clone at depth `N` (also implies `--shallow`).     |
+| `--dest DIR` | Clone into `DIR` instead of a fresh `mktemp -d` directory. |
+
+### How it stays token-safe
+
+`clone.mjs` invokes git with a one-shot credential helper
+(`-c credential.helper=…`) that echoes the token from `$MIRROR_TOKEN` at run
+time. The token therefore never appears in `argv`, in the clone URL, or in the
+resulting `.git/config`. The `oauth2` username is the GitLab convention for
+authenticating with a personal access token over HTTPS and works for any
+username the token accepts. For a non-HTTPS mirror (e.g. an `ssh://` remote),
+adjust the URL scheme — the credential-helper step only applies to HTTPS.
 
 ## After cloning
 
