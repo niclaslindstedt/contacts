@@ -1,0 +1,12 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Lovelace;Ada;;;
+FN:Ada Lovelace
+ORG:Analytical Engines Ltd
+TEL;TYPE=CELL:+44 20 7946 0958
+TEL;TYPE=WORK:+44 20 7946 0959
+EMAIL;TYPE=INTERNET:ada@analytical.example
+ADR;TYPE=HOME:;;12 St James's Square\, London;;;;
+BDAY:1815-12-10
+NOTE:First programmer. Met at the difference engine meetup.
+END:VCARD

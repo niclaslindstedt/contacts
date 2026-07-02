@@ -1,0 +1,49 @@
+/* SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 */
+
+/* App stylesheet.
+
+     1. Tailwind v4 base + utilities.
+     2. The framework's prebuilt stylesheet — the theme-token map, the button /
+        elevation flavours, the drawer keyframes, and every preset palette
+        (baked in — no runtime `installPresetTokens()` call needed).
+     3. `@source` — scan the installed framework package so the utility classes
+        its components use are emitted into this app's CSS.
+     4. App-shell layout: the html/body reset that makes this a full-viewport,
+        non-scrolling PWA. This stays the app's — it is layout, not framework. */
+
+@import "tailwindcss";
+@import "@niclaslindstedt/oss-framework/styles.css";
+
+@source "../node_modules/@niclaslindstedt/oss-framework/dist";
+
+/* ── App-shell layout ────────────────────────────────────────────────────────
+   A full-viewport `100svh` flex app whose panes own their own scroll regions,
+   so the document itself never scrolls. */
+:root {
+  /* The signature monospace stack. The theme engine overrides
+     `--app-font-family` inline once it mounts; this is the pre-paint default. */
+  --app-font-family:
+    "JetBrains Mono", "Fira Code", ui-monospace, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  /* Lock the document down: no page scroll and no overscroll rubber-band, so a
+     horizontal swipe on a row (or a vertical drag at a list's edge) can't drag
+     the whole page around underneath it on mobile. */
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--page-bg);
+  color: var(--fg);
+  font-family: var(--app-font-family);
+  font-size: calc(1rem * var(--app-font-scale));
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
