@@ -41,7 +41,7 @@ jobs:
           VITE_DROPBOX_APP_KEY: ${{ vars.DROPBOX_APP_KEY }}
           VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
       - id: deploy
