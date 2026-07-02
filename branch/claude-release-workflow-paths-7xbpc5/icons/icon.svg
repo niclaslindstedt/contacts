@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <!-- The app mark: a person silhouette on the app's dark surface. The PNG
-       install icons are generated from the same geometry by
-       scripts/generate-icons.mjs (`npm run icons`). -->
-  <rect width="100" height="100" rx="20" fill="#0b0d10"/>
-  <circle cx="50" cy="39.4" r="11.8" fill="#86efac"/>
-  <path d="M28.5 76 A 21.5 16 0 0 1 71.5 76 Z" fill="#86efac"/>
-</svg>
