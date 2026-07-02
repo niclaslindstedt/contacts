@@ -19,6 +19,13 @@ on:
 # least-privilege `permissions:` block (see OSS_SPEC §10.3).
 permissions: {}
 
+# The release publishes the root channel of the shared `gh-pages` branch, which
+# the `pages` (preview) and `branch-preview` workflows also push to. Serialise
+# all three under one group so their commits never race.
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -56,9 +63,23 @@ jobs:
       - run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Build the released app at the domain root (base `/`). VITE_PWA_IGNORE_PATHS
+      # lists the sibling channels nested under it so the root service worker
+      # disowns their pages (its scope `/` is a prefix of every path) — otherwise
+      # the root worker would serve the released shell in place of preview/branch.
       - run: npm run build
+        env:
+          VITE_BASE: /
+          VITE_PWA_IGNORE_PATHS: /preview/,/branch/
+          VITE_DROPBOX_APP_KEY: ${{ vars.DROPBOX_APP_KEY }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
       # This is an app, not a package — the deliverable is the Pages deploy;
-      # no registry publish happens here.
+      # no registry publish happens here. Publish the release to the root
+      # channel, preserving the sibling preview/ and branch/ channels.
+      - name: Deploy release to root
+        run: ./scripts/deploy-pages.sh . dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: GitHub Release
         uses: softprops/action-gh-release@v2
         with:

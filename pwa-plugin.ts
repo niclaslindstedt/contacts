@@ -27,6 +27,15 @@ type AppPwaOptions = {
   // build timestamp). Embedding it in the SW also guarantees the worker's bytes
   // differ between deploys even when no asset hash changed.
   version: string;
+  // Absolute path prefixes this worker must disown — the deploy paths of the
+  // *other* release channels that live under this one. The root release at `/`
+  // shares its SW scope with the `/preview/` and `/branch/` channels (a scope is
+  // a path prefix, so the root worker would otherwise claim their navigations
+  // before their own worker installs, serving the root shell in place of the
+  // sibling app). Listing them here makes the root worker step aside so each
+  // channel's own worker owns its pages. The sibling channels nest no deploys
+  // under themselves, so they pass none.
+  ignorePaths?: string[];
 };
 
 // Public assets we never want in the precache: source maps are dead weight
@@ -48,11 +57,12 @@ function listFiles(dir: string): string[] {
   return out;
 }
 
-function buildServiceWorker(
+export function buildServiceWorker(
   cacheId: string,
   base: string,
   version: string,
   precache: string[],
+  ignorePaths: string[] = [],
 ): string {
   const cacheName = `${cacheId}-precache`;
   return `// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
@@ -64,6 +74,9 @@ function buildServiceWorker(
 const CACHE = ${JSON.stringify(cacheName)};
 const BASE = ${JSON.stringify(base)};
 const INDEX = ${JSON.stringify(`${base}index.html`)};
+// Sibling release channels nested under BASE that this worker must NOT claim —
+// their pages are a different deploy and own their own worker. See ignorePaths.
+const IGNORE = ${JSON.stringify(ignorePaths)};
 const PRECACHE = ${JSON.stringify(precache)};
 const PRECACHE_PATHS = new Set(
   PRECACHE.map((u) => new URL(u, self.location.href).pathname),
@@ -120,9 +133,12 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // App-shell navigations: only our own routes get the shell fallback.
+  // App-shell navigations: only our own routes get the shell fallback. A
+  // navigation into a sibling channel (preview/branch) is disowned so its own
+  // worker — not this one — serves it.
   if (req.mode === "navigate") {
     if (!url.pathname.startsWith(BASE)) return;
+    if (IGNORE.some((p) => url.pathname.startsWith(p))) return;
     event.respondWith(navigateFallback(req));
     return;
   }
@@ -140,7 +156,11 @@ self.addEventListener("fetch", (event) => {
 `;
 }
 
-export function appPwa({ base, version }: AppPwaOptions): Plugin {
+export function appPwa({
+  base,
+  version,
+  ignorePaths = [],
+}: AppPwaOptions): Plugin {
   const cacheId = cacheIdForBase(base);
   let config: ResolvedConfig;
 
@@ -242,7 +262,13 @@ export function appPwa({ base, version }: AppPwaOptions): Plugin {
       this.emitFile({
         type: "asset",
         fileName: "sw.js",
-        source: buildServiceWorker(cacheId, base, version, precache),
+        source: buildServiceWorker(
+          cacheId,
+          base,
+          version,
+          precache,
+          ignorePaths,
+        ),
       });
       this.emitFile({
         type: "asset",

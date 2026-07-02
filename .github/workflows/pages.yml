@@ -1,26 +1,30 @@
 name: pages
 
+# Every commit merged to `main` publishes the rolling "preview" channel at
+# `/preview/` on the custom domain — the bleeding-edge build ahead of the
+# released app. The released app at the root is published separately by
+# `release.yml`; per-branch builds by `branch-preview.yml`. All three commit
+# sibling subtrees of the shared `gh-pages` branch via scripts/deploy-pages.sh,
+# so Pages must be configured to deploy from the `gh-pages` branch (root).
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
   packages: read
 
+# All three channels push to the same `gh-pages` branch; serialise them under
+# one group so their commits never race. Never cancel an in-flight deploy.
 concurrency:
-  group: pages
+  group: gh-pages
   cancel-in-progress: false
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,18 +37,22 @@ jobs:
       - run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # The app IS the website — served from the root of the custom domain
-      # (contacts.niclaslindstedt.se), so it builds at base `/` (the default).
-      # The `public/CNAME` file ships in the artifact to bind the domain. The
-      # OAuth identities are public identifiers, supplied as repository variables.
+      # Build the preview channel at its own base path under the custom domain
+      # (contacts.niclaslindstedt.se/preview/). The OAuth identities are public
+      # identifiers, supplied as repository variables.
       - run: npm run build
         env:
-          VITE_BASE: /
+          VITE_BASE: /preview/
           VITE_DROPBOX_APP_KEY: ${{ vars.DROPBOX_APP_KEY }}
           VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-      - id: deploy
-        uses: actions/deploy-pages@v4
+      # Only the root release owns the domain's CNAME; drop the copy that
+      # public/ carries into this channel's subdirectory, and keep the preview
+      # channel out of search indexes.
+      - name: Prepare channel output
+        run: |
+          rm -f dist/CNAME
+          printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+      - name: Deploy to preview channel
+        run: ./scripts/deploy-pages.sh preview dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
