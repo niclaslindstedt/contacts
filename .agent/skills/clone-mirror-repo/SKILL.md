@@ -1,6 +1,6 @@
 ---
 name: clone-mirror-repo
-description: "Use when the user asks to clone one of their mirrored repositories by name (e.g. \"clone the notes repo\") to inspect it. Builds the git URL from MIRROR_BASE + the repo name, authenticates with MIRROR_TOKEN, and clones into a temporary directory (deep by default, shallow on request)."
+description: 'Use when the user asks to clone one of their mirrored repositories by name (e.g. "clone the notes repo") to inspect it. Builds the git URL from MIRROR_BASE + the repo name, authenticates with MIRROR_TOKEN, and clones into a temporary directory (deep by default, shallow on request).'
 ---
 
 # Clone a mirrored repo for inspection
@@ -18,10 +18,10 @@ does X", "grab the `<name>` repo from my mirror".
 The mirror is configured entirely through environment variables. Never hardcode
 their values — read them at run time.
 
-| Variable      | Meaning                                                              | Example                          |
-| ------------- | ------------------------------------------------------------------- | -------------------------------- |
-| `MIRROR_BASE` | Host + path prefix of the mirror, no scheme, may end with a slash.   | `gitlab.com/niclaslindstedt/`    |
-| `MIRROR_TOKEN`| Personal access token with read access to the mirror. **Secret.**   | *(never print or commit this)*   |
+| Variable       | Meaning                                                            | Example                        |
+| -------------- | ------------------------------------------------------------------ | ------------------------------ |
+| `MIRROR_BASE`  | Host + path prefix of the mirror, no scheme, may end with a slash. | `gitlab.com/niclaslindstedt/`  |
+| `MIRROR_TOKEN` | Personal access token with read access to the mirror. **Secret.**  | _(never print or commit this)_ |
 
 The repo name is whatever the user names ("notes", "dotfiles", …). The git URL
 is `https://<MIRROR_BASE trimmed>/<repo>.git`.
