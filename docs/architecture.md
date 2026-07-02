@@ -70,6 +70,12 @@ in `waiting`, applies on SKIP_WAITING), `version.json`, and
 `precache-manifest.json`, under a base-derived cache id (`src/app/pwa.ts`).
 The worker serves the cached shell as the offline navigate fallback.
 
+Because the release/preview/branch channels share one origin (the custom domain),
+each build's base gives it a unique scope and cache id, and the root release
+passes `VITE_PWA_IGNORE_PATHS` so its worker disowns the sibling channels nested
+under it (its scope `/` is a prefix of `/preview/` and `/branch/`). See
+[configuration](configuration.md#release-channels).
+
 ## Output
 
 `src/output.ts` is the central output module (OSS_SPEC §19.4): semantic

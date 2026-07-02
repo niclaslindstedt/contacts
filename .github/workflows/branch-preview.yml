@@ -1,0 +1,86 @@
+name: branch-preview
+
+# Every push to a feature branch publishes that branch to its own channel at
+# `/branch/<name>/` on the custom domain, so a change can be tried in the real
+# deployed app before it lands on `main`. Deleting the branch tears it down again.
+# Like the root (release) and preview (main) channels, this commits a sibling
+# subtree of the shared `gh-pages` branch via scripts/deploy-pages.sh.
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - gh-pages
+  delete:
+
+permissions:
+  contents: write
+  packages: read
+
+# Share the one gh-pages group with the release/preview channels so no two
+# deploys push concurrently.
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Slug the branch name into a path-safe channel id (e.g.
+      # `claude/my-feature` -> `claude-my-feature`).
+      - name: Resolve channel
+        id: chan
+        run: |
+          slug="$(printf '%s' "${GITHUB_REF_NAME}" | tr -c 'A-Za-z0-9._-' '-' | sed -E 's/-+/-/g; s/^-|-$//g')"
+          echo "slug=${slug}" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@niclaslindstedt"
+      - run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: npm run build
+        env:
+          VITE_BASE: /branch/${{ steps.chan.outputs.slug }}/
+          VITE_DROPBOX_APP_KEY: ${{ vars.DROPBOX_APP_KEY }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+      # Only the root release owns the domain's CNAME; drop the copy public/
+      # carries into this channel's subdirectory, and keep branch previews out of
+      # search indexes.
+      - name: Prepare channel output
+        run: |
+          rm -f dist/CNAME
+          printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+      - name: Deploy to branch channel
+        run: ./scripts/deploy-pages.sh "branch/${{ steps.chan.outputs.slug }}" dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  teardown:
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove branch channel from gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DELETED_REF: ${{ github.event.ref }}
+        run: |
+          slug="$(printf '%s' "${DELETED_REF}" | tr -c 'A-Za-z0-9._-' '-' | sed -E 's/-+/-/g; s/^-|-$//g')"
+          remote="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git ls-remote --exit-code --heads "$remote" gh-pages >/dev/null 2>&1 || exit 0
+          work="$(mktemp -d)"
+          git config --global user.name "release-bot"
+          git config --global user.email "release-bot@users.noreply.github.com"
+          git clone --depth 1 --branch gh-pages "$remote" "$work"
+          [ -d "$work/branch/$slug" ] || { echo "No channel for '$slug'."; exit 0; }
+          git -C "$work" rm -r "branch/$slug" >/dev/null
+          git -C "$work" commit -m "deploy(branch/${slug}): teardown"
+          git -C "$work" push "$remote" HEAD:gh-pages

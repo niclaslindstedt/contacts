@@ -10,11 +10,20 @@ import { defineConfig } from "vite";
 
 import { appPwa } from "./pwa-plugin.ts";
 
-// The GitHub Pages base path is injected by the `pages.yml` workflow via
-// VITE_BASE. The site is served from the root of its custom domain
-// (contacts.niclaslindstedt.se), so this stays `/` — the same default used for
-// local dev and preview builds.
+// The base path is injected by the deploy workflows via VITE_BASE, one per
+// release channel on the custom domain (contacts.niclaslindstedt.se): the
+// released app at `/`, the rolling main build at `/preview/`, and per-branch
+// builds at `/branch/<name>/`. Defaults to `/` for local dev and preview builds.
 const base = process.env.VITE_BASE ?? "/";
+
+// Sibling release channels that live *under* this build's base and must be
+// disowned by its service worker (see pwa-plugin.ts `ignorePaths`). Only the
+// root release sets this — comma-separated absolute paths, e.g.
+// `/preview/,/branch/`.
+const ignorePaths = (process.env.VITE_PWA_IGNORE_PATHS ?? "")
+  .split(",")
+  .map((p) => p.trim())
+  .filter(Boolean);
 
 // The label the PWA update toast shows for the incoming build. Prefer the
 // deploying commit (the workflow exposes GITHUB_SHA); fall back to a build
@@ -57,5 +66,5 @@ export default defineConfig({
   },
   // `appPwa` only applies on build, so dev keeps registering no worker (the
   // app passes `enabled: !import.meta.env.DEV` to `usePwaUpdate`).
-  plugins: [react(), tailwindcss(), appPwa({ base, version })],
+  plugins: [react(), tailwindcss(), appPwa({ base, version, ignorePaths })],
 });
