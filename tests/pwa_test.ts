@@ -1,12 +1,43 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, it } from "vitest";
 
 import { buildServiceWorker } from "../pwa-plugin.ts";
 import { cacheIdForBase } from "../src/app/pwa.ts";
 
+const manifest = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL("../public/manifest.webmanifest", import.meta.url)),
+    "utf8",
+  ),
+) as Record<string, unknown>;
+
 // The three release channels share one Pages origin, so their service workers
 // must not collide: each needs its own precache cache id, and the root worker —
 // whose scope is a prefix of the sibling channels — must disown their paths.
+
+describe("web app manifest identity", () => {
+  // One static manifest is copied verbatim to every channel's deploy path
+  // (`/`, `/preview/`, `/branch/<name>/`) on a single origin. The install
+  // identity must differ per channel so installing from `/preview/` installs
+  // the preview app, not the root app.
+  it("does not pin an explicit id", () => {
+    // The manifest `id` member resolves relative to the *origin*, not the
+    // manifest URL — so a relative id like "./" collapses to "<origin>/" for
+    // every channel, giving all channels the same identity. Omitting `id`
+    // makes the identity fall back to the (per-channel) resolved `start_url`.
+    expect(manifest).not.toHaveProperty("id");
+  });
+
+  it("keeps start_url and scope relative so they resolve per channel", () => {
+    // Relative to the manifest URL, "./" resolves to `/preview/` for the
+    // preview build and `/` for the root build — distinct per channel.
+    expect(manifest.start_url).toBe("./");
+    expect(manifest.scope).toBe("./");
+  });
+});
 
 describe("cacheIdForBase", () => {
   it("derives a distinct cache id per channel base", () => {
