@@ -1,0 +1,17 @@
+# Contacts
+
+> A local-first contacts PWA built on @niclaslindstedt/oss-framework. Contacts
+> live on-device as JSON, optionally sync to Dropbox or Google Drive (with
+> AES-GCM encryption of the cloud copy), and export as vCard 3.0 (.vcf) for
+> Outlook / iOS / Android, Outlook-compatible CSV, or a JSON backup.
+
+- App: https://contacts.niclaslindstedt.se/
+- Source: https://github.com/niclaslindstedt/contacts
+- Framework: https://github.com/niclaslindstedt/oss-framework
+
+## Features
+
+- Contact cards: names, phones, emails, company, address, birthday, notes, photos
+- Folders, drag-and-drop, archive, undo/redo, full-text search
+- Namespaces: separate address books switched from the side menu
+- Themes, achievements, English/Swedish UI, installable offline PWA

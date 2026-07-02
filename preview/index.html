@@ -1,0 +1,77 @@
+<!doctype html>
+<!-- `data-theme` seeds the default preset before the app mounts (the engine
+     then keeps it in sync); the framework's token blocks key off it. -->
+<html lang="en" data-theme="githubDark">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Lock the viewport scale: an installed PWA is an app, not a document.
+         `maximum-scale=1, user-scalable=no` disables pinch-zoom and iOS's
+         focus auto-zoom; `viewport-fit=cover` lets the app paint under the
+         notch / home indicator (it pads with `env(safe-area-inset-*)`). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Contacts — a local-first address book</title>
+    <meta
+      name="description"
+      content="Contacts is a local-first address book PWA. Your contacts live on your device, sync to Dropbox or Google Drive if you want, can be encrypted at rest, and export as vCard or CSV for Outlook, iOS, and Android."
+    />
+    <link rel="canonical" href="https://contacts.niclaslindstedt.se/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Contacts — a local-first address book" />
+    <meta
+      property="og:description"
+      content="A privacy-first contacts PWA: local-only or cloud-synced (Dropbox, Google Drive), optional encryption at rest, themes, achievements, and vCard/CSV export."
+    />
+    <meta property="og:url" content="https://contacts.niclaslindstedt.se/" />
+    <meta
+      property="og:image"
+      content="https://contacts.niclaslindstedt.se/og.png"
+    />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Contacts — a local-first address book"
+    />
+    <meta
+      name="twitter:description"
+      content="A privacy-first contacts PWA: local-only or cloud-synced, optional encryption at rest, and vCard/CSV export for Outlook, iOS, and Android."
+    />
+    <meta
+      name="twitter:image"
+      content="https://contacts.niclaslindstedt.se/og.png"
+    />
+
+    <!-- JSON-LD -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Contacts",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Any",
+        "description": "A local-first address book PWA with optional Dropbox / Google Drive sync, encryption at rest, and vCard/CSV export.",
+        "url": "https://contacts.niclaslindstedt.se/",
+        "image": "https://contacts.niclaslindstedt.se/og.png",
+        "offers": { "@type": "Offer", "price": "0" }
+      }
+    </script>
+    <script type="module" crossorigin src="/preview/assets/index-TIhZ9VK3.js"></script>
+    <link rel="stylesheet" crossorigin href="/preview/assets/index-DTrEzEtw.css">
+    <link rel="manifest" href="/preview/manifest.webmanifest">
+    <link rel="icon" href="/preview/icons/icon.svg">
+    <link rel="apple-touch-icon" href="/preview/icons/apple-touch-icon-180.png">
+    <meta name="theme-color" content="#0b0d10">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Contacts">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
