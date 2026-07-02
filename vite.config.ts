@@ -11,7 +11,8 @@ import { defineConfig } from "vite";
 import { appPwa } from "./pwa-plugin.ts";
 
 // The GitHub Pages base path is injected by the `pages.yml` workflow via
-// VITE_BASE (a project site deploys under `/contacts/`). Defaults to `/` for
+// VITE_BASE. The site is served from the root of its custom domain
+// (contacts.niclaslindstedt.se), so this stays `/` — the same default used for
 // local dev and preview builds.
 const base = process.env.VITE_BASE ?? "/";
 

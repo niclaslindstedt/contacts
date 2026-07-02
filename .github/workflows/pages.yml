@@ -33,11 +33,13 @@ jobs:
       - run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # The app IS the website — build it at the Pages base path. The OAuth
-      # identities are public identifiers, supplied as repository variables.
+      # The app IS the website — served from the root of the custom domain
+      # (contacts.niclaslindstedt.se), so it builds at base `/` (the default).
+      # The `public/CNAME` file ships in the artifact to bind the domain. The
+      # OAuth identities are public identifiers, supplied as repository variables.
       - run: npm run build
         env:
-          VITE_BASE: /contacts/
+          VITE_BASE: /
           VITE_DROPBOX_APP_KEY: ${{ vars.DROPBOX_APP_KEY }}
           VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
       - uses: actions/configure-pages@v5

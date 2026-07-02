@@ -20,7 +20,7 @@ import { cacheIdForBase } from "./src/app/pwa.ts";
 //   - a Cache Storage entry named `<cacheId>-precache`
 
 type AppPwaOptions = {
-  // The bundler base (`/` locally, `/contacts/` on Pages). Drives the SW
+  // The bundler base (`/` — served from the custom domain root). Drives the SW
   // scope, the emitted file URLs, and — via `cacheIdForBase` — the precache name.
   base: string;
   // Label shown in the "a new version is ready" toast (a short commit sha or a
@@ -157,7 +157,7 @@ export function appPwa({ base, version }: AppPwaOptions): Plugin {
 
     // Wire the manifest, theme color, and apple-touch metadata into the shell.
     // Done here (not in index.html) so the hrefs stay base-correct from one
-    // source of truth whether the app deploys at `/` or `/contacts/`.
+    // source of truth regardless of the configured `base`.
     transformIndexHtml(): HtmlTagDescriptor[] {
       return [
         {

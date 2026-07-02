@@ -5,7 +5,7 @@
 > AES-GCM encryption of the cloud copy), and export as vCard 3.0 (.vcf) for
 > Outlook / iOS / Android, Outlook-compatible CSV, or a JSON backup.
 
-- App: https://niclaslindstedt.github.io/contacts/
+- App: https://contacts.niclaslindstedt.se/
 - Source: https://github.com/niclaslindstedt/contacts
 - Framework: https://github.com/niclaslindstedt/oss-framework
 

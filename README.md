@@ -92,11 +92,11 @@ prompt — check manually from the sidebar's _Check for updates_ row.
 Cloud sync needs OAuth app identities baked into the build as Vite env vars —
 see [docs/configuration.md](docs/configuration.md):
 
-| Variable                | Purpose                                         |
-| ----------------------- | ----------------------------------------------- |
-| `VITE_DROPBOX_APP_KEY`  | Dropbox app key (PKCE flow, no secret)          |
-| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client id (GIS token flow)         |
-| `VITE_BASE`             | Deploy base path (`/contacts/` on GitHub Pages) |
+| Variable                | Purpose                                              |
+| ----------------------- | ---------------------------------------------------- |
+| `VITE_DROPBOX_APP_KEY`  | Dropbox app key (PKCE flow, no secret)               |
+| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client id (GIS token flow)              |
+| `VITE_BASE`             | Deploy base path (`/` — served from the domain root) |
 
 ## Examples
 
