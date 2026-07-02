@@ -11,9 +11,10 @@ export default [
   },
   js.configs.recommended,
   {
-    // Node tooling scripts (icon generation, SEO checks). These run under
-    // Node, so expose its globals rather than the browser's.
-    files: ["scripts/**/*.mjs"],
+    // Node tooling scripts (icon generation, SEO checks) and agent-skill
+    // helpers. These run under Node, so expose its globals rather than the
+    // browser's.
+    files: ["scripts/**/*.mjs", ".agent/skills/**/*.mjs"],
     languageOptions: {
       sourceType: "module",
       ecmaVersion: 2022,
