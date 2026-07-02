@@ -5,7 +5,7 @@ server and no runtime config file). Vite reads these from the environment:
 
 | Variable                | Default   | Purpose                                                                                                                                                                                                                                         |
 | ----------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_BASE`             | `/`       | The deploy base path. The site is served from the root of its custom domain (`contacts.niclaslindstedt.se`), so the Pages workflow keeps this at `/`. Drives asset URLs, the service-worker scope, and the precache cache id.                    |
+| `VITE_BASE`             | `/`       | The deploy base path. The site is served from the root of its custom domain (`contacts.niclaslindstedt.se`), so the Pages workflow keeps this at `/`. Drives asset URLs, the service-worker scope, and the precache cache id.                   |
 | `VITE_DROPBOX_APP_KEY`  | _(unset)_ | Dropbox app key for the OAuth PKCE connect flow. Create a Dropbox app with the `files.content.write`/`files.content.read` scopes and an app folder; no secret is needed (PKCE). When unset, the Dropbox Connect button explains what's missing. |
 | `VITE_GOOGLE_CLIENT_ID` | _(unset)_ | Google OAuth client id for the Google Identity Services token flow (`drive.file` scope). When unset, the Google Drive Connect button explains what's missing.                                                                                   |
 
