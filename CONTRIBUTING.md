@@ -37,9 +37,27 @@ make fmt-check
    ```
    Types: `feat`, `fix`, `perf`, `docs`, `test`, `refactor`, `chore`, `ci`,
    `build`, `style`. Breaking changes: `<type>!:` or `BREAKING CHANGE:` footer.
-4. Open a PR. The **PR title** must be conventional-commit format because we
+4. If the change is user-visible, add a changelog fragment under
+   `.changes/unreleased/` (CI enforces this via the `changeset` job):
+
+   ```
+   .changes/unreleased/$(date +%s)-short-slug.md
+   ---
+   type: Added        # Added | Changed | Fixed | Removed | Security | Deprecated
+   breaking: true     # optional — forces a major release
+   ---
+
+   One line users will read in the changelog.
+   ```
+
+   Pure refactors, CI/build tweaks, and docs-only PRs are exempt (skip-list in
+   `scripts/release/check-changeset.mjs`); or label the PR `no-changelog` to opt
+   out. The Release workflow collates these into `CHANGELOG.md` and derives the
+   semver bump — run `make bump` to preview it.
+
+5. Open a PR. The **PR title** must be conventional-commit format because we
    squash-merge and that title becomes the commit message on `main`.
-5. CI must be green and at least one reviewer must approve.
+6. CI must be green and at least one reviewer must approve.
 
 ## Tests
 
