@@ -7,8 +7,8 @@ or Google Drive (with encryption at rest), and exports as vCard/CSV for
 Outlook, iOS, and Android.
 
 [![CI](https://github.com/niclaslindstedt/contacts/actions/workflows/ci.yml/badge.svg)](https://github.com/niclaslindstedt/contacts/actions/workflows/ci.yml)
-[![SEO](https://github.com/niclaslindstedt/contacts/actions/workflows/seo.yml/badge.svg)](https://github.com/niclaslindstedt/contacts/actions/workflows/seo.yml)
 [![Pages](https://github.com/niclaslindstedt/contacts/actions/workflows/pages.yml/badge.svg)](https://github.com/niclaslindstedt/contacts/actions/workflows/pages.yml)
+[![Release](https://github.com/niclaslindstedt/contacts/actions/workflows/release.yml/badge.svg)](https://github.com/niclaslindstedt/contacts/actions/workflows/release.yml)
 [![License: PolyForm-Noncommercial-1.0.0](https://img.shields.io/badge/license-PolyForm--Noncommercial--1.0.0-blue.svg)](LICENSE)
 
 ## Why?
@@ -96,7 +96,7 @@ see [docs/configuration.md](docs/configuration.md):
 | ----------------------- | ----------------------------------------------------------------------- |
 | `VITE_DROPBOX_APP_KEY`  | Dropbox app key (PKCE flow, no secret)                                  |
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth client id (GIS token flow)                                 |
-| `VITE_BASE`             | Deploy base path — `/` (release), `/preview/` (main), `/branch/<name>/` |
+| `VITE_BASE`             | Deploy base path — `/` (release), `/preview/` (main), `/branch/` (slot) |
 
 ## Examples
 

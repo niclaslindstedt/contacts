@@ -1,4 +1,4 @@
-.PHONY: build test lint fmt fmt-check shellcheck actionlint release clean docs website website-dev install icons check-seo
+.PHONY: build test lint fmt fmt-check actionlint release clean docs website website-dev install icons check-seo changelog bump
 
 build:
 	npm run build
@@ -28,9 +28,6 @@ install:
 icons:
 	npm run icons
 
-shellcheck:
-	shellcheck scripts/*.sh
-
 actionlint:
 	actionlint -color
 
@@ -47,3 +44,19 @@ website-dev:
 
 check-seo:
 	npm run build && npm run check:seo
+
+# Local preview of what the Release workflow will write to CHANGELOG.md.
+# Pass the planned version: `make changelog VERSION=0.2.0`. Consumes the
+# fragments in .changes/unreleased/ — run inside a scratch branch or
+# revert afterwards if you only wanted a preview.
+changelog:
+	@test -n "$(VERSION)" || { \
+		echo "usage: make changelog VERSION=X.Y.Z"; exit 2; \
+	}
+	node scripts/release/collate-changelog.mjs $(VERSION)
+
+# Print the semver bump (patch/minor/major) the Release workflow will
+# auto-derive from the current .changes/unreleased/ fragments. Read-only
+# — touches nothing.
+bump:
+	@node scripts/release/compute-bump.mjs

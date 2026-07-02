@@ -1,47 +1,56 @@
-name: CI
+name: ci
 
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    # Include `labeled` / `unlabeled` so the `no-changelog` escape
+    # hatch re-runs the changeset job when the label is toggled after
+    # the PR opened. The default activity types (`opened`,
+    # `synchronize`, `reopened`) would otherwise leave the check stuck
+    # red until the next push.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
+  # npm ci resolves @niclaslindstedt/oss-framework from GitHub Packages.
   packages: read
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
+          node-version-file: .nvmrc
+          cache: npm
           registry-url: "https://npm.pkg.github.com"
           scope: "@niclaslindstedt"
       - run: npm ci
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: npm run build
-      - run: npm test
-      - run: npm run lint
-      - run: npm run fmt:check
+      - run: make fmt-check
+      - run: make lint
+      - run: make test
+      - run: make build
 
-  # Lint workflow YAML with actionlint and shell scripts with
-  # shellcheck (OSS_SPEC §16.1). shellcheck is preinstalled on
-  # ubuntu-latest; actionlint is fetched via its official installer.
-  shell-lint:
+  changeset:
+    # Enforces that every PR touching user-visible code drops a
+    # changelog fragment under .changes/unreleased/, or opts out via
+    # the `no-changelog` label. Pure refactors, CI/build tweaks, and
+    # docs-only edits pass via the skip-list inside the script.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Install actionlint
-        run: |
-          bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-          echo "${PWD}" >> "$GITHUB_PATH"
-      - name: make actionlint
-        run: make actionlint
-      - name: make shellcheck
-        run: make shellcheck
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - name: Check for changelog fragment
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: node scripts/release/check-changeset.mjs
