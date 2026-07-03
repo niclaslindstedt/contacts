@@ -5,6 +5,7 @@ import { InlineEditField } from "@niclaslindstedt/oss-framework/components";
 
 import { Avatar } from "./Avatar.tsx";
 import { ContactAppearancePopover } from "./ContactAppearancePopover.tsx";
+import { PhotoViewer } from "./PhotoViewer.tsx";
 import { useT } from "./i18n/index.ts";
 import type { Contact } from "./types.ts";
 import { displayName, splitFullName } from "./types.ts";
@@ -27,6 +28,9 @@ export function ContactIdentity({
   // Tapping the name in edit mode swaps it for an inline editor (select-all on
   // focus, so the first keystroke replaces the name); this holds that mode.
   const [editingName, setEditingName] = useState(false);
+  // Read mode: tapping the photo opens it full-screen. Holds the shown source
+  // (the original when kept, else the baked crop), or null when closed.
+  const [viewing, setViewing] = useState<string | null>(null);
   const name = displayName(contact);
   // The company doubles as the display name when a card has no first/last name,
   // so only show it as a subtitle when it is genuinely a second line.
@@ -40,8 +44,24 @@ export function ContactIdentity({
           size="hero"
           onChange={(patch) => updateContact(contact.id, patch)}
         />
+      ) : contact.photo ? (
+        <button
+          type="button"
+          onClick={() =>
+            setViewing(contact.photoSource || contact.photo || null)
+          }
+          aria-label={t("contact.viewPhoto")}
+          title={t("contact.viewPhoto")}
+          className="shrink-0 cursor-zoom-in rounded-full hover:opacity-90"
+        >
+          <Avatar contact={contact} size="hero" />
+        </button>
       ) : (
         <Avatar contact={contact} size="hero" />
+      )}
+
+      {viewing && (
+        <PhotoViewer src={viewing} onClose={() => setViewing(null)} />
       )}
 
       {editing ? (

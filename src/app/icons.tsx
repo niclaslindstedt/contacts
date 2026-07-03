@@ -87,6 +87,50 @@ export function FormatIcon({ className }: IconProps) {
   );
 }
 
+/** An image with an up-arrow — the "upload photo" affordance in the photo
+ *  section of the appearance popover. */
+export function ImageUpIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable={false}
+      className={className}
+    >
+      <path d="M14.5 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9.5" />
+      <path d="m4 16 4-4a2 2 0 0 1 2.7-.1L16 16" />
+      <path d="M14 14l1-1a2 2 0 0 1 2.7-.1L20 14" />
+      <circle cx="9" cy="9" r="1.4" />
+      <path d="M19 8V2M16 5l3-3 3 3" />
+    </svg>
+  );
+}
+
+/** A crop frame — the "adjust photo" affordance (re-zoom/pan the circle). */
+export function CropIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable={false}
+      className={className}
+    >
+      <path d="M6 2v14a2 2 0 0 0 2 2h14" />
+      <path d="M18 22V8a2 2 0 0 0-2-2H2" />
+    </svg>
+  );
+}
+
 /** A downward tray arrow — the export/download affordance. */
 export function DownloadIcon({ className }: IconProps) {
   return (

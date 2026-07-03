@@ -73,8 +73,10 @@ Enter — and start filling in the card.
 - **Read & edit** — a contact opens in read mode, laid out to scan; the pencil
   in the toolbar flips it into edit mode (and the check flips it back). Tappable
   phone and email rows call and compose straight from read mode.
-- **Photos & appearance** — in edit mode, tap the avatar to upload a photo or
-  pick a glyph + accent colour.
+- **Photos & appearance** — in edit mode, tap the avatar to upload a photo and
+  frame it in a circle cropper (zoom + pan), adjust it later, or pick a glyph +
+  accent colour instead. Tap a photo in read mode to view it full-screen; on a
+  cloud drive each original is filed at `photos/<name>-<id>.jpg`.
 - **Search** — the magnifier in the action grid; matches names, numbers,
   emails, addresses, and notes (`*`/`?` wildcards, `/regex/`).
 - **Export** — the download button in the card header (single vCard) or

@@ -16,8 +16,10 @@ On first launch you land in the **Personal** namespace with one blank card.
 2. **Fill in the card** — phone numbers and emails are lists (add as many as
    you like, label them Mobile/Home/Work); company, address, birthday, and
    notes are plain fields. Every field saves when you leave it.
-3. **Add a photo** — tap the avatar in the card header, Upload photo. Or pick
-   a glyph and accent colour instead.
+3. **Add a photo** — tap the avatar in the card header, then **Upload photo**
+   in the Photo section, and frame it in the circle cropper (drag to move, pinch
+   or scroll to zoom). Adjust it later, tap it in read mode to view it
+   full-screen, or pick a glyph and accent colour instead.
 4. **Organise** — create folders from the action grid; drag contacts into
    them, or onto another namespace in the sidebar header, or onto Archive.
 5. **Install it** — the deployed site is an installable PWA and works fully
