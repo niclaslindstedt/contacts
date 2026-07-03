@@ -70,8 +70,11 @@ Enter — and start filling in the card.
 - **Organise** — drag a contact into a folder, onto another namespace, or onto
   Archive. Swipe right on a row to archive, left to delete. Everything is one
   Undo away (Ctrl/Cmd-Z).
-- **Photos & appearance** — tap the avatar in the card header to upload a
-  photo or pick a glyph + accent colour.
+- **Read & edit** — a contact opens in read mode, laid out to scan; the pencil
+  in the toolbar flips it into edit mode (and the check flips it back). Tappable
+  phone and email rows call and compose straight from read mode.
+- **Photos & appearance** — in edit mode, tap the avatar to upload a photo or
+  pick a glyph + accent colour.
 - **Search** — the magnifier in the action grid; matches names, numbers,
   emails, addresses, and notes (`*`/`?` wildcards, `/regex/`).
 - **Export** — the download button in the card header (single vCard) or

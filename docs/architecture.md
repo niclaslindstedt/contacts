@@ -14,8 +14,8 @@ The framework owns the **mechanics and the UI kit**; the app owns the
 
 ```
 ┌────────────────────────── app (this repo) ──────────────────────────┐
-│ ContactScreen · SideMenuContent · ArchiveScreen · SearchOverlay      │
-│ SettingsModal + tabs · Avatar · ContactAppearancePopover             │
+│ ContactScreen (read/edit views) · SideMenuContent · ArchiveScreen    │
+│ SearchOverlay · SettingsModal + tabs · Avatar · appearance popover   │
 │        │                                                             │
 │ useContactStore (doc + undo/redo)   useNamespaces   useAppSettings   │
 │ useSyncEngine (real sync)           useAchievements                  │
