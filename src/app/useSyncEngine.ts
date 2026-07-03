@@ -157,6 +157,9 @@ export function useSyncEngine(
     "none" | "offline" | "auth-error" | "conflict" | "throttled" | "error"
   >("none");
   const [locked, setLocked] = useState(false);
+  // Set when a loaded cloud copy still holds inline photos (a pre-file-layout
+  // document): a one-time save then files them out — see the sweep effect below.
+  const [photoSweep, setPhotoSweep] = useState(false);
   // The edit counter that has been pushed to the backend. Anything newer is
   // unsaved — that's `dirty`.
   const [savedVersion, setSavedVersion] = useState(store.version);
@@ -210,6 +213,7 @@ export function useSyncEngine(
         : withExternalPhotos(
             cached,
             dropboxPhotoStore(dropboxAuth, DROPBOX_APP_KEY || undefined),
+            () => setPhotoSweep(true),
           );
     }
     if (backend === "gdrive" && gdriveToken) {
@@ -226,7 +230,9 @@ export function useSyncEngine(
         ? withEncryption(cached, passwordRef, {
             logger: logStore.createLogger("encrypt"),
           })
-        : withExternalPhotos(cached, gdrivePhotoStore(gdriveToken));
+        : withExternalPhotos(cached, gdrivePhotoStore(gdriveToken), () =>
+            setPhotoSweep(true),
+          );
     }
     return null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -391,6 +397,33 @@ export function useSyncEngine(
     blocked,
     locked,
     store.version,
+    doSave,
+  ]);
+
+  // One-time photo sweep: when the adopted cloud copy still holds inline photos
+  // (a document from before the file layout), file them out on open instead of
+  // waiting for the next edit. `doSave` pushes the current document through the
+  // externaliser, which writes the image files and strips the bytes; the flag
+  // clears once fired so it runs at most once per adopted backend. Stays put
+  // while a fault, lock, or fake-data pause blocks saving, then fires when clear.
+  useEffect(() => {
+    if (!photoSweep) return;
+    if (!isCloud || !connected || !adapter || blocked || locked || paused)
+      return;
+    if (encrypted && passwordRef.current === null) return;
+    setPhotoSweep(false);
+    syncLog.info("photos: cloud copy holds inline photos — filing them out");
+    void doSave();
+  }, [
+    photoSweep,
+    isCloud,
+    connected,
+    adapter,
+    blocked,
+    locked,
+    paused,
+    encrypted,
+    passwordRef,
     doSave,
   ]);
 
