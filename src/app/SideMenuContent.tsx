@@ -65,9 +65,11 @@ const ABOUT_PLACEMENT: FloatingPlacement = {
 // (Source code).
 const SOURCE_URL = "https://github.com/niclaslindstedt/contacts";
 const DONATE_URL = "https://github.com/sponsors/niclaslindstedt";
-// The subtitle under the Source row — the app's released version, inlined at
-// build time (`__APP_VERSION__`, see `vite.config.ts`).
-const BUILD_LABEL = `v${__APP_VERSION__}`;
+// The subtitle under the Source row — the build identifier, composed at build
+// time (`__BUILD_LABEL__`, see `vite.config.ts`): the version, the CI run
+// number, the deploy slot (`-pre` for preview, `-br` for a branch build), and
+// the short commit hash, e.g. `1.3.0.237-pre+4f23a97`.
+const BUILD_LABEL = __BUILD_LABEL__;
 
 // The navigation drawer's content — the rows the framework `Sidebar` shell
 // frames. This is the app's own navigation (the framework owns only the
