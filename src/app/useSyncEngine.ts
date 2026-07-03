@@ -135,6 +135,10 @@ export function useSyncEngine(
   store: ContactStore,
   slug: string,
   passwordRef: MutablePasswordRef,
+  // Suspend all writes to the backend. Set while the developer "Fake data"
+  // backend has taken over storage, so a throwaway sample is never pushed up to
+  // a connected cloud copy — fake data stays entirely in memory.
+  paused = false,
 ): SyncEngine {
   const [backend, setBackendState] = useState<SyncBackendId>(readBackend);
   const [dropboxTokens, setDropboxTokens] = useState<DropboxTokens | null>(
@@ -304,6 +308,8 @@ export function useSyncEngine(
   // typed errors map onto the command centre's recovery affordances.
   const saving = useRef(false);
   const doSave = useCallback(async () => {
+    // Fake-data takeover in effect — never push the in-memory sample upstream.
+    if (paused) return;
     if (!adapter || saving.current) return;
     if (encrypted && passwordRef.current === null) {
       setLocked(true);
@@ -368,7 +374,7 @@ export function useSyncEngine(
     } finally {
       saving.current = false;
     }
-  }, [adapter, encrypted, passwordRef]);
+  }, [adapter, encrypted, passwordRef, paused]);
 
   // Debounced auto-save: a settled edit on a connected cloud backend pushes
   // itself, unless a blocking fault stands in the way.

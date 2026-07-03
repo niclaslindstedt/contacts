@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   useApplyTheme,
@@ -49,7 +49,9 @@ import { logStore } from "./app/log.ts";
 import { status } from "./output.ts";
 import { useAchievements } from "./app/useAchievements.ts";
 import { useAppSettings } from "./app/useAppSettings.ts";
-import { useContactStore } from "./app/useContactStore.ts";
+import { useDevSeed } from "./app/dev/useDevSeed.ts";
+import { createSeedBackend } from "./app/dev/seedBackend.ts";
+import { localDocBackend, useContactStore } from "./app/useContactStore.ts";
 import { useNamespaces } from "./app/useNamespaces.ts";
 import { useSyncEngine } from "./app/useSyncEngine.ts";
 import { cacheIdForBase } from "./app/pwa.ts";
@@ -69,7 +71,16 @@ export function App() {
   // document store keys off the active slug, so switching a namespace swaps
   // the whole address book and its undo history.
   const ns = useNamespaces();
-  const store = useContactStore(ns.activeSlug);
+  // Developer "Fake data" takeover: when active (via the Developer tab toggle or
+  // the `VITE_SEED` build var), an in-memory backend seeded with sample data
+  // replaces the real localStorage backend for the session — nothing on disk is
+  // touched, and a reload restores the real address book (see `useDevSeed`).
+  const devSeed = useDevSeed();
+  const backend = useMemo(
+    () => (devSeed.active ? createSeedBackend(devSeed.size) : localDocBackend),
+    [devSeed.active, devSeed.size],
+  );
+  const store = useContactStore(ns.activeSlug, backend);
   const [namespacesOpen, setNamespacesOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   // The top-level view the main area shows: the active contact, or the
@@ -84,7 +95,7 @@ export function App() {
   // copy lives only in this in-memory ref; the framework's encryption wrapper
   // reads it fresh on every operation and stores it nowhere.
   const passwordRef = useRef<string | null>(null);
-  const sync = useSyncEngine(store, ns.activeSlug, passwordRef);
+  const sync = useSyncEngine(store, ns.activeSlug, passwordRef, devSeed.active);
   const [syncDetailsOpen, setSyncDetailsOpen] = useState(false);
 
   // Wide screens (≥ the smallest iPad) dock the sidebar permanently; phones

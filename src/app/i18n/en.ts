@@ -308,6 +308,10 @@ export const en = {
     },
     developer: {
       intro: "Diagnostic tools. These stay on this device.",
+      fakeDataTitle: "Fake data",
+      fakeData: "Load fake data",
+      fakeDataHint:
+        "Swap your address book for a throwaway sample full of varied test contacts. It lives in memory only — nothing is saved, and reloading the page brings your real contacts back.",
       loggingTitle: "Logging",
       captureLogs: "Capture logs",
       captureLogsHint:

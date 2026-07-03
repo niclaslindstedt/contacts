@@ -50,6 +50,27 @@ fails on a missing dependency, wait and retry, or run `make install` once the
 token is in place. The hook is a no-op outside the web environment
 (`CLAUDE_CODE_REMOTE`), so it never touches a local developer's npm config.
 
+### Fake data / seeded dev server
+
+`npm run dev` **starts seeded by default** (`VITE_SEED=large`): the dev server
+comes up on a throwaway sample address book full of varied edge-case contacts
+(nameless/company-only cards, very long and unicode/RTL text, many phones and
+emails, leap-day birthdays, every phone/postal style, archived cards, empty and
+archived folders) instead of an empty document — so the UI, search, sort,
+export, and formatters always have realistic input to shake out edge cases.
+
+- The seed is a **storage backend that takes over storage, in memory** —
+  `createSeedBackend` (`src/app/dev/seedBackend.ts`) replaces the real
+  `localDocBackend` in the store; nothing is ever written to localStorage, and a
+  page reload (or `npm run dev:clean`) drops back to the real address book. This
+  mirrors the checklist project's dev-seed `StorageAdapter` swap.
+- `VITE_SEED` controls it: `1`/`sample` (curated edge-case set), a number
+  (roughly that many contacts), `large` (a big stress spread), `0`/unset (off).
+  Override the default with e.g. `VITE_SEED=25 npm run dev`.
+- The **Developer → Fake data** settings toggle (`useDevSeed`) flips the same
+  backend live, without a rebuild. The sample builder is `buildFakeData`
+  (`src/app/dev/fakeData.ts`). See `docs/configuration.md`.
+
 ## Commit and PR conventions
 
 - All commits follow [Conventional Commits](https://www.conventionalcommits.org/).

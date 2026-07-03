@@ -37,24 +37,44 @@ export function freshId(prefix: string): string {
   return `${prefix}-${crypto.randomUUID()}`;
 }
 
-function load(slug: string): AppData {
-  try {
-    const raw = localStorage.getItem(docKey(slug));
-    // Run the persisted bytes forward to the latest version before the app
-    // sees them (see `migrations.ts`).
-    if (raw) return parseDoc(raw);
-  } catch {
-    // Corrupt or unavailable storage — fall back to the starter document.
-  }
-  return starterDoc();
-}
+/** The document storage seam. The store never touches `localStorage` directly
+ *  — it reads and writes a namespace's document through a `DocBackend`, so a
+ *  different backend can *take over storage* without the store changing. Two
+ *  implementations exist: the real `localDocBackend` (persists to localStorage)
+ *  and the developer in-memory seed backend (`createSeedBackend`), swapped in by
+ *  the "Fake data" toggle. Modelled on the checklist project's `StorageAdapter`
+ *  seam, narrowed to the app's synchronous per-namespace document. */
+export type DocBackend = {
+  readonly id: "local" | "dev";
+  /** The namespace's current document, or a starter document when empty. */
+  load(slug: string): AppData;
+  /** Persist a namespace's document. A best-effort sink — it must not throw. */
+  save(slug: string, doc: AppData): void;
+};
 
-/** Write a namespace's document to its localStorage key. Used to push a
- *  contact / folder *into another namespace's* document — the one the active
- *  store isn't holding. */
-function persistDoc(slug: string, doc: AppData): void {
-  localStorage.setItem(docKey(slug), serializeDoc(doc));
-}
+/** The real backend: one JSON document per namespace in localStorage, run
+ *  through the migration pipeline on the way in and out. */
+export const localDocBackend: DocBackend = {
+  id: "local",
+  load(slug) {
+    try {
+      const raw = localStorage.getItem(docKey(slug));
+      // Run the persisted bytes forward to the latest version before the app
+      // sees them (see `migrations.ts`).
+      if (raw) return parseDoc(raw);
+    } catch {
+      // Corrupt or unavailable storage — fall back to the starter document.
+    }
+    return starterDoc();
+  },
+  save(slug, doc) {
+    try {
+      localStorage.setItem(docKey(slug), serializeDoc(doc));
+    } catch {
+      // Storage full / unavailable — the in-memory state still works.
+    }
+  },
+};
 
 /** Pick the active contact after a delete/archive: keep the current one if
  *  it's still visible, otherwise fall to the first un-archived card — so
@@ -66,34 +86,47 @@ function nextActiveId(contacts: Contact[], current: string): string {
 
 export type ContactStore = ReturnType<typeof useContactStore>;
 
-export function useContactStore(slug: string) {
-  // The active slug travels *with* the document in state so the persist effect
-  // can never write one namespace's data under another's key (the clobber a
-  // separate `data` + `slug` state would race into on a switch).
-  const [state, setState] = useState(() => ({ slug, data: load(slug) }));
+export function useContactStore(
+  slug: string,
+  backend: DocBackend = localDocBackend,
+) {
+  // Keep the live backend reachable from the memoised callbacks (reload, the
+  // cross-namespace moves) without widening their dependency lists.
+  const backendRef = useRef(backend);
+  backendRef.current = backend;
+
+  // The active slug and the backend travel *with* the document in state, so the
+  // persist effect can never write one namespace's data under another's key —
+  // and swapping the backend (the "Fake data" takeover) re-adopts cleanly.
+  const [state, setState] = useState(() => ({
+    slug,
+    backend,
+    data: backend.load(slug),
+  }));
   // Edit history. `setActive` replaces the present without pushing, so
   // navigation never clutters undo; every content edit goes through `commit`.
   const past = useRef<AppData[]>([]);
   const future = useRef<AppData[]>([]);
   const [version, setVersion] = useState(0); // re-render on history change
 
-  // Namespace switch — adopt that namespace's document and reset history.
-  // Adjusting state during render (rather than in an effect) is React's
-  // blessed way to respond to a changed input with no stale-doc flash.
-  if (state.slug !== slug) {
+  // Namespace switch — or a backend takeover (fake data on/off) — adopts the
+  // matching document and resets history. Adjusting state during render (rather
+  // than in an effect) is React's blessed way to respond to a changed input
+  // with no stale-doc flash. Swapping back to the local backend re-reads the
+  // real, untouched document.
+  if (state.slug !== slug || state.backend !== backend) {
     past.current = [];
     future.current = [];
-    setState({ slug, data: load(slug) });
+    setState({ slug, backend, data: backend.load(slug) });
   }
 
   const data = state.data;
 
   useEffect(() => {
-    try {
-      localStorage.setItem(docKey(state.slug), serializeDoc(state.data));
-    } catch {
-      // Storage full / unavailable — the in-memory state still works.
-    }
+    // Write-through to whichever backend is active. The local backend persists
+    // to localStorage; the fake-data backend keeps the bytes in memory, so a
+    // dev session never touches the real address book on disk.
+    state.backend.save(state.slug, state.data);
   }, [state]);
 
   const commit = useCallback((next: AppData) => {
@@ -129,7 +162,7 @@ export function useContactStore(slug: string) {
   // another tab. Drives the pull-to-refresh gesture. Replaces the present
   // without touching the undo history (a refresh isn't an edit you'd undo).
   const reload = useCallback(() => {
-    setState((cur) => ({ ...cur, data: load(cur.slug) }));
+    setState((cur) => ({ ...cur, data: cur.backend.load(cur.slug) }));
     setVersion((v) => v + 1);
   }, []);
 
@@ -339,24 +372,25 @@ export function useContactStore(slug: string) {
   );
 
   // Move a contact into *another* namespace — dropping it onto a workspace row
-  // in the side menu. The target document lives under a different localStorage
-  // key, so we read it, append a fresh-id copy (reset to the root — the target
-  // has no matching folder), write it back, and only then drop the original.
-  // The remote write happens first so a storage failure aborts before anything
-  // is lost.
+  // in the side menu. The target document lives under a different backend key,
+  // so we read it, append a fresh-id copy (reset to the root — the target has
+  // no matching folder), write it back, and only then drop the original. The
+  // target write happens first so a storage failure aborts before anything is
+  // lost. Both reads and writes go through the active backend, so a fake-data
+  // session moves cards between in-memory namespaces without touching disk.
   const moveContactToNamespace = useCallback(
     (contactId: string, targetSlug: string) => {
       if (targetSlug === state.slug) return;
       const contact = data.contacts.find((c) => c.id === contactId);
       if (!contact) return;
       try {
-        const target = load(targetSlug);
+        const target = state.backend.load(targetSlug);
         const moved: Contact = {
           ...contact,
           id: freshId("contact"),
           folderId: null,
         };
-        persistDoc(targetSlug, {
+        state.backend.save(targetSlug, {
           ...target,
           contacts: [...target.contacts, moved],
         });
@@ -370,7 +404,7 @@ export function useContactStore(slug: string) {
         activeContactId: nextActiveId(contacts, data.activeContactId),
       });
     },
-    [commit, data, state.slug],
+    [commit, data, state.slug, state.backend],
   );
 
   // Move a folder — and every contact it holds — into another namespace.
@@ -383,7 +417,7 @@ export function useContactStore(slug: string) {
         (c) => c.folderId === folderId,
       );
       try {
-        const target = load(targetSlug);
+        const target = state.backend.load(targetSlug);
         const newFolderId = freshId("folder");
         const movedFolder: Folder = { ...folder, id: newFolderId };
         const movedContacts: Contact[] = folderContacts.map((c) => ({
@@ -391,7 +425,7 @@ export function useContactStore(slug: string) {
           id: freshId("contact"),
           folderId: newFolderId,
         }));
-        persistDoc(targetSlug, {
+        state.backend.save(targetSlug, {
           ...target,
           folders: [...target.folders, movedFolder],
           contacts: [...target.contacts, ...movedContacts],
@@ -408,7 +442,7 @@ export function useContactStore(slug: string) {
         activeContactId: nextActiveId(contacts, data.activeContactId),
       });
     },
-    [commit, data, state.slug],
+    [commit, data, state.slug, state.backend],
   );
 
   const activeContact = useMemo(
