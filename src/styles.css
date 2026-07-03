@@ -61,3 +61,15 @@ input[type="date"]::-webkit-date-and-time-value {
   text-align: left;
   min-width: 0;
 }
+
+/* On touch WebKit (iOS Safari) the native date control keeps its intrinsic
+   width even with `max-width: 100%` set — the box only starts respecting the
+   layout once its native appearance is reset, so the birthday field stops
+   stretching past its card. Scoped to coarse pointers so desktop keeps the
+   native calendar-picker affordance; tapping still opens the native picker. */
+@media (pointer: coarse) {
+  input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
