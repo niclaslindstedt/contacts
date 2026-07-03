@@ -179,6 +179,7 @@ export const en = {
     importantDate: "Date",
     importantDateLabel: "Occasion",
     importantDateLabelPlaceholder: "Anniversary",
+    importantDateLabelRequired: "Give the occasion a name.",
     removeImportantDate: "Remove date",
     dateMonth: "Month",
     dateDay: "Day",

@@ -23,9 +23,9 @@ notes, and a photo.
   the contact's current age. Tapping the countdown chip hands the birthday off
   to your calendar app as an all-day event that recurs every year.
 - **Other important dates.** Beyond the birthday, add any number of important
-  dates — a name day, an anniversary — each with a free-text occasion. A date can
-  be a full date (month, day, and year) or **day and month only** (leave the year
-  blank). Like the birthday, each shows a countdown chip; tapping it hands a
+  dates — a name day, an anniversary — each with a free-text occasion (required;
+  it names the countdown chip and the calendar reminder). A date can be a full
+  date (month, day, and year) or **day and month only** (leave the year blank). Like the birthday, each shows a countdown chip; tapping it hands a
   yearly reminder to your calendar, titled with the occasion and the contact's
   name (e.g. "Anniversary Sarah Connor"). When a date carries a year, tapping it
   reveals how many years have passed.
