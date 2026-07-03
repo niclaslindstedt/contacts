@@ -20,6 +20,7 @@ import { contactToVCard, exportFileStem } from "./export.ts";
 import { downloadText, MIME_VCARD } from "./download.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { SyncEngine } from "./useSyncEngine.ts";
+import { hasAddress } from "./address.ts";
 import type { AppSettings } from "./useAppSettings.ts";
 import type { Contact } from "./types.ts";
 import { displayName } from "./types.ts";
@@ -198,7 +199,7 @@ function isEmptyContact(c: Contact): boolean {
     c.phones.length === 0 &&
     c.emails.length === 0 &&
     !c.company?.trim() &&
-    !c.address?.trim() &&
+    !hasAddress(c) &&
     !c.birthday?.trim() &&
     !c.notes?.trim() &&
     !c.photo

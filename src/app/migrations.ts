@@ -4,6 +4,7 @@ import {
   type Versioned,
 } from "@niclaslindstedt/oss-framework/storage";
 
+import { parseAddress } from "./address.ts";
 import { logStore } from "./log.ts";
 import type { AppData, Contact, Folder } from "./types.ts";
 
@@ -20,7 +21,7 @@ import type { AppData, Contact, Folder } from "./types.ts";
 
 /** The current persisted-document version. Bump it and add a step below when
  *  the on-disk shape changes — every shipped step stays forever. */
-export const LATEST_VERSION = 1;
+export const LATEST_VERSION = 2;
 
 const migrations = {
   // v0 (pre-versioning / blank) → v1: the bootstrap step. Guarantee the two
@@ -50,6 +51,21 @@ const migrations = {
           ? doc.activeContactId
           : ((contacts[0] as Contact | undefined)?.id ?? ""),
     };
+  },
+  // v1 → v2: the free-form `address` string becomes three structured fields
+  // (`street` / `zip` / `city`). Best-effort split the old blob so an existing
+  // address survives the upgrade; drop the retired `address` key.
+  1: (doc: Versioned): Versioned => {
+    const contacts = (Array.isArray(doc.contacts) ? doc.contacts : []).map(
+      (raw) => {
+        const { address, ...rest } = raw as Record<string, unknown>;
+        if (typeof address === "string" && address.trim()) {
+          return { ...rest, ...parseAddress(address) };
+        }
+        return rest;
+      },
+    );
+    return { ...doc, version: 2, contacts };
   },
 } as const;
 
