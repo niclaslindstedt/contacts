@@ -266,9 +266,22 @@ export function appPwa({
           attrs: { rel: "manifest", href: `${base}manifest.webmanifest` },
           injectTo: "head",
         },
+        // The raster fallback first: engines that don't honour the SVG favicon
+        // (Safari, crawlers) and the implicit /favicon.ico probe pick this up,
+        // while modern browsers prefer the typed SVG below. Base-correct so each
+        // channel (`/`, `/preview/`, `/branch/…`) points at its own copy.
         {
           tag: "link",
-          attrs: { rel: "icon", href: `${base}icons/icon.svg` },
+          attrs: { rel: "icon", href: `${base}favicon.ico`, sizes: "32x32" },
+          injectTo: "head",
+        },
+        {
+          tag: "link",
+          attrs: {
+            rel: "icon",
+            type: "image/svg+xml",
+            href: `${base}icons/icon.svg`,
+          },
           injectTo: "head",
         },
         {

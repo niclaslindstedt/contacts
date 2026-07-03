@@ -58,6 +58,32 @@ function chunk(type, data) {
   return Buffer.concat([len, body, crc]);
 }
 
+// Pack already-encoded PNG blobs into a single ICONDIR (a .ico file). PNG-
+// compressed entries are honoured by every current browser and by Windows
+// since Vista, so one .ico carrying 16/32/48 px PNGs is the whole legacy-
+// favicon story — the raster fallback for tabs that don't render the SVG mark.
+function encodeIco(pngs) {
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0); // reserved
+  header.writeUInt16LE(1, 2); // resource type: icon
+  header.writeUInt16LE(pngs.length, 4);
+  const dir = Buffer.alloc(16 * pngs.length);
+  let offset = header.length + dir.length;
+  pngs.forEach(({ size, data }, i) => {
+    const e = dir.subarray(i * 16);
+    e[0] = size >= 256 ? 0 : size; // width  (0 encodes 256)
+    e[1] = size >= 256 ? 0 : size; // height (0 encodes 256)
+    e[2] = 0; // palette size (0 for a true-colour PNG entry)
+    e[3] = 0; // reserved
+    e.writeUInt16LE(1, 4); // colour planes
+    e.writeUInt16LE(32, 6); // bits per pixel
+    e.writeUInt32LE(data.length, 8); // bytes in this entry
+    e.writeUInt32LE(offset, 12); // byte offset from the file start
+    offset += data.length;
+  });
+  return Buffer.concat([header, dir, ...pngs.map((p) => p.data)]);
+}
+
 function encodePng(width, height, rgba) {
   const raw = Buffer.alloc((width * 4 + 1) * height);
   for (let y = 0; y < height; y++) {
@@ -201,4 +227,21 @@ writeFileSync(
   renderIcon(180, { pad: 0.12, radius: 0 }),
 );
 writeFileSync(join(root, "public", "og.png"), renderOg());
-console.log("icons: wrote pwa-192/512/512-maskable, apple-touch-180, og.png");
+
+// favicon.ico — the browser-tab fallback for engines that ignore the SVG
+// favicon (Safari, search crawlers) and for the implicit /favicon.ico request.
+// Packs the mark at the three classic tab sizes; a hair less padding than the
+// install icons so the thin outline stays legible at 16 px. Lives at the public
+// root so it deploys as `<base>favicon.ico` (see pwa-plugin.ts link tag).
+writeFileSync(
+  join(root, "public", "favicon.ico"),
+  encodeIco(
+    [16, 32, 48].map((size) => ({
+      size,
+      data: renderIcon(size, { pad: 0.08 }),
+    })),
+  ),
+);
+console.log(
+  "icons: wrote pwa-192/512/512-maskable, apple-touch-180, og.png, favicon.ico",
+);

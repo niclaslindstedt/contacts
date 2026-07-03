@@ -19,10 +19,7 @@ import {
   useMediaQuery,
   useUndoRedoShortcuts,
 } from "@niclaslindstedt/oss-framework/hooks";
-import {
-  DEFAULT_GLYPH,
-  glyphDataUri,
-} from "@niclaslindstedt/oss-framework/glyphs";
+import { glyphDataUri } from "@niclaslindstedt/oss-framework/glyphs";
 import {
   NamespacesModal,
   applyFaviconHref,
@@ -197,16 +194,19 @@ export function App() {
   ) : null;
 
   // Re-badge the browser tab. The active *namespace*'s glyph wins when it has
-  // one, so a glance at the tab tells you which workspace you're in;
-  // otherwise it falls back to the active contact's glyph + accent.
+  // one, so a glance at the tab tells you which workspace you're in; a contact
+  // with a *custom* glyph re-badges the tab with theirs. By default — the blank
+  // starter card, or a contact who hasn't chosen a glyph — the tab wears the
+  // app's own mark (the same person icon the installed PWA and the site's
+  // static favicon show), never the framework's generic `folder` fallback.
   const active = store.activeContact;
   const activeNamespace = ns.activeNamespace;
   useEffect(() => {
-    const contactHref = glyphDataUri(
-      active?.glyph ?? DEFAULT_GLYPH,
-      active?.color ?? "#86efac",
-      { background: "#0b0d10" },
-    );
+    const contactHref = active?.glyph
+      ? glyphDataUri(active.glyph, active.color ?? "#86efac", {
+          background: "#0b0d10",
+        })
+      : `${import.meta.env.BASE_URL}icons/icon.svg`;
     applyFaviconHref(
       namespaceFaviconHref(activeNamespace, contactHref, {
         defaultColor: "#86efac",
