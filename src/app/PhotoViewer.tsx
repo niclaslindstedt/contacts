@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import {
-  useEffect,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
 import { CloseIcon } from "@niclaslindstedt/oss-framework/components";
+import { useEscapeKey } from "@niclaslindstedt/oss-framework/hooks";
 
 import { useT } from "./i18n/index.ts";
 
@@ -29,13 +29,7 @@ export function PhotoViewer({
 }) {
   const t = useT();
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  useEscapeKey(true, onClose);
 
   const [dragY, setDragY] = useState(0);
   const start = useRef<{ x: number; y: number } | null>(null);
