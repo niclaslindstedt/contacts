@@ -45,6 +45,12 @@ const PUBLIC_SKIP = new Set([
   "sitemap.xml",
   "llms.txt",
   "og.png",
+  // CNAME is GitHub Pages config, not an app asset. The Pages workflow
+  // strips it from every non-root slot (only the root artifact may carry a
+  // CNAME), so a precached `${base}CNAME` 404s the service worker's install
+  // fetch on `/preview/` and `/branch/` and skews the precache byte total the
+  // update-progress fill reports. Keep it out of the precache entirely.
+  "CNAME",
 ]);
 
 // Per-release-channel PWA display name. The three Pages channels share one
