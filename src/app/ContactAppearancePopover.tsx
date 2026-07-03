@@ -8,11 +8,10 @@ import {
 import {
   ColorPalette,
   GLYPH_COLORS,
-  GLYPH_NAMES,
-  GlyphPicker,
 } from "@niclaslindstedt/oss-framework/glyphs";
 
 import { Avatar } from "./Avatar.tsx";
+import { ContactGlyphPicker } from "./ContactGlyph.tsx";
 import { PersonIcon } from "./icons.tsx";
 import { log } from "./log.ts";
 import { fileToPhotoDataUri } from "./photo.ts";
@@ -110,8 +109,7 @@ export function ContactAppearancePopover({ contact, onChange }: Props) {
         <p className="mt-3 mb-1.5 text-xs font-semibold tracking-wide text-muted uppercase">
           {t("contact.icon")}
         </p>
-        <GlyphPicker
-          glyphs={GLYPH_NAMES}
+        <ContactGlyphPicker
           value={contact.glyph ?? null}
           onChange={(glyph) => onChange({ glyph })}
           tintColor={contact.color}

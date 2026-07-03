@@ -146,7 +146,7 @@ export function ContactScreen({
         />
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pb-10 [overscroll-behavior:contain]">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-10 [overscroll-behavior:contain]">
         {/* Key the whole form by contact id so switching cards remounts the
             fields with fresh local state — no carried drafts. */}
         <div key={contact.id} className="flex flex-col">
@@ -175,19 +175,10 @@ export function ContactScreen({
           </Section>
 
           <Section title={t("contact.details")}>
+            {/* The name lives in the header (tap the title to edit it), so the
+                details grid opens straight at company and birthday rather than
+                repeating first / last name here. */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <LabeledInput
-                label={t("contact.firstName")}
-                value={contact.firstName}
-                onCommit={(firstName) =>
-                  updateContact(contact.id, { firstName })
-                }
-              />
-              <LabeledInput
-                label={t("contact.lastName")}
-                value={contact.lastName}
-                onCommit={(lastName) => updateContact(contact.id, { lastName })}
-              />
               <LabeledInput
                 label={t("contact.company")}
                 value={contact.company ?? ""}
@@ -203,7 +194,7 @@ export function ContactScreen({
             <LabeledTextarea
               label={t("contact.address")}
               value={contact.address ?? ""}
-              rows={2}
+              rows={3}
               onCommit={(address) => updateContact(contact.id, { address })}
             />
           </Section>
@@ -225,7 +216,7 @@ export function ContactScreen({
 }
 
 const inputClass =
-  "w-full rounded-md border border-line bg-surface-2 px-2 py-1.5 text-sm text-fg outline-none focus:border-accent";
+  "w-full min-w-0 max-w-full rounded-md border border-line bg-surface-2 px-2 py-1.5 text-sm text-fg outline-none focus:border-accent";
 
 // A labelled single-line field that holds its draft locally and commits on
 // blur (or Enter) — so a settled edit is one undoable store step, not a

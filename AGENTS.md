@@ -36,6 +36,20 @@ public packages, so local installs need a `read:packages` token in `~/.npmrc`
 (`//npm.pkg.github.com/:_authToken=<token>`); CI authenticates with the
 workflow's `GITHUB_TOKEN`.
 
+### Dependency install in web sessions
+
+Claude Code on the web runs `.claude/hooks/session-start.sh` on `SessionStart`
+(wired up in `.claude/settings.json`), so **dependencies install automatically
+in the background** — an agent shouldn't run `make install` by hand first. The
+hook resolves a GitHub Packages token from the environment
+(`NODE_AUTH_TOKEN` / `GITHUB_PAT` / `GH_TOKEN` / `GITHUB_TOKEN`, first wins),
+writes it to `~/.npmrc`, and runs `npm install` — the committed project
+`.npmrc` stays token-free. It runs in **async** mode, so `node_modules` may
+still be populating for a moment after the session opens; if a `make` target
+fails on a missing dependency, wait and retry, or run `make install` once the
+token is in place. The hook is a no-op outside the web environment
+(`CLAUDE_CODE_REMOTE`), so it never touches a local developer's npm config.
+
 ## Commit and PR conventions
 
 - All commits follow [Conventional Commits](https://www.conventionalcommits.org/).
