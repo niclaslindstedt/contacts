@@ -64,12 +64,14 @@ export function formatDate(iso: string, format: DateFormat): string {
 // --- Phone -------------------------------------------------------------------
 
 /** How a phone number is shown once parsed. */
-export type PhoneFormat = "raw" | "international" | "national" | "e164";
+export type PhoneFormat =
+  "raw" | "international" | "national" | "swedish" | "e164";
 
 export const PHONE_FORMATS: readonly PhoneFormat[] = [
   "raw",
   "international",
   "national",
+  "swedish",
   "e164",
 ] as const;
 
@@ -183,6 +185,15 @@ export function formatPhone(parsed: ParsedPhone, format: PhoneFormat): string {
   }
 
   const extSuffix = ext ? ` ext. ${ext}` : "";
+
+  if (format === "swedish") {
+    // Sweden writes national numbers with a single leading 0 trunk prefix and
+    // no country code (so +46 76 811 25 67 is dialled as 0768112567). Drop any
+    // country code, normalise to exactly one leading 0, then group the digits.
+    const trunk = `0${national.replace(/^0+/, "")}`;
+    return `${groupDigits(trunk)}${extSuffix}`;
+  }
+
   const body = groupDigits(national);
   if (format === "national") return `${body}${extSuffix}`;
   // international
@@ -198,18 +209,20 @@ export function formatPhoneValue(input: string, format: PhoneFormat): string {
 // --- Postal code -------------------------------------------------------------
 
 /** How a postal / ZIP code is shown. */
-export type ZipFormat = "raw" | "us5" | "us9" | "spaced";
+export type ZipFormat = "raw" | "us5" | "us9" | "se" | "spaced";
 
 export const ZIP_FORMATS: readonly ZipFormat[] = [
   "raw",
   "us5",
   "us9",
+  "se",
   "spaced",
 ] as const;
 
 /** Render a postal code in the chosen style. `raw` is untouched; the US styles
- *  clamp to a 5- or 9-digit ZIP, and `spaced` splits the last two digits off
- *  (the Swedish "123 45" grouping). A value with no digits is returned as-is. */
+ *  clamp to a 5- or 9-digit ZIP, `se` renders the five-digit Swedish "xxx xx"
+ *  form (a space after the third digit), and `spaced` splits the last two
+ *  digits off. A value with no digits is returned as-is. */
 export function formatZip(input: string, format: ZipFormat): string {
   const raw = input.trim();
   if (format === "raw") return raw;
@@ -222,6 +235,11 @@ export function formatZip(input: string, format: ZipFormat): string {
       return digits.length > 5
         ? `${digits.slice(0, 5)}-${digits.slice(5, 9)}`
         : digits.slice(0, 5);
+    case "se":
+      // Swedish postal codes are five digits written "xxx xx".
+      return digits.length > 3
+        ? `${digits.slice(0, 3)} ${digits.slice(3, 5)}`
+        : digits;
     case "spaced":
       return digits.length > 2
         ? `${digits.slice(0, digits.length - 2)} ${digits.slice(-2)}`
