@@ -47,26 +47,6 @@ export function CodeIcon({ className }: IconProps) {
   );
 }
 
-/** A document with text lines — the Logs surface. */
-export function ScrollTextIcon({ className }: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-      focusable={false}
-      className={className}
-    >
-      <path d="M6 3h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
-      <path d="M8 8h8M8 12h8M8 16h5" />
-    </svg>
-  );
-}
-
 /** A hash / number sign — the Format surface (date, phone, and postal-code
  *  display styles). */
 export function FormatIcon({ className }: IconProps) {

@@ -9,6 +9,7 @@ import {
   DatabaseIcon,
   MenuIcon,
   PaletteIcon,
+  ScrollTextIcon,
   SlidersIcon,
   type IconProps,
 } from "@niclaslindstedt/oss-framework/components";
@@ -17,7 +18,7 @@ import {
   type ThemeAppearance,
 } from "@niclaslindstedt/oss-framework/theme";
 
-import { CodeIcon, FormatIcon, ScrollTextIcon } from "./icons.tsx";
+import { CodeIcon, FormatIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { APP_LOOK } from "./look.ts";
 import { DEFAULT_SETTINGS, type AppSettings } from "./useAppSettings.ts";
