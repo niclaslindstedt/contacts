@@ -14,6 +14,7 @@ import { useStandaloneMobile } from "@niclaslindstedt/oss-framework/pwa";
 import { unlock as unlockTrophy } from "@niclaslindstedt/oss-framework/achievements";
 
 import { log, logStore } from "../log.ts";
+import { useDevSeed } from "../dev/useDevSeed.ts";
 import { useT } from "../i18n/index.ts";
 import { contactsToCsv, contactsToVCards } from "../export.ts";
 import { serializeDoc } from "../migrations.ts";
@@ -454,9 +455,21 @@ export function DeveloperTab({
   // Real install context, read from the framework's PWA detection. `true`
   // only inside an installed PWA window on a phone/tablet.
   const standalone = useStandaloneMobile();
+  // The "Fake data" toggle applies live and is in-memory only (not a staged
+  // draft setting): flipping it swaps the store's storage backend for the
+  // ephemeral seed backend immediately. See `useDevSeed`.
+  const { active: fakeData, setActive: setFakeData } = useDevSeed();
   return (
     <div>
       <p className="mb-3 text-xs text-muted">{t("settings.developer.intro")}</p>
+      <Section title={t("settings.developer.fakeDataTitle")}>
+        <ToggleRow
+          label={t("settings.developer.fakeData")}
+          hint={t("settings.developer.fakeDataHint")}
+          checked={fakeData}
+          onChange={setFakeData}
+        />
+      </Section>
       <Section title={t("settings.developer.loggingTitle")}>
         <ToggleRow
           label={t("settings.developer.captureLogs")}

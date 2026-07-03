@@ -296,6 +296,10 @@ export const sv: Catalog = {
     },
     developer: {
       intro: "Diagnostikverktyg. Dessa stannar på den här enheten.",
+      fakeDataTitle: "Testdata",
+      fakeData: "Ladda testdata",
+      fakeDataHint:
+        "Byt ut din adressbok mot ett tillfälligt exempel fullt av varierade testkontakter. Det finns bara i minnet — inget sparas, och en omladdning av sidan tar tillbaka dina riktiga kontakter.",
       loggingTitle: "Loggning",
       captureLogs: "Fånga loggar",
       captureLogsHint:

@@ -7,7 +7,8 @@
   "author": "Niclas Lindstedt <niclas@agilator.se>",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "VITE_SEED=${VITE_SEED:-large} vite",
+    "dev:clean": "VITE_SEED=0 vite",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",

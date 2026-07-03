@@ -3,12 +3,13 @@
 All configuration is **build-time** (the app is a static PWA — there is no
 server and no runtime config file). Vite reads these from the environment:
 
-| Variable                | Default   | Purpose                                                                                                                                                                                                                                                                                                                 |
-| ----------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_BASE`             | `/`       | The deploy base path. Drives asset URLs, the service-worker scope, and the precache cache id. The site is served from the custom domain (`contacts.niclaslindstedt.se`); each release channel builds at its own base: `/` (release), `/preview/` (main), `/branch/` (the on-demand branch slot).                        |
-| `VITE_PWA_IGNORE_PATHS` | _(unset)_ | Comma-separated absolute paths the service worker must **disown** — the sibling channels nested under this build's base. Only the root release sets it (`/preview/,/branch/`); its worker's scope `/` is a prefix of the siblings, so without this it would serve the released shell in place of a preview/branch page. |
-| `VITE_DROPBOX_APP_KEY`  | _(unset)_ | Dropbox app key for the OAuth PKCE connect flow. Create a Dropbox app with the `files.content.write`/`files.content.read` scopes and an app folder; no secret is needed (PKCE). When unset, the Dropbox Connect button explains what's missing.                                                                         |
-| `VITE_GOOGLE_CLIENT_ID` | _(unset)_ | Google OAuth client id for the Google Identity Services token flow (`drive.file` scope). When unset, the Google Drive Connect button explains what's missing.                                                                                                                                                           |
+| Variable                | Default   | Purpose                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_BASE`             | `/`       | The deploy base path. Drives asset URLs, the service-worker scope, and the precache cache id. The site is served from the custom domain (`contacts.niclaslindstedt.se`); each release channel builds at its own base: `/` (release), `/preview/` (main), `/branch/` (the on-demand branch slot).                                                                                                              |
+| `VITE_PWA_IGNORE_PATHS` | _(unset)_ | Comma-separated absolute paths the service worker must **disown** — the sibling channels nested under this build's base. Only the root release sets it (`/preview/,/branch/`); its worker's scope `/` is a prefix of the siblings, so without this it would serve the released shell in place of a preview/branch page.                                                                                       |
+| `VITE_DROPBOX_APP_KEY`  | _(unset)_ | Dropbox app key for the OAuth PKCE connect flow. Create a Dropbox app with the `files.content.write`/`files.content.read` scopes and an app folder; no secret is needed (PKCE). When unset, the Dropbox Connect button explains what's missing.                                                                                                                                                               |
+| `VITE_GOOGLE_CLIENT_ID` | _(unset)_ | Google OAuth client id for the Google Identity Services token flow (`drive.file` scope). When unset, the Google Drive Connect button explains what's missing.                                                                                                                                                                                                                                                 |
+| `VITE_SEED`             | _(unset)_ | Boot into the developer **Fake data** backend, seeded with sample contacts. `1`/`true`/`sample` loads the curated edge-case set; a number loads roughly that many contacts; `large` loads a big stress-test spread; `0` or unset starts on the real address book. In-memory only — nothing is persisted. `npm run dev` sets this to `large` by default. See [Fake data](#fake-data--seeded-dev-server) below. |
 
 Example production build:
 
@@ -22,6 +23,31 @@ npm run build
 For the GitHub Actions deploy, set `DROPBOX_APP_KEY` / `GOOGLE_CLIENT_ID` as
 repository **variables** (they are public identifiers, not secrets) and the
 deploy workflows pass them through.
+
+## Fake data / seeded dev server
+
+`npm run dev` starts **seeded by default** (it runs `VITE_SEED=large vite`): the
+dev server comes up on a throwaway sample address book full of varied edge-case
+contacts — nameless / company-only cards, very long and unicode/RTL text, many
+phones and emails, leap-day and far-past/future birthdays, every phone and
+postal-code style, archived cards, and empty and archived folders — so the UI,
+search, sort, export, and formatters always have realistic input.
+
+- **How much:** `VITE_SEED=1` (or `sample`) loads just the curated edge-case
+  set; a number (`VITE_SEED=250`) loads roughly that many contacts; `large`
+  loads a big stress-test spread. Override the default per run, e.g.
+  `VITE_SEED=25 npm run dev`.
+- **Turn it off:** `npm run dev:clean` (or `VITE_SEED=0 npm run dev`) starts on
+  your real, persisted address book.
+- **In the app:** the **Settings → Developer → Fake data** toggle flips the same
+  seed on and off live, without a rebuild (enable developer mode in
+  Settings → General first).
+
+The seed is a storage backend that **takes over storage, entirely in memory** —
+nothing is ever written to disk, and no fake data is pushed to a connected cloud
+copy. Reloading the page (or toggling it off) restores the real document
+untouched. Because a production build never sets `VITE_SEED`, shipped builds
+always start on real data.
 
 ## Release channels
 

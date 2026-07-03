@@ -16,3 +16,20 @@ declare const __BUILD_LABEL__: string;
 // number ("dev" for a local build).
 declare const __BUILD_COMMIT__: string;
 declare const __BUILD_NUMBER__: string;
+
+// Build-time env the app reads through `import.meta.env`. All optional — the
+// app builds and runs with none of them set. See `docs/configuration.md`.
+interface ImportMetaEnv {
+  // Boot straight into the developer "Fake data" backend, seeded with sample
+  // contacts (see `src/app/dev/fakeData.ts`). `1`/`true`/`sample` loads the
+  // curated edge-case set; a number loads roughly that many contacts; `large`
+  // loads a big stress-test spread. Unset (or `0`) starts on the real address
+  // book. `npm run dev` sets this to `large` by default.
+  readonly VITE_SEED?: string;
+  // Dropbox app key (PKCE public client). Unset hides the Dropbox storage
+  // backend in Settings → Storage. See `src/app/useSyncEngine.ts`.
+  readonly VITE_DROPBOX_APP_KEY?: string;
+  // Google OAuth client id (GIS token client). Unset hides the Google Drive
+  // storage backend. See `src/app/useSyncEngine.ts`.
+  readonly VITE_GOOGLE_CLIENT_ID?: string;
+}
