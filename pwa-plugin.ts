@@ -187,11 +187,24 @@ self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
-// The offline navigateFallback: serve the cached app shell for any in-scope
-// navigation so the installed PWA opens offline, falling back to the network
-// and then the shell again.
+// The app-shell navigation handler. Network-first: fetch the freshly-deployed
+// shell — bypassing the HTTP cache with \`reload\`, since this worker controls a
+// plain browser tab too, so a cache-first shell reads as "the site is stale and
+// only private mode is fresh" — refresh the offline copy from it, and fall back
+// to the precached shell only when the network is unreachable. The build's
+// assets are content-hashed, so a fresh shell pulls its new bundle in on its
+// own; the worker swap (SKIP_WAITING) still gates the precache, not this read.
 async function navigateFallback(req) {
   const cache = await caches.open(CACHE);
+  try {
+    const fresh = await fetch(new Request(INDEX, { cache: "reload" }));
+    if (fresh && fresh.ok) {
+      cache.put(INDEX, fresh.clone());
+      return fresh;
+    }
+  } catch {
+    // Offline — serve the precached shell below.
+  }
   return (await cache.match(INDEX)) || fetch(req).catch(() => cache.match(INDEX));
 }
 
