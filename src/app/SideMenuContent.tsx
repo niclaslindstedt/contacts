@@ -64,7 +64,13 @@ const ABOUT_PLACEMENT: FloatingPlacement = {
 // The project links surfaced in the footer (Donate) and the About dropdown
 // (Source code).
 const SOURCE_URL = "https://github.com/niclaslindstedt/contacts";
-const DONATE_URL = "https://github.com/sponsors/niclaslindstedt";
+// The donate link is configurable at build time (`VITE_DONATE_URL`, wired up
+// as a repository variable in the deploy workflows) so the sponsorship target
+// can change without a code edit; it falls back to the project's GitHub
+// Sponsors page when unset. See `docs/configuration.md`.
+const DONATE_URL =
+  (import.meta.env.VITE_DONATE_URL as string | undefined) ||
+  "https://github.com/sponsors/niclaslindstedt";
 // The subtitle under the Source row — the build identifier, composed at build
 // time (`__BUILD_LABEL__`, see `vite.config.ts`): the version, the CI run
 // number, the deploy slot (`-pre` for preview, `-br` for a branch build), and

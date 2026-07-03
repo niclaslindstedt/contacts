@@ -131,6 +131,7 @@ jobs:
           # hidden from the storage picker.
           VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          VITE_DONATE_URL: ${{ vars.VITE_DONATE_URL }}
 
       - name: Stash production dist
         if: steps.tag.outputs.has_release == 'true'
@@ -165,6 +166,7 @@ jobs:
           VITE_PWA_IGNORE_PATHS: ${{ steps.tag.outputs.has_release == 'false' && '/preview/,/branch/' || '' }}
           VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          VITE_DONATE_URL: ${{ vars.VITE_DONATE_URL }}
 
       # ---- Optional /branch/ build + persist to orphan branch ----
       - name: Stash preview dist
@@ -190,6 +192,7 @@ jobs:
           VITE_BASE: /branch/
           VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          VITE_DONATE_URL: ${{ vars.VITE_DONATE_URL }}
 
       - name: Persist /branch/ build to orphan branch
         if: steps.dispatch.outputs.has_dispatch == 'true'
