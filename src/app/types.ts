@@ -97,24 +97,29 @@ export type Contact = {
   importantDates: ImportantDate[];
   notes?: string;
   /** The contact's face, shown everywhere the avatar appears: the baked
-   *  circular-crop square JPEG data URI (see `photo.ts`), or absent. Small
-   *  enough to ride inline in the document so the menu renders without fetching
-   *  originals. The three fields below describe how it was made so the crop can
-   *  be re-adjusted and the original re-exported. */
+   *  circular-crop square JPEG data URI (see `photo.ts`), or absent. Held inline
+   *  on this device so the menu renders without fetching originals; on a cloud
+   *  backend it is externalised to a binary JPEG file (`photoPath`) and stripped
+   *  from the synced document (see `photoStore.ts`). The fields below describe
+   *  how it was made so the crop can be re-adjusted and the original
+   *  re-exported. */
   photo?: string | null;
   /** The resized original the crop was taken from (a larger JPEG data URI),
    *  kept so "Adjust" reopens the cropper at the same source. On a cloud
-   *  backend this is the payload externalised to `photoPath`; stripped from the
-   *  synced document once the file is written (see `photoStore.ts`). */
+   *  backend this is externalised to a binary JPEG file (`photoSourcePath`) and
+   *  stripped from the synced document once the file is written. */
   photoSource?: string | null;
   /** The framing the last crop used, so the cropper restores it: `scale` is the
    *  zoom over the cover-fit baseline, `x`/`y` the pan offset in the crop
    *  viewport's unit square (0 = centred). */
   photoTransform?: PhotoTransform | null;
-  /** The deterministic file path the original lives at on a cloud backend
-   *  (`photos/<name>-<id>.jpg`) — easy to find in the drive. Absent until a
-   *  photo is externalised. */
+  /** The deterministic file path the display crop lives at on a cloud backend
+   *  (`photos/<name>-<id>.jpg`) — a real JPEG, easy to preview in the drive.
+   *  Absent until the photo is externalised. */
   photoPath?: string | null;
+  /** The file path the larger source original lives at on a cloud backend
+   *  (`photos/<name>-<id>-source.jpg`). Absent until externalised. */
+  photoSourcePath?: string | null;
   // `null` for a standalone (ungrouped) contact shown at the menu's root.
   folderId: string | null;
   // The card's appearance when it has no photo — a glyph name (from the

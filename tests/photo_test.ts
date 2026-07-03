@@ -7,6 +7,7 @@ import {
   dataUrlToBytes,
   drawRect,
   photoPathFor,
+  photoSourcePathFor,
 } from "../src/app/photo.ts";
 import { withExternalPhotos, type PhotoStore } from "../src/app/photoStore.ts";
 
@@ -40,6 +41,12 @@ describe("photoPathFor", () => {
       "photos/acme-inc-x.jpg",
     );
     expect(photoPathFor({ id: "y" })).toBe("photos/contact-y.jpg");
+  });
+
+  it("files the source beside the display crop", () => {
+    const c = { id: "c1", firstName: "Ada", lastName: "Lovelace" };
+    expect(photoPathFor(c)).toBe("photos/ada-lovelace-c1.jpg");
+    expect(photoSourcePathFor(c)).toBe("photos/ada-lovelace-c1-source.jpg");
   });
 });
 
@@ -81,15 +88,20 @@ describe("crop geometry", () => {
 
 // -- withExternalPhotos --------------------------------------------------------
 
-function memPhotoStore(): PhotoStore & { files: Map<string, string> } {
-  const files = new Map<string, string>();
+function memPhotoStore(): PhotoStore & { files: Map<string, Uint8Array> } {
+  const files = new Map<string, Uint8Array>();
   return {
     files,
     list: async () => [...files.keys()],
     read: async (p) => files.get(p) ?? null,
-    write: async (p, data) => void files.set(p, data),
+    write: async (p, bytes) => void files.set(p, bytes),
     remove: async (p) => void files.delete(p),
   };
+}
+
+/** The bytes a `data:` URL decodes to, as a plain array for easy comparison. */
+function bytesOf(dataUrl: string): number[] {
+  return Array.from(dataUrlToBytes(dataUrl)!.bytes);
 }
 
 function fakeInner() {
@@ -110,38 +122,54 @@ function fakeInner() {
 const doc = (contacts: unknown[]) =>
   JSON.stringify({ version: 2, folders: [], contacts, activeContactId: "" });
 
+// "ABC" and "DEF" as JPEG-ish data URIs — the actual bytes don't matter, only
+// that they round-trip through the byte file store.
+const DISPLAY = "data:image/jpeg;base64,QUJD"; // "ABC"
+const SOURCE = "data:image/jpeg;base64,REVG"; // "DEF"
+
 describe("withExternalPhotos", () => {
-  it("externalises the source to a file and strips it from the saved doc", async () => {
+  it("externalises both images as binary files and strips them from the doc", async () => {
     const store = memPhotoStore();
     const inner = fakeInner();
     const adapter = withExternalPhotos(inner, store);
 
-    const source = "data:image/jpeg;base64,QUJD"; // "ABC"
     await adapter.save(
       doc([
         {
           id: "c1",
           firstName: "Ada",
           lastName: "Lovelace",
-          photo: "p",
-          photoSource: source,
+          photo: DISPLAY,
+          photoSource: SOURCE,
         },
       ]),
     );
 
-    // The file landed at the deterministic path.
-    expect(store.files.get("photos/ada-lovelace-c1.jpg")).toBe(source);
-    // The synced doc kept a photoPath but dropped the heavy source.
-    const savedContact = JSON.parse(inner.lastSaved()!).contacts[0];
-    expect(savedContact.photoPath).toBe("photos/ada-lovelace-c1.jpg");
-    expect(savedContact.photoSource).toBeUndefined();
-    expect(savedContact.photo).toBe("p");
+    // Both files landed at their deterministic paths as raw bytes (not text).
+    const display = store.files.get("photos/ada-lovelace-c1.jpg");
+    const source = store.files.get("photos/ada-lovelace-c1-source.jpg");
+    expect(display).toBeInstanceOf(Uint8Array);
+    expect(Array.from(display!)).toEqual(bytesOf(DISPLAY));
+    expect(Array.from(source!)).toEqual(bytesOf(SOURCE));
+
+    // The synced doc kept the paths but dropped every image byte.
+    const c = JSON.parse(inner.lastSaved()!).contacts[0];
+    expect(c.photoPath).toBe("photos/ada-lovelace-c1.jpg");
+    expect(c.photoSourcePath).toBe("photos/ada-lovelace-c1-source.jpg");
+    expect(c.photo).toBeUndefined();
+    expect(c.photoSource).toBeUndefined();
   });
 
-  it("re-hydrates the source from its file on load", async () => {
+  it("re-hydrates both images from their files on load", async () => {
     const store = memPhotoStore();
-    const source = "data:image/jpeg;base64,QUJD";
-    store.files.set("photos/ada-lovelace-c1.jpg", source);
+    store.files.set(
+      "photos/ada-lovelace-c1.jpg",
+      dataUrlToBytes(DISPLAY)!.bytes,
+    );
+    store.files.set(
+      "photos/ada-lovelace-c1-source.jpg",
+      dataUrlToBytes(SOURCE)!.bytes,
+    );
     const inner = fakeInner();
     await inner.save(
       doc([
@@ -149,8 +177,8 @@ describe("withExternalPhotos", () => {
           id: "c1",
           firstName: "Ada",
           lastName: "Lovelace",
-          photo: "p",
           photoPath: "photos/ada-lovelace-c1.jpg",
+          photoSourcePath: "photos/ada-lovelace-c1-source.jpg",
         },
       ]),
     );
@@ -158,14 +186,38 @@ describe("withExternalPhotos", () => {
     const adapter = withExternalPhotos(inner, store);
     const snap = await adapter.load();
     const c = JSON.parse(snap!.text).contacts[0];
-    expect(c.photoSource).toBe(source);
+    expect(bytesOf(c.photo)).toEqual(bytesOf(DISPLAY));
+    expect(bytesOf(c.photoSource)).toEqual(bytesOf(SOURCE));
   });
 
-  it("prunes an orphaned photo file once its contact loses the photo", async () => {
+  it("files out an imported inline photo on the next save", async () => {
+    // An imported vCard photo lands in `photo` with no source — it should still
+    // be broken out into a file rather than ride inline in the document.
+    const store = memPhotoStore();
+    const inner = fakeInner();
+    const adapter = withExternalPhotos(inner, store);
+
+    await adapter.save(
+      doc([
+        { id: "c1", firstName: "Ada", lastName: "Lovelace", photo: DISPLAY },
+      ]),
+    );
+
+    expect(store.files.has("photos/ada-lovelace-c1.jpg")).toBe(true);
+    const c = JSON.parse(inner.lastSaved()!).contacts[0];
+    expect(c.photo).toBeUndefined();
+    expect(c.photoPath).toBe("photos/ada-lovelace-c1.jpg");
+  });
+
+  it("prunes orphaned photo files once a contact loses its photo", async () => {
     const store = memPhotoStore();
     store.files.set(
       "photos/ada-lovelace-c1.jpg",
-      "data:image/jpeg;base64,QUJD",
+      dataUrlToBytes(DISPLAY)!.bytes,
+    );
+    store.files.set(
+      "photos/ada-lovelace-c1-source.jpg",
+      dataUrlToBytes(SOURCE)!.bytes,
     );
     const inner = fakeInner();
     const adapter = withExternalPhotos(inner, store);
@@ -175,9 +227,10 @@ describe("withExternalPhotos", () => {
       doc([{ id: "c1", firstName: "Ada", lastName: "Lovelace" }]),
     );
     expect(store.files.has("photos/ada-lovelace-c1.jpg")).toBe(false);
+    expect(store.files.has("photos/ada-lovelace-c1-source.jpg")).toBe(false);
   });
 
-  it("keeps the photo inline when the file write fails (externalise-or-embed)", async () => {
+  it("keeps a photo inline when the file write fails (externalise-or-embed)", async () => {
     const store = memPhotoStore();
     store.write = async () => {
       throw new Error("network down");
@@ -185,22 +238,23 @@ describe("withExternalPhotos", () => {
     const inner = fakeInner();
     const adapter = withExternalPhotos(inner, store);
 
-    const source = "data:image/jpeg;base64,QUJD";
     await adapter.save(
       doc([
         {
           id: "c1",
           firstName: "Ada",
           lastName: "Lovelace",
-          photo: "p",
-          photoSource: source,
+          photo: DISPLAY,
+          photoSource: SOURCE,
         },
       ]),
     );
 
     const c = JSON.parse(inner.lastSaved()!).contacts[0];
-    // Not filed, so the source stays in the synced doc — never lost.
-    expect(c.photoSource).toBe(source);
+    // Not filed, so the images stay in the synced doc — never lost.
+    expect(c.photo).toBe(DISPLAY);
+    expect(c.photoSource).toBe(SOURCE);
     expect(c.photoPath).toBeUndefined();
+    expect(c.photoSourcePath).toBeUndefined();
   });
 });
