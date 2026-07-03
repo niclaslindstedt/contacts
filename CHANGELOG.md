@@ -12,6 +12,65 @@ section here. Do not hand-edit the released sections.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-03
+
+### Added
+
+- **Developer "Fake data" mode and a seeded dev server** — Developer mode now has a **Fake data** toggle that swaps your address book for a throwaway sample full of varied edge-case contacts (nameless cards, very long and unicode text, many phones and emails, leap-day birthdays, archived cards and folders). It's an in-memory storage backend that takes over storage — nothing is saved, and reloading the page restores your real contacts. The dev server is seeded with this data by default via the new `VITE_SEED` build variable.
+- **Position, zoom, and view contact photos** — Uploading a contact photo now opens a Facebook-style circle cropper — drag to
+  move and pinch, scroll, or drag the slider to zoom, choosing exactly which part
+  the circle shows. Tapping the photo in read mode opens it full-screen, and an
+  adjust button re-frames it later. The upload, adjust, and remove actions live as
+  glyphs in a Photo section above colour. On a connected cloud drive each original
+  is filed at a tidy `photos/<name>-<id>.jpg` path so it's easy to find. [Learn more](feature:contacts)
+
+### Changed
+
+- **Refreshed the app icon and favicon** — The app mark is now a clean person outline drawn as a blue gradient stroke on
+  the dark surface — the same line-art style as the sibling notes and checklist
+  apps, in a distinct hue so Contacts stands apart in the tab bar and home
+  screen. The browser-tab favicon, the PWA install icons, the Apple touch icon,
+  and the social-preview image are all regenerated from the new mark.
+- **Auto-capitalise words when typing a contact name** — Editing a contact's name now hints the on-screen keyboard to capitalise each
+  word, so names come out as proper nouns (John Smith) without reaching for the
+  shift key on every word.
+- **The update prompt names the full version instead of a bare commit hash** — The "a new version is ready" prompt now shows the full build identifier
+  (e.g. `1.3.0.237-pre+4f23a97`) — the same label the About dropdown shows —
+  instead of just the short commit sha, so the incoming build is easy to
+  recognise at a glance.
+- **Format settings are now country-based** — The **Format** tab is now organised around a country. Pick your country
+  (Sweden or the United States to start) and phone numbers and postal codes are
+  shown that country's way — Sweden's `+46 (0)76-818 13 37` and `123 45`, the
+  US's `+1 (202) 555-0100` and `12345-6789`. A number that carries its own
+  country code (`+1`, `+46`) is formatted for that country automatically, so a
+  Swedish address book still shows a US number the American way.
+  
+  Small toggles fine-tune the details without changing country: whether to
+  format at all, whether to show the international country code, whether to show
+  the leading-zero trunk digit, and whether to group postal codes with spaces.
+  Each country decides what those toggles mean and ignores the ones it has no use
+  for. Adding more countries is now a matter of dropping in one file per country,
+  so the list will grow. As before, formatting changes the display only — what
+  you typed is stored untouched.
+
+### Fixed
+
+- **Stop the preview/branch PWA from precaching a missing CNAME** — The `/preview/` and `/branch/` builds no longer list the GitHub Pages `CNAME`
+  file in their service-worker precache. That file is stripped from every
+  non-root deploy slot, so precaching it made the worker's install fetch 404 and
+  threw off the byte total shown by the update-progress fill. It is excluded from
+  the precache on every channel now.
+- **The app updates without getting stuck on a stale cached build** — The service worker now fetches the app shell network-first (falling back to the
+  cached copy only when offline), so a freshly-deployed build loads on the next
+  reload instead of a normal browser tab staying pinned to the old cached version
+  until the cache was cleared.
+- **Birthday field no longer overflows its card on iOS** — On iOS the birthday date field in a contact's edit view stretched past the edge of its card, out of line with the other detail fields. The native date control now respects its layout box, so the field fits neatly like the rest.
+- **Panning a photo in the cropper no longer drags the whole modal** — Dragging to pan (or pinching to zoom) inside the circle cropper no longer moves
+  the entire dialog. The cropper sits in a modal that closes on a downward swipe,
+  and a vertical pan was being read as that swipe, so the whole card slid with the
+  photo. Touch gestures inside the viewport now stay with the crop and never reach
+  the modal's swipe-to-close. [Learn more](feature:contacts)
+
 ## [0.2.0] - 2026-07-03
 
 ### Added
