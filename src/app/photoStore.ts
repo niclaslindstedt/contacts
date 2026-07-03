@@ -117,12 +117,39 @@ function fingerprint(s: string): string {
   return `${s.length}:${(h >>> 0).toString(36)}`;
 }
 
+/** Whether a *stored* document still carries image bytes inline — a contact
+ *  whose `photo` or `photoSource` is a decodable data URI. Run against the raw
+ *  backend copy (before rehydration), it is the "this cloud copy predates the
+ *  file layout and wants externalising" signal the one-time sweep keys off:
+ *  a fully-filed copy has only paths, so it reads false. */
+export function hasInlinePhotos(text: string): boolean {
+  let doc: PhotoDoc;
+  try {
+    doc = JSON.parse(text) as PhotoDoc;
+  } catch {
+    return false;
+  }
+  const contacts = Array.isArray(doc.contacts) ? doc.contacts : null;
+  if (!contacts) return false;
+  return contacts.some(
+    (c) =>
+      dataUrlToBytes(c.photo) !== null ||
+      dataUrlToBytes(c.photoSource) !== null,
+  );
+}
+
 /** Wrap a `StorageAdapter` so contact photos are externalised to binary JPEG
  *  files on save and re-hydrated on load. Delegates every other adapter member
- *  (id, label, capabilities, probe, …) to `inner`. */
+ *  (id, label, capabilities, probe, …) to `inner`.
+ *
+ *  `onInlinePhotosLoaded` fires when a *loaded* backend copy still holds inline
+ *  image bytes (see {@link hasInlinePhotos}) — the sync engine uses it to kick a
+ *  one-time save that files the photos out, so an existing document migrates to
+ *  the file layout on open without waiting for the next edit. */
 export function withExternalPhotos(
   inner: StorageAdapter,
   photos: PhotoStore,
+  onInlinePhotosLoaded?: () => void,
 ): StorageAdapter {
   // Paths this session has already written, keyed to the source fingerprint, so
   // a re-crop (same original) or a debounced re-save doesn't re-upload.
@@ -244,6 +271,11 @@ export function withExternalPhotos(
     async load() {
       const snap = await inner.load();
       if (!snap) return snap;
+      // Detect on the raw stored text, before rehydration re-inlines filed
+      // photos — so only a copy that genuinely still embeds bytes trips it.
+      if (onInlinePhotosLoaded && hasInlinePhotos(snap.text)) {
+        onInlinePhotosLoaded();
+      }
       return { ...snap, text: await rehydrate(snap.text) };
     },
     async save(text, baseRevision) {

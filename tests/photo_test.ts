@@ -9,7 +9,11 @@ import {
   photoPathFor,
   photoSourcePathFor,
 } from "../src/app/photo.ts";
-import { withExternalPhotos, type PhotoStore } from "../src/app/photoStore.ts";
+import {
+  hasInlinePhotos,
+  withExternalPhotos,
+  type PhotoStore,
+} from "../src/app/photoStore.ts";
 
 // The photo layer's node-testable surface: the deterministic file path, the
 // data-URL ⇄ bytes seam the externaliser moves across, the crop geometry, and
@@ -256,5 +260,74 @@ describe("withExternalPhotos", () => {
     expect(c.photoSource).toBe(SOURCE);
     expect(c.photoPath).toBeUndefined();
     expect(c.photoSourcePath).toBeUndefined();
+  });
+
+  it("signals a load that still holds inline photos (one-time sweep)", async () => {
+    const store = memPhotoStore();
+    const inner = fakeInner();
+    // A pre-file-layout cloud copy: photos still embedded inline.
+    await inner.save(
+      doc([
+        {
+          id: "c1",
+          firstName: "Ada",
+          lastName: "Lovelace",
+          photo: DISPLAY,
+          photoSource: SOURCE,
+        },
+      ]),
+    );
+
+    let signalled = 0;
+    const adapter = withExternalPhotos(inner, store, () => (signalled += 1));
+    await adapter.load();
+    expect(signalled).toBe(1);
+  });
+
+  it("does not signal a load that is already fully filed out", async () => {
+    const store = memPhotoStore();
+    store.files.set(
+      "photos/ada-lovelace-c1.jpg",
+      dataUrlToBytes(DISPLAY)!.bytes,
+    );
+    const inner = fakeInner();
+    // A filed-out cloud copy carries only paths, no inline bytes.
+    await inner.save(
+      doc([
+        {
+          id: "c1",
+          firstName: "Ada",
+          lastName: "Lovelace",
+          photoPath: "photos/ada-lovelace-c1.jpg",
+        },
+      ]),
+    );
+
+    let signalled = 0;
+    const adapter = withExternalPhotos(inner, store, () => (signalled += 1));
+    await adapter.load();
+    expect(signalled).toBe(0);
+  });
+});
+
+describe("hasInlinePhotos", () => {
+  it("is true when a contact still embeds image bytes inline", () => {
+    expect(hasInlinePhotos(doc([{ id: "c1", photo: DISPLAY }]))).toBe(true);
+    expect(hasInlinePhotos(doc([{ id: "c1", photoSource: SOURCE }]))).toBe(
+      true,
+    );
+  });
+
+  it("is false for a filed-out copy, non-data values, or junk", () => {
+    // Only paths — the filed-out layout.
+    expect(
+      hasInlinePhotos(
+        doc([{ id: "c1", photoPath: "photos/a.jpg", photo: "" }]),
+      ),
+    ).toBe(false);
+    // A non-data-URI string (e.g. a stray label) doesn't count as image bytes.
+    expect(hasInlinePhotos(doc([{ id: "c1", photo: "p" }]))).toBe(false);
+    expect(hasInlinePhotos(doc([]))).toBe(false);
+    expect(hasInlinePhotos("not json")).toBe(false);
   });
 });

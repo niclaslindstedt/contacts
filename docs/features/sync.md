@@ -29,6 +29,12 @@ on the drive to render offline; the drive files are written on save and re-read
 when a fresh device loads the document. If a file write can't complete, the
 photo simply stays inline in the document that save — it is never lost.
 
+A document synced before this file layout existed keeps its photos inline in the
+cloud copy. The app **migrates it automatically**: when it opens and finds a
+cloud copy that still embeds photos, it files them out once in the background —
+no edit or manual save needed. After that one sweep the drive holds the image
+files and the document holds only their paths.
+
 This applies to the **plaintext** cloud copy only. With encryption on (below),
 photos stay inside the encrypted envelope rather than as separate plaintext
 image files on the drive.
