@@ -240,34 +240,39 @@ export const en = {
     },
     format: {
       intro:
-        "How dates, phone numbers, and postal codes are displayed on your cards. These change the display only — what you typed is stored untouched.",
+        "Formatting follows a country. Pick your country and phone numbers and postal codes are shown its way; the toggles fine-tune the details. These change the display only — what you typed is stored untouched.",
       previewLabel: "Sample:",
+      previewOff: "Shown exactly as entered",
+      countryTitle: "Country",
+      countryHint:
+        "Sets the style for phone numbers and postal codes. A number that carries its own country code (+1, +46) is formatted for that country automatically.",
+      phoneTitle: "Phone numbers",
+      phoneEnable: "Format phone numbers",
+      phoneEnableHint:
+        "Group saved numbers your country's way. Off shows them exactly as typed. Editing a number always reveals what you entered.",
+      phoneCountryCode: "Show country code",
+      phoneCountryCodeHint: "Prefix the international calling code, like +46.",
+      phoneLeadingZero: "Show leading zero",
+      phoneLeadingZeroHint:
+        "Show the national trunk digit — Sweden's (0) beside +46, or a plain leading 0. Ignored by countries without one.",
+      postalTitle: "Postal codes",
+      postalEnable: "Format postal codes",
+      postalEnableHint:
+        "Group postal / ZIP codes your country's way. Off shows them exactly as typed.",
+      postalSpaces: "Group with spaces",
+      postalSpacesHint:
+        "Space the groups where the country allows it — Sweden's 123 45. Ignored where another separator is fixed.",
       dateTitle: "Date format",
       dateHint: "How the birthday date is shown.",
-      phoneTitle: "Phone number format",
-      phoneHint:
-        "How saved phone numbers are shown. Editing a number reveals exactly what you typed.",
-      zipTitle: "Postal code format",
-      zipHint: "How postal / ZIP codes are grouped.",
+      country: {
+        se: "Sweden",
+        us: "United States",
+      },
       date: {
         iso: "ISO",
         us: "US",
         eu: "European",
         long: "Long",
-      },
-      phone: {
-        raw: "As entered",
-        international: "International",
-        national: "National",
-        swedish: "Swedish",
-        e164: "E.164",
-      },
-      zip: {
-        raw: "As entered",
-        us5: "US 5-digit",
-        us9: "US ZIP+4",
-        se: "Swedish",
-        spaced: "Grouped",
       },
     },
     storage: {

@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-// Display formatting for the value-shaped fields a contact carries — dates
-// (the birthday), phone numbers, and postal codes. The Format settings tab
-// (see `settings/tabs.tsx`) picks one style per field; these pure functions
-// render a stored value into that style.
+// The country-agnostic core of display formatting. This module holds only what
+// is true regardless of country: how a stored ISO date renders, and how a
+// free-typed phone number is pulled apart into calling code / national digits /
+// extension. *How* those national digits are grouped, and how a postal code is
+// laid out, is deliberately NOT here — that is a per-country convention and
+// lives in `countries/` (each country implements the `CountryFormat`
+// interface). Nothing in this file knows that Sweden groups in pairs or that
+// the US wraps its area code in parentheses.
 //
 // Everything here is a pure function over strings — no DOM, no settings hook —
 // so the whole surface is unit-testable in node (see `tests/format_test.ts`).
 // The stored value is never mutated by these renderers: a phone is kept
 // verbatim as the user typed it and only *displayed* in the chosen shape, so
-// changing the setting reformats every card without touching the document.
+// changing a setting reformats every card without touching the document.
 
 // --- Date --------------------------------------------------------------------
 
@@ -61,26 +65,18 @@ export function formatDate(iso: string, format: DateFormat): string {
   }
 }
 
-// --- Phone -------------------------------------------------------------------
+// --- Phone parsing -----------------------------------------------------------
 
-/** How a phone number is shown once parsed. */
-export type PhoneFormat =
-  "raw" | "international" | "national" | "swedish" | "e164";
-
-export const PHONE_FORMATS: readonly PhoneFormat[] = [
-  "raw",
-  "international",
-  "national",
-  "swedish",
-  "e164",
-] as const;
-
-/** The structured shape `parsePhone` recovers from a free-typed number. */
+/** The structured shape `parsePhone` recovers from a free-typed number. This is
+ *  the input every country's phone formatter receives — country code and
+ *  national digits already separated, so a formatter only decides grouping. */
 export type ParsedPhone = {
   /** Country calling code without the leading `+` ("46"), or null when the
    *  input carried no explicit international prefix. */
   countryCode: string | null;
-  /** National significant digits — no country code, no separators. */
+  /** National significant digits — no country code, no separators. May keep a
+   *  leading trunk 0 when the number was typed in local form (a country
+   *  formatter normalises this as its convention dictates). */
   national: string;
   /** Trailing extension digits ("x123"), or null. */
   ext: string | null;
@@ -90,11 +86,12 @@ export type ParsedPhone = {
   valid: boolean;
 };
 
-// A small table of country calling codes, longest first so the prefix match is
-// greedy (so "1" never shadows "1..."). Only consulted when the input opens
-// with an explicit international prefix (`+` or `00`); a bare local number
-// keeps all its digits in `national`.
-const COUNTRY_CODES = [
+// A table of E.164 calling codes, longest first so the prefix match is greedy
+// (so "1" never shadows "1..."). This is numbering-plan data, not a formatting
+// choice — it only helps `parsePhone` peel an explicit international prefix off
+// the front. A country not listed here still parses; its digits simply stay in
+// `national`. Only consulted when the input opens with `+` or `00`.
+const CALLING_CODES = [
   "971",
   "972",
   "353",
@@ -150,7 +147,7 @@ export function parsePhone(input: string): ParsedPhone {
   let countryCode: string | null = null;
   let national = significant;
   if (international) {
-    const cc = COUNTRY_CODES.find((code) => significant.startsWith(code));
+    const cc = CALLING_CODES.find((code) => significant.startsWith(code));
     if (cc && significant.length > cc.length) {
       countryCode = cc;
       national = significant.slice(cc.length);
@@ -160,91 +157,42 @@ export function parsePhone(input: string): ParsedPhone {
   return { countryCode, national, ext, raw, valid: national.length > 0 };
 }
 
-/** Group a run of digits into readable space-separated chunks. */
-function groupDigits(digits: string, size = 3): string {
+// --- Shared grouping helpers -------------------------------------------------
+// Small pure primitives the country formatters build their conventions from.
+// They express *how digits clump*, not any one country's rule.
+
+/** Strip everything but digits. */
+export function digitsOnly(input: string): string {
+  return input.replace(/\D/g, "");
+}
+
+/** Group a run of digits into fixed-size chunks joined by `sep` (spaces by
+ *  default). The trailing chunk keeps whatever digits remain. */
+export function groupDigits(digits: string, size = 3, sep = " "): string {
   const groups: string[] = [];
   for (let i = 0; i < digits.length; i += size) {
     groups.push(digits.slice(i, i + size));
   }
-  return groups.join(" ");
+  return groups.join(sep);
 }
 
-/** Render a parsed phone number in the chosen style. `raw` echoes the input
- *  untouched; the others regroup the digits and either keep, drop, or compact
- *  the country code. An unparseable value always falls back to its raw form. */
-export function formatPhone(parsed: ParsedPhone, format: PhoneFormat): string {
-  if (format === "raw" || !parsed.valid) return parsed.raw;
-
-  const { countryCode, national, ext } = parsed;
-
-  if (format === "e164") {
-    // Compact, separator-free — the shape sync/import tools want. E.164 has no
-    // notion of an extension, so it rides along as a trailing "x".
-    const core = countryCode ? `+${countryCode}${national}` : national;
-    return ext ? `${core}x${ext}` : core;
+/** Group digits into pairs from the left, letting the *first* group be a triple
+ *  when the count is odd — the "three together if possible, otherwise groups of
+ *  two" rule several European conventions share (e.g. Sweden's subscriber
+ *  part). `"8181337"` → `"818 13 37"`, `"123456"` → `"12 34 56"`. */
+export function groupPairsLeadingTriple(digits: string, sep = " "): string {
+  if (digits.length === 0) return "";
+  const groups: string[] = [];
+  let i = 0;
+  if (digits.length % 2 === 1) {
+    groups.push(digits.slice(0, 3));
+    i = 3;
   }
-
-  const extSuffix = ext ? ` ext. ${ext}` : "";
-
-  if (format === "swedish") {
-    // Sweden writes national numbers with a single leading 0 trunk prefix and
-    // no country code (so +46 76 811 25 67 is dialled as 0768112567). Drop any
-    // country code, normalise to exactly one leading 0, then group the digits.
-    const trunk = `0${national.replace(/^0+/, "")}`;
-    return `${groupDigits(trunk)}${extSuffix}`;
-  }
-
-  const body = groupDigits(national);
-  if (format === "national") return `${body}${extSuffix}`;
-  // international
-  const withCc = countryCode ? `+${countryCode} ${body}` : body;
-  return `${withCc}${extSuffix}`;
+  for (; i < digits.length; i += 2) groups.push(digits.slice(i, i + 2));
+  return groups.join(sep);
 }
 
-/** Convenience wrapper: parse then format in one call. */
-export function formatPhoneValue(input: string, format: PhoneFormat): string {
-  return formatPhone(parsePhone(input), format);
-}
-
-// --- Postal code -------------------------------------------------------------
-
-/** How a postal / ZIP code is shown. */
-export type ZipFormat = "raw" | "us5" | "us9" | "se" | "spaced";
-
-export const ZIP_FORMATS: readonly ZipFormat[] = [
-  "raw",
-  "us5",
-  "us9",
-  "se",
-  "spaced",
-] as const;
-
-/** Render a postal code in the chosen style. `raw` is untouched; the US styles
- *  clamp to a 5- or 9-digit ZIP, `se` renders the five-digit Swedish "xxx xx"
- *  form (a space after the third digit), and `spaced` splits the last two
- *  digits off. A value with no digits is returned as-is. */
-export function formatZip(input: string, format: ZipFormat): string {
-  const raw = input.trim();
-  if (format === "raw") return raw;
-  const digits = raw.replace(/\D/g, "");
-  if (!digits) return raw;
-  switch (format) {
-    case "us5":
-      return digits.slice(0, 5);
-    case "us9":
-      return digits.length > 5
-        ? `${digits.slice(0, 5)}-${digits.slice(5, 9)}`
-        : digits.slice(0, 5);
-    case "se":
-      // Swedish postal codes are five digits written "xxx xx".
-      return digits.length > 3
-        ? `${digits.slice(0, 3)} ${digits.slice(3, 5)}`
-        : digits;
-    case "spaced":
-      return digits.length > 2
-        ? `${digits.slice(0, digits.length - 2)} ${digits.slice(-2)}`
-        : digits;
-    default:
-      return raw;
-  }
+/** Render a parsed extension as a human suffix (" ext. 42"), or "" when none. */
+export function extSuffix(ext: string | null): string {
+  return ext ? ` ext. ${ext}` : "";
 }
