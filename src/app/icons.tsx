@@ -213,6 +213,28 @@ export function CalendarIcon({ className }: IconProps) {
   );
 }
 
+/** A wrapped gift — the important-date rows (name day, anniversary, …) in read
+ *  mode, set apart from the birthday's plain calendar. */
+export function GiftIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable={false}
+      className={className}
+    >
+      <path d="M20 12v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8" />
+      <path d="M2 7h20v5H2zM12 22V7" />
+      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+    </svg>
+  );
+}
+
 /** A map pin — the address row in read mode. */
 export function MapPinIcon({ className }: IconProps) {
   return (

@@ -13,7 +13,8 @@ import { displayName } from "./types.ts";
 // language, per-string matching, scoring, highlighting) and the overlay
 // chrome; this file owns the *corpus* — what gets indexed and how the hits are
 // grouped (per contact). A card contributes its display name, company, every
-// phone number and email address, and its notes (clipped to a snippet).
+// phone number and email address, each address (title + parts) and important
+// date, and its notes (clipped to a snippet).
 
 /** One matched field within a contact group. */
 export type FieldHit = {
@@ -76,7 +77,18 @@ export function runSearch(data: AppData, raw: string): SearchOutcome {
     tryField("company", contact.company);
     for (const p of contact.phones) tryField(`phone-${p.id}`, p.value);
     for (const e of contact.emails) tryField(`email-${e.id}`, e.value);
-    tryField("address", formatAddress(contact));
+    for (const a of contact.addresses) {
+      tryField(
+        `address-${a.id}`,
+        [a.label?.trim(), formatAddress(a)].filter(Boolean).join(" "),
+      );
+    }
+    for (const d of contact.importantDates) {
+      tryField(
+        `date-${d.id}`,
+        [d.label?.trim(), d.date].filter(Boolean).join(" "),
+      );
+    }
 
     // Notes can be long — clip the hit to a focused window.
     if (contact.notes) {

@@ -9,21 +9,23 @@
 // Pure functions over a plain `Address` shape — no DOM — so the whole surface
 // is unit-testable in node (see `tests/address_test.ts`).
 
-/** The postal-address subset of a contact card. */
-export type Address = {
+/** The structured postal parts an address carries — the geographic subset,
+ *  without the id or free-text title that a contact-level `Address`
+ *  (`types.ts`) wraps them in. These pure helpers only ever need the parts. */
+export type AddressParts = {
   street?: string;
   zip?: string;
   city?: string;
 };
 
 /** Whether any of the three parts carries content. */
-export function hasAddress(a: Address): boolean {
+export function hasAddress(a: AddressParts): boolean {
   return !!(a.street?.trim() || a.zip?.trim() || a.city?.trim());
 }
 
 /** The address as display lines — the street on its own line, then the
  *  "zip city" locality line — with blank parts dropped. */
-export function addressLines(a: Address): string[] {
+export function addressLines(a: AddressParts): string[] {
   const lines: string[] = [];
   const street = a.street?.trim();
   if (street) lines.push(street);
@@ -34,14 +36,14 @@ export function addressLines(a: Address): string[] {
 
 /** The address as one comma-joined line — the maps query and the search /
  *  export representation. */
-export function formatAddress(a: Address): string {
+export function formatAddress(a: AddressParts): string {
   return addressLines(a).join(", ");
 }
 
 /** A universal maps deep link for the address. The `?api=1&query=` Google Maps
  *  search URL is the portable choice: on a phone the OS hands it off to the
  *  installed map app, and on the desktop it opens Google Maps in the browser. */
-export function mapsUrl(a: Address): string {
+export function mapsUrl(a: AddressParts): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     formatAddress(a),
   )}`;
@@ -61,7 +63,7 @@ function splitLocality(s: string): { zip: string; city: string } | null {
 /** Best-effort split of a free-form (possibly multi-line) address into the
  *  three structured parts. Used once, by the v1→v2 migration, to carry an old
  *  single-field address forward; it never has to be perfect, only sensible. */
-export function parseAddress(raw: string): Address {
+export function parseAddress(raw: string): AddressParts {
   const text = raw.trim();
   if (!text) return {};
   // Prefer explicit line breaks; fall back to comma separation on one line.

@@ -21,6 +21,7 @@ import { downloadText, MIME_VCARD } from "./download.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { SyncEngine } from "./useSyncEngine.ts";
 import { hasAddress } from "./address.ts";
+import { isValidFlexDate } from "./importantDates.ts";
 import type { AppSettings } from "./useAppSettings.ts";
 import type { Contact } from "./types.ts";
 import { displayName } from "./types.ts";
@@ -199,8 +200,9 @@ function isEmptyContact(c: Contact): boolean {
     c.phones.length === 0 &&
     c.emails.length === 0 &&
     !c.company?.trim() &&
-    !hasAddress(c) &&
+    !c.addresses.some(hasAddress) &&
     !c.birthday?.trim() &&
+    !c.importantDates.some((d) => isValidFlexDate(d.date)) &&
     !c.notes?.trim() &&
     !c.photo
   );

@@ -16,6 +16,8 @@ function card(overrides: Partial<Contact>): Contact {
     lastName: "",
     phones: [],
     emails: [],
+    addresses: [],
+    importantDates: [],
     folderId: null,
     ...overrides,
   };

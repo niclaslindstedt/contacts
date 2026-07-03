@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { describe, expect, it } from "vitest";
 
-import { birthdayIcs } from "../src/app/calendar.ts";
+import { birthdayIcs, dateEventIcs } from "../src/app/calendar.ts";
 
 // A fixed "now" so the DTSTAMP is deterministic — 3 July 2026, 09:30:00 UTC.
 const NOW = new Date(Date.UTC(2026, 6, 3, 9, 30, 0));
@@ -72,6 +72,48 @@ describe("birthdayIcs", () => {
     ).toBeNull();
     expect(
       birthdayIcs({ iso: "not-a-date", summary: "x", uid: "u", now: NOW }),
+    ).toBeNull();
+  });
+});
+
+function dateIcs(value: string, summary = "Anniversary Sarah Connor"): string {
+  return (
+    dateEventIcs({ value, summary, uid: "date-d1@contacts.app", now: NOW }) ??
+    ""
+  );
+}
+
+describe("dateEventIcs", () => {
+  it("anchors a full date on its own year and recurs yearly", () => {
+    const out = dateIcs("2010-06-15");
+    expect(out).toContain("DTSTART;VALUE=DATE:20100615");
+    expect(out).toContain("DTEND;VALUE=DATE:20100616");
+    expect(out).toContain("RRULE:FREQ=YEARLY");
+    expect(out).toContain("SUMMARY:Anniversary Sarah Connor");
+  });
+
+  it("anchors a yearless date already passed this year on next year", () => {
+    // 15 June is before 3 July (NOW), so the first reminder is next year.
+    const out = dateIcs("06-15");
+    expect(out).toContain("DTSTART;VALUE=DATE:20270615");
+    expect(out).toContain("DTEND;VALUE=DATE:20270616");
+  });
+
+  it("anchors a yearless date still ahead this year on this year", () => {
+    const out = dateIcs("08-15");
+    expect(out).toContain("DTSTART;VALUE=DATE:20260815");
+    expect(out).toContain("DTEND;VALUE=DATE:20260816");
+  });
+
+  it("carries a stable UID and escapes the woven summary", () => {
+    const out = dateIcs("2010-06-15", "Anniversary; Sarah, Connor");
+    expect(out).toContain("UID:date-d1@contacts.app");
+    expect(out).toContain("SUMMARY:Anniversary\\; Sarah\\, Connor");
+  });
+
+  it("is null for a date that isn't real", () => {
+    expect(
+      dateEventIcs({ value: "13-40", summary: "x", uid: "u", now: NOW }),
     ).toBeNull();
   });
 });

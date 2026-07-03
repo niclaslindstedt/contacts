@@ -21,7 +21,7 @@ import type { AppData, Contact, Folder } from "./types.ts";
 
 /** The current persisted-document version. Bump it and add a step below when
  *  the on-disk shape changes — every shipped step stays forever. */
-export const LATEST_VERSION = 2;
+export const LATEST_VERSION = 3;
 
 const migrations = {
   // v0 (pre-versioning / blank) → v1: the bootstrap step. Guarantee the two
@@ -66,6 +66,38 @@ const migrations = {
       },
     );
     return { ...doc, version: 2, contacts };
+  },
+  // v2 → v3: the single flat address (`street` / `zip` / `city`) becomes an
+  // `addresses` array so a card can hold several titled addresses, and a new
+  // `importantDates` array joins the birthday. Fold any existing flat address
+  // into the first entry (untitled — the UI shows the "Home" placeholder) and
+  // drop the retired keys; guarantee both arrays exist on every contact.
+  2: (doc: Versioned): Versioned => {
+    const contacts = (Array.isArray(doc.contacts) ? doc.contacts : []).map(
+      (raw) => {
+        const { street, zip, city, ...rest } = raw as Record<string, unknown>;
+        const addresses = Array.isArray(rest.addresses) ? rest.addresses : [];
+        const hasFlat = [street, zip, city].some(
+          (v) => typeof v === "string" && v.trim(),
+        );
+        if (hasFlat) {
+          addresses.unshift({
+            id: `${typeof rest.id === "string" ? rest.id : "addr"}-address`,
+            ...(typeof street === "string" && street.trim() ? { street } : {}),
+            ...(typeof zip === "string" && zip.trim() ? { zip } : {}),
+            ...(typeof city === "string" && city.trim() ? { city } : {}),
+          });
+        }
+        return {
+          ...rest,
+          addresses,
+          importantDates: Array.isArray(rest.importantDates)
+            ? rest.importantDates
+            : [],
+        };
+      },
+    );
+    return { ...doc, version: 3, contacts };
   },
 } as const;
 

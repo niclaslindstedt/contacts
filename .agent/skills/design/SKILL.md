@@ -96,6 +96,27 @@ your code edit
 It's near the bottom of the script under a clear `// === RECIPE ===`
 banner. Everything above is reusable plumbing.
 
+## Mobile is mandatory, not optional
+
+This app is a phone-first PWA, so **every visual change must be verified at a
+phone viewport — never desktop alone.** Desktop and mobile are different
+layouts (the `sm` breakpoint at 640px flips the docked sidebar to a drawer,
+restacks field rows, and reflows popovers/modals), so a change that reads
+perfectly on desktop routinely breaks on a 390px screen — a control row that
+overflows, a select that clips, a dialog footer under the soft keyboard.
+
+Concretely:
+
+- **Always shoot `mobile` alongside `desktop`.** Never run the harness with
+  `--viewports desktop` by itself. The default (`desktop,mobile`) already does
+  both — don't narrow it. When a change touches a landscape-sensitive surface
+  (a full-height modal, the cropper), add `mobile-landscape` too.
+- **Read the mobile PNG every iteration**, not just at the end. A loop that
+  only looks at desktop and checks mobile once at the finish has usually
+  already baked in a phone regression.
+- A change is **not done** until the phone render is confirmed correct — see
+  Verification below. "Looks right on desktop" is half a result.
+
 ## The iteration loop
 
 1. **Boot the dev server once.** Vite HMR makes reloads ~100ms after the
@@ -274,7 +295,10 @@ In roughly descending order of recurrence:
 
 A loop is "done" when:
 
-- The PNG at every required viewport matches the intended design.
+- **The `mobile` PNG matches the intended design — this is a hard gate, not a
+  nice-to-have.** A change verified on desktop only is unfinished, full stop.
+- The PNG at every required viewport (always including `mobile`) matches the
+  intended design.
 - The same code path looks right at the _next_ breakpoint up (the
   desktop edit didn't regress mobile, or vice versa).
 - The change passes `make lint` and `make test`; the visual signal in

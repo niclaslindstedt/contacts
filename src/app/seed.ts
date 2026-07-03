@@ -14,6 +14,8 @@ export function starterDoc(): AppData {
         lastName: "",
         phones: [],
         emails: [],
+        addresses: [],
+        importantDates: [],
         folderId: null,
       },
     ],

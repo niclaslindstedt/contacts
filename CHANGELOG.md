@@ -44,7 +44,7 @@ section here. Do not hand-edit the released sections.
   US's `+1 (202) 555-0100` and `12345-6789`. A number that carries its own
   country code (`+1`, `+46`) is formatted for that country automatically, so a
   Swedish address book still shows a US number the American way.
-  
+
   Small toggles fine-tune the details without changing country: whether to
   format at all, whether to show the international country code, whether to show
   the leading-zero trunk digit, and whether to group postal codes with spaces.

@@ -72,7 +72,11 @@ Enter — and start filling in the card.
   Undo away (Ctrl/Cmd-Z).
 - **Read & edit** — a contact opens in read mode, laid out to scan; the pencil
   in the toolbar flips it into edit mode (and the check flips it back). Tappable
-  phone and email rows call and compose straight from read mode.
+  phone and email rows — each typed Private or Work — call and compose straight
+  from read mode. A card holds several titled addresses (home, cabin, work) and,
+  beyond the birthday, any number of important dates (name day, anniversary) that
+  can be a full date or day-and-month-only; tapping one drops a yearly calendar
+  reminder titled with the occasion and the contact's name.
 - **Photos & appearance** — in edit mode, tap the avatar to upload a photo and
   frame it in a circle cropper (zoom + pan), adjust it later, or pick a glyph +
   accent colour instead. Tap a photo in read mode to view it full-screen; on a
