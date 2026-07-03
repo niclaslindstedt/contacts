@@ -47,3 +47,17 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
+
+/* Native `<input type="date">` carries an intrinsic min width in WebKit that
+   ignores `width: 100%`, so on a narrow screen the field spills past its card
+   and drags a horizontal scrollbar in with it. Let it shrink to its box and
+   keep its rendered value from forcing the field wider than the layout. */
+input[type="date"] {
+  min-width: 0;
+  max-width: 100%;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  min-width: 0;
+}

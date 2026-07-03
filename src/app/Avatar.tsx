@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { Glyph } from "@niclaslindstedt/oss-framework/glyphs";
-
+import { ContactGlyph } from "./ContactGlyph.tsx";
 import { PersonIcon } from "./icons.tsx";
 import type { Contact } from "./types.ts";
 import { initials } from "./types.ts";
@@ -39,7 +38,7 @@ export function Avatar({
       style={tint}
     >
       {contact.glyph ? (
-        <Glyph name={contact.glyph} className={iconDim} style={tint} />
+        <ContactGlyph name={contact.glyph} className={iconDim} style={tint} />
       ) : mono ? (
         <span aria-hidden>{mono}</span>
       ) : (
