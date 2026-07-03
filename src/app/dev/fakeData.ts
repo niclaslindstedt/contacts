@@ -328,7 +328,7 @@ function curatedContacts(): Contact[] {
       birthday: "2099-12-31",
       folderId: FLD_FAMILY,
     },
-    // Postal-code variety — every `ZipFormat` the Format tab renders.
+    // Postal-code variety — the shapes each country's Format renderer handles.
     {
       id: "seed-c-zip-se",
       firstName: "Sven",

@@ -19,18 +19,19 @@ import { useT } from "../i18n/index.ts";
 import { contactsToCsv, contactsToVCards } from "../export.ts";
 import { serializeDoc } from "../migrations.ts";
 import { downloadText, MIME_CSV, MIME_JSON, MIME_VCARD } from "../download.ts";
+import { DATE_FORMATS, formatDate, type DateFormat } from "../format.ts";
 import {
-  DATE_FORMATS,
-  PHONE_FORMATS,
-  ZIP_FORMATS,
-  formatDate,
+  COUNTRIES,
   formatPhoneValue,
-  formatZip,
-  type DateFormat,
-  type PhoneFormat,
-  type ZipFormat,
-} from "../format.ts";
-import type { AppSettings } from "../useAppSettings.ts";
+  formatPostalValue,
+  getCountry,
+  type CountryCode,
+} from "../countries/index.ts";
+import {
+  phoneOptions,
+  postalOptions,
+  type AppSettings,
+} from "../useAppSettings.ts";
 import type { ContactStore } from "../useContactStore.ts";
 import {
   DROPBOX_APP_KEY,
@@ -116,17 +117,15 @@ export function GeneralTab({
 
 // --- Format ----------------------------------------------------------------
 
-// Representative samples the pickers preview each style with. The phone sample
-// carries an explicit country code so the international / national styles read
-// differently; the zip sample carries the extra digits ZIP+4 needs.
 const SAMPLE_DATE = "2026-07-03";
-const SAMPLE_PHONE = "+46812345678";
-const SAMPLE_ZIP = "12345-6789";
 
-// Display styles for the value-shaped fields — dates, phone numbers, postal
-// codes. Each picker previews every option with a live sample (its `hint`) and
-// echoes the current pick beneath. These are staged like the other draft
-// settings and only bite on Save.
+// Formatting is country-based: the user picks a home country and the country
+// decides how phones and postal codes are shaped (see `countries/`). The tab
+// exposes a small set of country-agnostic toggles — format at all, show the
+// country code, the leading zero, group with spaces — and previews them live
+// against that country's own sample number. The date format stays an
+// independent style pick. All of this is staged like the other draft settings
+// and only bites on Save.
 export function FormatTab({
   settings,
   update,
@@ -135,93 +134,152 @@ export function FormatTab({
   update: Update;
 }) {
   const t = useT();
+  const country = getCountry(settings.country);
 
+  const countryOptions = COUNTRIES.map((c) => ({
+    value: c.code as CountryCode,
+    // The country name key is data-driven (one per registered country), so it
+    // can't be a statically-known catalog leaf — narrow it at the call site.
+    label: `${c.flag} ${t(
+      `settings.format.country.${c.nameKey}` as Parameters<typeof t>[0],
+    )}`,
+  }));
   const dateOptions = DATE_FORMATS.map((value) => ({
     value,
     label: t(`settings.format.date.${value}`),
     hint: formatDate(SAMPLE_DATE, value),
   }));
-  const phoneOptions = PHONE_FORMATS.map((value) => ({
-    value,
-    label: t(`settings.format.phone.${value}`),
-    hint: formatPhoneValue(SAMPLE_PHONE, value),
-  }));
-  const zipOptions = ZIP_FORMATS.map((value) => ({
-    value,
-    label: t(`settings.format.zip.${value}`),
-    hint: formatZip(SAMPLE_ZIP, value),
-  }));
+
+  const phonePreview = formatPhoneValue(
+    country.samples.phone,
+    settings.country,
+    { ...phoneOptions(settings), format: true },
+  );
+  const postalPreview = formatPostalValue(
+    country.samples.postal,
+    settings.country,
+    { ...postalOptions(settings), format: true },
+  );
 
   return (
     <div>
       <p className="mb-3 text-xs text-muted">{t("settings.format.intro")}</p>
 
+      <Section title={t("settings.format.countryTitle")}>
+        <div className="flex flex-col gap-1.5">
+          <SegmentedControl<CountryCode>
+            value={settings.country}
+            options={countryOptions}
+            onChange={(next) => update("country", next)}
+            fullWidth
+            ariaLabel={t("settings.format.countryTitle")}
+          />
+          <p className="text-xs text-muted">
+            {t("settings.format.countryHint")}
+          </p>
+        </div>
+      </Section>
+
+      <Section title={t("settings.format.phoneTitle")}>
+        <ToggleRow
+          label={t("settings.format.phoneEnable")}
+          hint={t("settings.format.phoneEnableHint")}
+          checked={settings.phoneFormat}
+          onChange={(next) => update("phoneFormat", next)}
+        />
+        <NestedOptions enabled={settings.phoneFormat}>
+          <ToggleRow
+            label={t("settings.format.phoneCountryCode")}
+            hint={t("settings.format.phoneCountryCodeHint")}
+            checked={settings.phoneCountryCode}
+            onChange={(next) => update("phoneCountryCode", next)}
+          />
+          <ToggleRow
+            label={t("settings.format.phoneLeadingZero")}
+            hint={t("settings.format.phoneLeadingZeroHint")}
+            checked={settings.phoneLeadingZero}
+            onChange={(next) => update("phoneLeadingZero", next)}
+          />
+        </NestedOptions>
+        <Preview
+          value={
+            settings.phoneFormat
+              ? phonePreview
+              : t("settings.format.previewOff")
+          }
+        />
+      </Section>
+
+      <Section title={t("settings.format.postalTitle")}>
+        <ToggleRow
+          label={t("settings.format.postalEnable")}
+          hint={t("settings.format.postalEnableHint")}
+          checked={settings.postalFormat}
+          onChange={(next) => update("postalFormat", next)}
+        />
+        <NestedOptions enabled={settings.postalFormat}>
+          <ToggleRow
+            label={t("settings.format.postalSpaces")}
+            hint={t("settings.format.postalSpacesHint")}
+            checked={settings.postalSpaces}
+            onChange={(next) => update("postalSpaces", next)}
+          />
+        </NestedOptions>
+        <Preview
+          value={
+            settings.postalFormat
+              ? postalPreview
+              : t("settings.format.previewOff")
+          }
+        />
+      </Section>
+
       <Section title={t("settings.format.dateTitle")}>
-        <FormatField
-          preview={formatDate(SAMPLE_DATE, settings.dateFormat)}
-          hint={t("settings.format.dateHint")}
-        >
+        <div className="flex flex-col gap-1">
           <SelectPicker<DateFormat>
             value={settings.dateFormat}
             options={dateOptions}
             onChange={(next) => update("dateFormat", next)}
             ariaLabel={t("settings.format.dateTitle")}
           />
-        </FormatField>
-      </Section>
-
-      <Section title={t("settings.format.phoneTitle")}>
-        <FormatField
-          preview={formatPhoneValue(SAMPLE_PHONE, settings.phoneFormat)}
-          hint={t("settings.format.phoneHint")}
-        >
-          <SelectPicker<PhoneFormat>
-            value={settings.phoneFormat}
-            options={phoneOptions}
-            onChange={(next) => update("phoneFormat", next)}
-            ariaLabel={t("settings.format.phoneTitle")}
-          />
-        </FormatField>
-      </Section>
-
-      <Section title={t("settings.format.zipTitle")}>
-        <FormatField
-          preview={formatZip(SAMPLE_ZIP, settings.zipFormat)}
-          hint={t("settings.format.zipHint")}
-        >
-          <SelectPicker<ZipFormat>
-            value={settings.zipFormat}
-            options={zipOptions}
-            onChange={(next) => update("zipFormat", next)}
-            ariaLabel={t("settings.format.zipTitle")}
-          />
-        </FormatField>
+          <Preview value={formatDate(SAMPLE_DATE, settings.dateFormat)} />
+          <p className="text-xs text-muted">{t("settings.format.dateHint")}</p>
+        </div>
       </Section>
     </div>
   );
 }
 
-// The picker + a live "Sample: …" line + the explanatory hint, laid out the
-// same way for all three format rows.
-function FormatField({
-  preview,
-  hint,
+// The sub-toggles under a master switch. Kept mounted but dimmed and inert when
+// the master is off, so the knobs stay discoverable without doing anything —
+// the indent rule makes the nesting read at a glance.
+function NestedOptions({
+  enabled,
   children,
 }: {
-  preview: string;
-  hint: string;
+  enabled: boolean;
   children: ReactNode;
 }) {
+  return (
+    <div
+      className={`mt-1 flex flex-col gap-2 border-l border-line pl-3 transition-opacity ${
+        enabled ? "" : "pointer-events-none opacity-40"
+      }`}
+      aria-disabled={!enabled}
+    >
+      {children}
+    </div>
+  );
+}
+
+// A live "Sample: …" line echoing what the current options produce.
+function Preview({ value }: { value: string }) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-1">
-      {children}
-      <p className="text-xs text-muted">
-        {t("settings.format.previewLabel")}{" "}
-        <span className="font-mono text-fg">{preview}</span>
-      </p>
-      <p className="text-xs text-muted">{hint}</p>
-    </div>
+    <p className="mt-1 text-xs text-muted">
+      {t("settings.format.previewLabel")}{" "}
+      <span className="font-mono text-fg">{value}</span>
+    </p>
   );
 }
 

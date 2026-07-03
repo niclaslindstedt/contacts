@@ -2,10 +2,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  digitsOnly,
   formatDate,
-  formatPhone,
-  formatPhoneValue,
-  formatZip,
+  groupDigits,
+  groupPairsLeadingTriple,
   parsePhone,
 } from "../src/app/format.ts";
 
@@ -61,80 +61,21 @@ describe("parsePhone", () => {
   });
 });
 
-describe("formatPhone", () => {
-  const parsed = parsePhone("+46812345678");
-
-  it("echoes the raw input for the raw style", () => {
-    expect(formatPhone(parsed, "raw")).toBe("+46812345678");
+describe("digit grouping helpers", () => {
+  it("strips non-digits", () => {
+    expect(digitsOnly("+46 (0)76-818 13 37")).toBe("460768181337");
+    expect(digitsOnly("N/A")).toBe("");
   });
 
-  it("groups digits and keeps the country code for international", () => {
-    expect(formatPhone(parsed, "international")).toBe("+46 812 345 678");
+  it("groups into fixed-size chunks", () => {
+    expect(groupDigits("2025550100")).toBe("202 555 010 0");
+    expect(groupDigits("12345", 2, "-")).toBe("12-34-5");
   });
 
-  it("drops the country code for the national style", () => {
-    expect(formatPhone(parsed, "national")).toBe("812 345 678");
-  });
-
-  it("adds the leading 0 trunk prefix for the Swedish style", () => {
-    // A country-code number is dialled nationally with a single leading 0.
-    expect(formatPhone(parsed, "swedish")).toBe("081 234 567 8");
-    // A bare local number keeps its single leading 0, never doubling it.
-    expect(formatPhoneValue("076811256", "swedish")).toBe("076 811 256");
-    expect(formatPhoneValue("+46768112567", "swedish")).toBe("076 811 256 7");
-  });
-
-  it("compacts to a separator-free E.164 string", () => {
-    expect(formatPhone(parsed, "e164")).toBe("+46812345678");
-  });
-
-  it("carries an extension through each non-compact style", () => {
-    const ext = parsePhone("+1 202 555 0100 x42");
-    expect(formatPhone(ext, "international")).toBe("+1 202 555 010 0 ext. 42");
-    expect(formatPhone(ext, "e164")).toBe("+12025550100x42");
-  });
-
-  it("falls back to raw when nothing parses", () => {
-    expect(formatPhoneValue("n/a", "international")).toBe("n/a");
-  });
-
-  it("formats a bare local number without inventing a country code", () => {
-    expect(formatPhoneValue("5551234567", "international")).toBe(
-      "555 123 456 7",
-    );
-    expect(formatPhoneValue("5551234567", "e164")).toBe("5551234567");
-  });
-});
-
-describe("formatZip", () => {
-  it("leaves the raw style untouched", () => {
-    expect(formatZip("12345-6789", "raw")).toBe("12345-6789");
-  });
-
-  it("clamps to a 5-digit US ZIP", () => {
-    expect(formatZip("12345-6789", "us5")).toBe("12345");
-    expect(formatZip("12345", "us5")).toBe("12345");
-  });
-
-  it("renders ZIP+4 when there are enough digits", () => {
-    expect(formatZip("123456789", "us9")).toBe("12345-6789");
-    expect(formatZip("12345", "us9")).toBe("12345");
-  });
-
-  it("renders the five-digit Swedish 'xxx xx' form", () => {
-    expect(formatZip("12345", "se")).toBe("123 45");
-    expect(formatZip("123 45", "se")).toBe("123 45");
-    // Extra digits are clamped to five; a short draft stays untouched.
-    expect(formatZip("123456789", "se")).toBe("123 45");
-    expect(formatZip("12", "se")).toBe("12");
-  });
-
-  it("splits the last two digits for the spaced style", () => {
-    expect(formatZip("12345", "spaced")).toBe("123 45");
-    expect(formatZip("12", "spaced")).toBe("12");
-  });
-
-  it("returns a digitless value as-is", () => {
-    expect(formatZip("N/A", "us5")).toBe("N/A");
+  it("groups pairs with a leading triple when the count is odd", () => {
+    expect(groupPairsLeadingTriple("8181337")).toBe("818 13 37"); // 7 → 3 2 2
+    expect(groupPairsLeadingTriple("123456")).toBe("12 34 56"); // 6 → 2 2 2
+    expect(groupPairsLeadingTriple("12345")).toBe("123 45"); // 5 → 3 2
+    expect(groupPairsLeadingTriple("")).toBe("");
   });
 });

@@ -20,8 +20,13 @@ import {
   PhoneIcon,
 } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
-import { formatDate, formatPhoneValue, formatZip } from "./format.ts";
-import type { AppSettings } from "./useAppSettings.ts";
+import { formatDate } from "./format.ts";
+import { formatPhoneValue, formatPostalValue } from "./countries/index.ts";
+import {
+  phoneOptions,
+  postalOptions,
+  type AppSettings,
+} from "./useAppSettings.ts";
 import type { Contact } from "./types.ts";
 import { displayName } from "./types.ts";
 
@@ -81,7 +86,11 @@ export function ContactReadView({
                 href={`tel:${phone.value.replace(/\s+/g, "")}`}
                 icon={<PhoneIcon className="h-4 w-4" />}
                 label={t("contact.phone")}
-                value={formatPhoneValue(phone.value, settings.phoneFormat)}
+                value={formatPhoneValue(
+                  phone.value,
+                  settings.country,
+                  phoneOptions(settings),
+                )}
               />
             ))}
             {emails.map((email) => (
@@ -283,7 +292,11 @@ function AddressRow({
   const t = useT();
   const lines = addressLines({
     street: contact.street,
-    zip: formatZip(contact.zip ?? "", settings.zipFormat),
+    zip: formatPostalValue(
+      contact.zip ?? "",
+      settings.country,
+      postalOptions(settings),
+    ),
     city: contact.city,
   });
   return (

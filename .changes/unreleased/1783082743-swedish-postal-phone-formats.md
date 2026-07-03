@@ -1,11 +1,19 @@
 ---
-type: Added
-title: Swedish postal-code and phone-number formats
+type: Changed
+title: Format settings are now country-based
 ---
 
-The **Format** settings tab now offers Swedish styles. Postal codes can render
-in the five-digit `xxx xx` form (a space after the third digit), and phone
-numbers can render in the Swedish national style — the country code is dropped
-in favour of a single leading `0` trunk prefix (so `+46 76 811 25 67` shows as
-`076 811 256 7`). As with every format, the display changes only; what you typed
-is stored untouched.
+The **Format** tab is now organised around a country. Pick your country
+(Sweden or the United States to start) and phone numbers and postal codes are
+shown that country's way — Sweden's `+46 (0)76-818 13 37` and `123 45`, the
+US's `+1 (202) 555-0100` and `12345-6789`. A number that carries its own
+country code (`+1`, `+46`) is formatted for that country automatically, so a
+Swedish address book still shows a US number the American way.
+
+Small toggles fine-tune the details without changing country: whether to
+format at all, whether to show the international country code, whether to show
+the leading-zero trunk digit, and whether to group postal codes with spaces.
+Each country decides what those toggles mean and ignores the ones it has no use
+for. Adding more countries is now a matter of dropping in one file per country,
+so the list will grow. As before, formatting changes the display only — what
+you typed is stored untouched.
