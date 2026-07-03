@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DEFAULT_NAMESPACE_SLUG } from "@niclaslindstedt/oss-framework/namespaces";
 
+import type { ImportedContact } from "./import.ts";
 import { parseDoc, serializeDoc } from "./migrations.ts";
 import { starterDoc } from "./seed.ts";
 import type { AppData, Contact, Folder } from "./types.ts";
@@ -213,6 +214,42 @@ export function useContactStore(
         activeContactId: id,
       });
       return id;
+    },
+    [commit, data],
+  );
+
+  // File a batch of parsed cards (a vCard / JSON / CSV drop or file pick) into
+  // the document. Every card and every one of its rows gets a fresh id, so an
+  // import never collides with an id already on disk; the whole batch lands as
+  // one undoable step, and the first imported card is opened. Returns how many
+  // cards were filed so the caller can report it. Filed to the root — the
+  // importer doesn't know the document's folders.
+  const importContacts = useCallback(
+    (drafts: readonly ImportedContact[]): number => {
+      if (drafts.length === 0) return 0;
+      const contacts: Contact[] = drafts.map((d) => ({
+        id: freshId("contact"),
+        firstName: d.firstName,
+        lastName: d.lastName,
+        ...(d.company ? { company: d.company } : {}),
+        phones: d.phones.map((p) => ({ ...p, id: freshId("phone") })),
+        emails: d.emails.map((e) => ({ ...e, id: freshId("email") })),
+        addresses: d.addresses.map((a) => ({ ...a, id: freshId("address") })),
+        ...(d.birthday ? { birthday: d.birthday } : {}),
+        importantDates: d.importantDates.map((x) => ({
+          ...x,
+          id: freshId("date"),
+        })),
+        ...(d.notes ? { notes: d.notes } : {}),
+        ...(d.photo ? { photo: d.photo } : {}),
+        folderId: null,
+      }));
+      commit({
+        ...data,
+        contacts: [...data.contacts, ...contacts],
+        activeContactId: contacts[0]!.id,
+      });
+      return contacts.length;
     },
     [commit, data],
   );
@@ -462,6 +499,7 @@ export function useContactStore(
     version,
     setActive,
     addContact,
+    importContacts,
     updateContact,
     deleteContact,
     archiveContact,

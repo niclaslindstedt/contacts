@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 
 import {
   Button,
@@ -17,6 +17,7 @@ import { log, logStore } from "../log.ts";
 import { useDevSeed } from "../dev/useDevSeed.ts";
 import { useT } from "../i18n/index.ts";
 import { contactsToCsv, contactsToVCards } from "../export.ts";
+import { IMPORT_ACCEPT, readImportedContacts } from "../importFiles.ts";
 import { serializeDoc } from "../migrations.ts";
 import { downloadText, MIME_CSV, MIME_JSON, MIME_VCARD } from "../download.ts";
 import { DATE_FORMATS, formatDate, type DateFormat } from "../format.ts";
@@ -303,6 +304,10 @@ export function StorageTab({
   const t = useT();
   const [pass, setPass] = useState("");
   const [gateOpen, setGateOpen] = useState(false);
+  // The file-picker import — the non-drag path to the same importer the
+  // drag-and-drop overlay uses (see `ImportDropZone` / `import.ts`).
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
 
   // A cloud backend only appears in the picker when its OAuth identifier is
   // baked into the build — an unconfigured backend can't be connected, so we
@@ -351,6 +356,22 @@ export function StorageTab({
     }
     unlockTrophy("exporter");
     log.info(`export: downloaded contacts.${kind}`);
+  };
+
+  const runImport = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const { contacts } = await readImportedContacts(Array.from(files));
+    if (contacts.length === 0) {
+      setImportMsg(t("import.none"));
+      log.warn("import: no contacts found in picked file(s)");
+      return;
+    }
+    const n = store.importContacts(contacts);
+    if (n > 0) unlockTrophy("importer");
+    setImportMsg(
+      n === 1 ? t("import.doneOne") : t("import.done", { n: String(n) }),
+    );
+    log.info(`import: filed ${n} contact(s) from picked file(s)`);
   };
 
   return (
@@ -471,6 +492,35 @@ export function StorageTab({
             </Button>
           </div>
         )}
+      </Section>
+
+      <Section title={t("settings.storage.importTitle")}>
+        <p className="text-xs text-muted">
+          {t("settings.storage.importIntro")}
+        </p>
+        <input
+          ref={fileInput}
+          type="file"
+          accept={IMPORT_ACCEPT}
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            void runImport(e.target.files);
+            // Reset so re-picking the same file fires `change` again.
+            e.target.value = "";
+          }}
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => fileInput.current?.click()}
+          >
+            {t("settings.storage.importChoose")}
+          </Button>
+          {importMsg && (
+            <span className="text-sm text-success">{importMsg}</span>
+          )}
+        </div>
       </Section>
 
       <Section title={t("settings.storage.exportTitle")}>

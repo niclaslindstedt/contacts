@@ -130,6 +130,26 @@ export function DownloadIcon({ className }: IconProps) {
   );
 }
 
+/** An upward tray arrow — the import/upload affordance (mirror of the export
+ *  download mark), used by the drag-and-drop overlay and the Import button. */
+export function UploadIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable={false}
+      className={className}
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 8l5-5 5 5M12 3v12" />
+    </svg>
+  );
+}
+
 // The read-mode field marks. Each read row wears one of these in a tinted
 // circle so the card scans at a glance — a handset for phones, an envelope for
 // emails, and the small set the details block draws from.

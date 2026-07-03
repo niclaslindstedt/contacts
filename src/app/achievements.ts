@@ -136,4 +136,16 @@ export const CATALOG: readonly Achievement<AchState>[] = [
     // bus from the export buttons.
     trigger: { kind: "manual" },
   },
+  {
+    id: "importer",
+    tier: "expert",
+    glyph: PlusIcon,
+    name: "Immigrant",
+    condition: "Import contacts from a file.",
+    learnMore:
+      "Drag a .vcf straight from your phone's Contacts app onto the card — or use Import in Settings — to pour vCard, CSV, or JSON cards into the address book.",
+    // Importing files into the document is a document change, but the drop can
+    // land anywhere; it fires through the manual bus from the import flow.
+    trigger: { kind: "manual" },
+  },
 ];
