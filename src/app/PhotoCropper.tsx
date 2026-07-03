@@ -76,6 +76,26 @@ export function PhotoCropper({
     if (nat) setTransform((tr) => clampTransform(nat.w, nat.h, tr));
   }, [nat]);
 
+  // Keep the drag-to-pan inside the viewport from reaching the enclosing
+  // `Modal`'s swipe-down-to-close, which listens for raw touch events on its
+  // card. Without this, panning the photo drags the whole modal — the pointer
+  // handlers below can't stop it, since swipe-to-close reads `touch*` events
+  // rather than pointer ones. Stopping propagation on the viewport (a
+  // descendant of the card) runs before the card's bubble-phase listener, so
+  // the modal never arms its swipe. Native listeners, because the modal's are
+  // native too and would otherwise fire first.
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const stop = (e: TouchEvent) => e.stopPropagation();
+    el.addEventListener("touchstart", stop);
+    el.addEventListener("touchmove", stop);
+    return () => {
+      el.removeEventListener("touchstart", stop);
+      el.removeEventListener("touchmove", stop);
+    };
+  }, []);
+
   // Live pointer state: the active pointers (for pinch), the last single-pointer
   // position (for incremental pan), and the pinch baseline.
   const pointers = useRef(new Map<number, { x: number; y: number }>());
