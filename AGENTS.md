@@ -146,17 +146,29 @@ framework's internals — only its published subpaths.
 
 ## Documentation sync points
 
-| When you change…                    | Update…                                                                              |
-| ----------------------------------- | ------------------------------------------------------------------------------------ |
-| the contact model or export formats | `docs/features/export.md`, `tests/export_test.ts`, `README.md`                       |
-| sync backends / encryption          | `docs/features/sync.md`, `docs/configuration.md`                                     |
-| settings surface                    | `docs/getting-started.md`                                                            |
-| user-visible features               | `CHANGELOG.md` bullets + `docs/features/*.md` (the in-app "What's new" renders both) |
+| When you change…                    | Update…                                                                                                   |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| the contact model or export formats | `docs/features/export.md`, `tests/export_test.ts`, `README.md`                                            |
+| sync backends / encryption          | `docs/features/sync.md`, `docs/configuration.md`                                                          |
+| settings surface                    | `docs/getting-started.md`                                                                                 |
+| user-visible features               | a `.changes/unreleased/` changeset fragment + `docs/features/*.md` (the in-app "What's new" renders both) |
+
+Every user-visible change needs a **changeset fragment** at
+`.changes/unreleased/<unix-ts>-<slug>.md` — YAML front matter with a `type:`
+(`Added` / `Changed` / `Fixed` / …) and a one-line `title:`, then a short prose
+body. CI's `changeset` check fails a PR that ships user-visible behavior without
+one, and the Release workflow collates the fragments into the dated
+`CHANGELOG.md` sections (those released sections are generated — never
+hand-edit them). See `scripts/release/` and the existing fragments for the
+exact shape.
 
 ## Parity / cross-cutting rules
 
 - `src/app/i18n/en.ts` is the catalog's type source; `sv.ts` must satisfy it —
-  adding a string means adding it to **both**.
+  adding a string means adding it to **both**. A **runtime-built** key (one
+  computed per item rather than written as a literal, e.g. a per-country name
+  key) isn't a statically-known catalog leaf, so `t()` needs a cast at the call
+  site: ``t(`prefix.${x}` as Parameters<typeof t>[0])``.
 - The service-worker contract (cache id, `sw.js`, `version.json`,
   `precache-manifest.json`) is shared between `src/app/pwa.ts` and
   `pwa-plugin.ts`; change them together.

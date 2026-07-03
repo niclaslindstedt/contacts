@@ -225,6 +225,29 @@ export async function openSettings(page) {
   await page.getByRole("dialog").first().waitFor();
 }
 
+// Open Settings and switch to a named tab (e.g. "Format", "Storage",
+// "Developer"). The tabs aren't a tab strip — the header title button
+// (`#settings-title`) opens a FloatingPanel menu of `menuitem`s. Target the
+// title button by id: a plain `[aria-haspopup="menu"]` also matches sidebar
+// controls sitting *behind* the modal backdrop, so the click gets intercepted.
+export async function openSettingsTab(page, tabName) {
+  await openSettings(page);
+  await page.locator("#settings-title").click();
+  await page.getByRole("menuitem", { name: tabName }).click();
+  await page.waitForTimeout(150);
+}
+
+// Scroll the Settings dialog's tab body to the bottom (to shoot sections below
+// the fold). Scoped to the dialog so it doesn't scroll the sidebar's own list.
+export async function scrollSettingsToBottom(page) {
+  await page
+    .getByRole("dialog")
+    .locator("div.overflow-y-auto")
+    .first()
+    .evaluate((el) => (el.scrollTop = el.scrollHeight));
+  await page.waitForTimeout(150);
+}
+
 // Pop the local `npm run dev` Vite server, or fall back to the built
 // preview server if dev is silent. The skill prefers dev for HMR speed.
 async function resolveBaseUrl(explicit) {
