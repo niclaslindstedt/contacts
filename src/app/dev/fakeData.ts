@@ -467,6 +467,39 @@ function curatedContacts(): Contact[] {
       importantDates: [],
       folderId: null,
     },
+    // Auto-archive cards: a self-filing schedule set far in the future so the
+    // dev-load sweep leaves them be. One shelves itself, one self-destructs —
+    // the "pizzeria added for a holiday" case the feature is built for.
+    {
+      id: "seed-c-autoarchive",
+      firstName: "Beach",
+      lastName: "Rental",
+      company: "Seaside Cottages",
+      phones: [phone("+46 40 555 246", "work")],
+      emails: [],
+      addresses: [],
+      importantDates: [],
+      notes: "Booked for the summer — shelve it once we're home.",
+      folderId: null,
+      glyph: "home",
+      autoArchiveDate: "2099-08-15",
+      autoArchiveAction: "archive",
+    },
+    {
+      id: "seed-c-autodelete",
+      firstName: "",
+      lastName: "",
+      company: "Vacation Pizzeria",
+      phones: [phone("+39 06 555 0147", "work")],
+      emails: [],
+      addresses: [],
+      importantDates: [],
+      notes: "Only need this while we're away — drop it afterwards.",
+      folderId: null,
+      glyph: "star",
+      autoArchiveDate: "2099-08-20",
+      autoArchiveAction: "delete",
+    },
     // Archived cards: one inside the archived folder, one standalone. Both stay
     // in the document but drop out of the menu (the Archive screen tallies them).
     {

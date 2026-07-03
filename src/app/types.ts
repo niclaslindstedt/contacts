@@ -59,6 +59,11 @@ export type ImportantDate = {
   date: string;
 };
 
+/** What the auto-archive sweep does to a contact when its scheduled date
+ *  arrives: shelve the card in the Archive ("archive"), or drop it from the
+ *  document for good ("delete"). Stored on the contact next to the date. */
+export type AutoArchiveAction = "archive" | "delete";
+
 /** How a contact photo is framed inside the circle — the Facebook-style
  *  zoom/pan the cropper produces and restores. `scale` multiplies the
  *  cover-fit baseline (1 = the image just fills the circle); `x`/`y` pan the
@@ -120,6 +125,17 @@ export type Contact = {
   // contacts stay in the document — they drop out of the menu but the Archive
   // counter tallies them and an Undo brings them back.
   archived?: boolean;
+  /** When set, the card files itself away without being touched: on or after
+   *  this day the app's sweep either archives it or deletes it (see
+   *  {@link autoArchiveAction}). A full ISO `YYYY-MM-DD`. Handy for a contact
+   *  you only want around for a while — a holiday pizzeria that should tidy
+   *  itself away when the trip ends. Cleared once the sweep archives the card,
+   *  so restoring it from the Archive doesn't re-file it. */
+  autoArchiveDate?: string;
+  /** What the sweep does when {@link autoArchiveDate} arrives — shelve the card
+   *  or delete it for good. Absent (or with no date set) means auto-archiving
+   *  is off; a bare date with no action defaults to archiving. */
+  autoArchiveAction?: AutoArchiveAction;
 };
 
 /** A folder groups contacts in the side menu under one collapsible row. */

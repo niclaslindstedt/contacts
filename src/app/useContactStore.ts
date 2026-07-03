@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DEFAULT_NAMESPACE_SLUG } from "@niclaslindstedt/oss-framework/namespaces";
 
+import { dueContacts, isoDate } from "./autoArchive.ts";
 import type { ImportedContact } from "./import.ts";
 import { parseDoc, serializeDoc } from "./migrations.ts";
 import { starterDoc } from "./seed.ts";
@@ -311,6 +312,39 @@ export function useContactStore(
     [commit, data],
   );
 
+  // Auto-archive sweep: file away every contact whose scheduled date has
+  // arrived (see `autoArchive.ts`) — archived cards are shelved and their
+  // schedule cleared so restoring one doesn't re-file it; delete-scheduled
+  // cards leave the document for good. Runs on load and on reload; a no-op when
+  // nothing is due (no empty undo step), otherwise one undoable step for the
+  // whole batch.
+  const sweepAutoArchive = useCallback(
+    (now: Date = new Date()) => {
+      const { toArchive, toDelete } = dueContacts(data.contacts, isoDate(now));
+      if (toArchive.length === 0 && toDelete.length === 0) return;
+      const deleteIds = new Set(toDelete.map((c) => c.id));
+      const archiveIds = new Set(toArchive.map((c) => c.id));
+      const contacts = data.contacts
+        .filter((c) => !deleteIds.has(c.id))
+        .map((c) =>
+          archiveIds.has(c.id)
+            ? {
+                ...c,
+                archived: true,
+                autoArchiveDate: undefined,
+                autoArchiveAction: undefined,
+              }
+            : c,
+        );
+      commit({
+        ...data,
+        contacts,
+        activeContactId: nextActiveId(contacts, data.activeContactId),
+      });
+    },
+    [commit, data],
+  );
+
   // Create a folder under a user-picked name and return its id. The name is
   // collected inline before this fires.
   const addFolder = useCallback(
@@ -504,6 +538,7 @@ export function useContactStore(
     deleteContact,
     archiveContact,
     unarchiveContact,
+    sweepAutoArchive,
     addFolder,
     renameFolder,
     deleteFolder,

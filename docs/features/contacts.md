@@ -49,3 +49,12 @@ notes, and a photo.
   [Cloud sync](feature:sync).
 - **Archive, don't lose.** Swipe a contact right in the side menu (or drag it
   onto Archive) to shelve it. The Archive page restores or deletes for good.
+- **Auto-archive.** In edit mode, the **Auto-archive** section lets a card file
+  itself away on a date you pick — flip the switch, choose the date (it starts
+  two weeks out), and choose what happens then: **Archive** (shelve it, the
+  default) or **Delete** (drop it for good). Handy for a place you only need for
+  a while — the pizzeria you added for a holiday — that should tidy itself away
+  when the trip's over. The schedule shows in read mode ("Archives itself on
+  …"), and the sweep runs whenever you open the app, so a card scheduled while
+  the app was closed catches up on your next visit. Archiving a card this way
+  clears its schedule, so restoring it from the Archive won't re-file it.

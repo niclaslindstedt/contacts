@@ -5,15 +5,19 @@ import {
   Button,
   PlusIcon,
   Section,
+  SegmentedControl,
   SelectPicker,
+  ToggleRow,
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
 
+import { autoArchiveAction, defaultAutoArchiveDate } from "./autoArchive.ts";
 import { isValidFlexDate, parseFlexDate } from "./importantDates.ts";
 import { useLang, useT } from "./i18n/index.ts";
 import { freshId } from "./useContactStore.ts";
 import type {
   Address,
+  AutoArchiveAction,
   Contact,
   ContactMethodKind,
   Email,
@@ -117,6 +121,82 @@ export function ContactEditView({
           onCommit={(notes) => updateContact(contact.id, { notes })}
         />
       </Section>
+
+      <Section title={t("contact.autoArchive")}>
+        <AutoArchiveRow contact={contact} updateContact={updateContact} />
+      </Section>
+    </div>
+  );
+}
+
+// The auto-archive control: a toggle that arms a self-filing schedule, and —
+// once armed — a date to fire on and a choice of what happens then (shelve the
+// card or delete it outright). Enabling seeds a date two weeks out so the card
+// doesn't vanish the moment the switch is flipped; clearing the date disarms
+// the schedule. The date and action commit straight to the store (each an
+// undoable step), so the sweep on the next app open acts on the latest choice.
+function AutoArchiveRow({
+  contact,
+  updateContact,
+}: {
+  contact: Contact;
+  updateContact: (id: string, patch: Partial<Contact>) => void;
+}) {
+  const t = useT();
+  const enabled = !!contact.autoArchiveDate?.trim();
+  const action = autoArchiveAction(contact);
+
+  const toggle = (on: boolean) => {
+    updateContact(
+      contact.id,
+      on
+        ? {
+            autoArchiveDate: defaultAutoArchiveDate(new Date()),
+            autoArchiveAction: action,
+          }
+        : { autoArchiveDate: undefined, autoArchiveAction: undefined },
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <ToggleRow
+        label={t("contact.autoArchiveToggle")}
+        hint={t("contact.autoArchiveHint")}
+        checked={enabled}
+        onChange={toggle}
+      />
+      {enabled && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <LabeledInput
+            label={t("contact.autoArchiveDate")}
+            value={contact.autoArchiveDate ?? ""}
+            type="date"
+            onCommit={(date) =>
+              updateContact(contact.id, {
+                autoArchiveDate: date.trim() || undefined,
+                ...(date.trim() ? {} : { autoArchiveAction: undefined }),
+              })
+            }
+          />
+          <label className="flex min-w-0 flex-col gap-1">
+            <span className="text-xs text-muted">
+              {t("contact.autoArchiveAction")}
+            </span>
+            <SegmentedControl<AutoArchiveAction>
+              value={action}
+              ariaLabel={t("contact.autoArchiveAction")}
+              onChange={(next) =>
+                updateContact(contact.id, { autoArchiveAction: next })
+              }
+              options={[
+                { value: "archive", label: t("contact.autoArchiveArchive") },
+                { value: "delete", label: t("contact.autoArchiveDelete") },
+              ]}
+            />
+          </label>
+        </div>
+      )}
     </div>
   );
 }
