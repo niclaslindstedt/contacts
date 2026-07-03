@@ -159,15 +159,17 @@ All flags are optional.
 All exported from `screenshot.mjs`; the recipe runs in the same file, so
 they're already in scope.
 
-| Helper                        | What it does                                                                                                                                               |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `openApp(page)`               | Navigate to the app root and wait until the shell has rendered (the card's Edit/Done control, or the phone's "Open sidebar" button). Universal first step. |
-| `enterEditMode(page)`         | Put the open contact card into edit mode (no-op if already there) — where the appearance popover and the field form live.                                  |
-| `openSidebar(page)`           | Ensure the side menu is reachable: a no-op on wide screens (docked), opens the drawer on phones via the "Open sidebar" button.                             |
-| `newContact(page)`            | Create a fresh contact and land on its card (opens straight in edit mode). Opens the sidebar first on phones.                                              |
-| `openAppearancePopover(page)` | Enter edit mode, then tap the avatar to open the Photo / Colour / Icon popover. Verified against `ContactAppearancePopover.tsx`.                           |
-| `openPhotoCropper(page, img)` | Open the appearance popover and upload an image to open the circle cropper. `img` defaults to a bundled PWA icon, so a recipe needs no fixture of its own. |
-| `openSettings(page)`          | Open the Settings dialog from the side menu's footer.                                                                                                      |
+| Helper                         | What it does                                                                                                                                               |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `openApp(page)`                | Navigate to the app root and wait until the shell has rendered (the card's Edit/Done control, or the phone's "Open sidebar" button). Universal first step. |
+| `enterEditMode(page)`          | Put the open contact card into edit mode (no-op if already there) — where the appearance popover and the field form live.                                  |
+| `openSidebar(page)`            | Ensure the side menu is reachable: a no-op on wide screens (docked), opens the drawer on phones via the "Open sidebar" button.                             |
+| `newContact(page)`             | Create a fresh contact and land on its card (opens straight in edit mode). Opens the sidebar first on phones.                                              |
+| `openAppearancePopover(page)`  | Enter edit mode, then tap the avatar to open the Photo / Colour / Icon popover. Verified against `ContactAppearancePopover.tsx`.                           |
+| `openPhotoCropper(page, img)`  | Open the appearance popover and upload an image to open the circle cropper. `img` defaults to a bundled PWA icon, so a recipe needs no fixture of its own. |
+| `openSettings(page)`           | Open the Settings dialog from the side menu's footer.                                                                                                      |
+| `openSettingsTab(page, name)`  | Open Settings and switch to a named tab ("Format", "Storage", "Developer", …). The tabs are a FloatingPanel menu behind the title button, not a tab strip. |
+| `scrollSettingsToBottom(page)` | Scroll the Settings dialog's tab body to the bottom to shoot sections below the fold (scoped to the dialog, so it won't scroll the sidebar list).          |
 
 When a helper you need is missing, add it to the HELPERS block of
 `screenshot.mjs` so the next agent gets it for free (and update the
@@ -210,6 +212,30 @@ async function recipe(page) {
   await openApp(page);
   await openSettings(page);
 }
+```
+
+### "I'm designing a specific settings tab (e.g. Format)"
+
+```js
+async function recipe(page) {
+  await openApp(page);
+  await openSettingsTab(page, "Format");
+  // Sections below the fold? Reveal them:
+  await scrollSettingsToBottom(page);
+}
+```
+
+A tab whose controls start in an "off" state (a master toggle gating nested
+options) is easiest to shoot by pre-seeding the persisted settings before the
+app boots, rather than clicking toggles a modal backdrop may intercept:
+
+```js
+await page.addInitScript(() => {
+  localStorage.setItem(
+    "contacts:settings",
+    JSON.stringify({ phoneFormat: true }),
+  );
+});
 ```
 
 ### "I want both light and dark mode side-by-side"
@@ -258,12 +284,32 @@ A loop is "done" when:
 
 ## Skill self-improvement
 
-After a run:
+The script has two halves with opposite lifetimes: the **recipe** is
+per-iteration scratch (revert it when you're done — it's noise in the
+diff), but the **HELPERS block is durable and shared**. Any flow you had
+to work out — reaching a screen, dismissing an overlay, seeding a state,
+scrolling a scoped container — is something the next session in a
+_different_ area will hit too. So when a recipe needs a step that isn't a
+one-off, promote it:
 
-1. If the recipe needed a helper that wasn't in the script, add it to
-   the HELPERS block and document it in the table above. Common
-   candidates: opening the search overlay, the archive screen, the
-   namespaces manager, or seeding a specific contact state.
+- **Extract it into a named helper in the HELPERS block** (e.g.
+  `openSettingsTab`, `openSearchOverlay`), give it a doc comment that
+  records any gotcha you discovered (a selector that matched the wrong
+  element, a backdrop that ate the click), and add a row to the
+  **Available helpers** table.
+- **Leave that helper in the script when you revert the recipe.** Reverting
+  the scratch recipe should _not_ take the helper with it — the helper is
+  the reusable payoff, and it stays committed so the next session gets it
+  for free.
+- **Verify the helper before you leave it** — run the harness once through
+  the new helper so a future session isn't the one to discover it's stale.
+
+After a run, also:
+
+1. If the recipe needed a helper that wasn't in the script, follow the
+   promote-and-keep rule above. Common candidates: opening the search
+   overlay, the archive screen, the namespaces manager, a specific
+   settings tab, or seeding a specific contact state.
 2. If a real selector drifts (an aria-label changes in the i18n
    catalog), fix the helper and note it here.
 3. If a new viewport mattered for the bug (a foldable, an ultrawide, a
