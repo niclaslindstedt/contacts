@@ -70,6 +70,15 @@ in `waiting`, applies on SKIP_WAITING), `version.json`, and
 `precache-manifest.json`, under a base-derived cache id (`src/app/pwa.ts`).
 The worker serves the cached shell as the offline navigate fallback.
 
+It also generates the `manifest.webmanifest` per build rather than shipping a
+static one, because the install identity must differ per release channel. The
+`id`, `start_url`, and `scope` members are resolved against the _origin_ (not
+the manifest URL) by some engines — notably iOS Safari's "Add to Home Screen"
+— so a relative `"./"` collapses every channel onto the root app. The plugin
+pins them (and the icon `src`s) to the absolute deploy `base` and gives each
+channel a distinct tile name, so `/`, `/preview/`, and `/branch/` install as
+separate apps.
+
 Because the release/preview/branch channels share one origin (the custom domain),
 each build's base gives it a unique scope and cache id, and the root release
 passes `VITE_PWA_IGNORE_PATHS` so its worker disowns the sibling channels nested
