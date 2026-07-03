@@ -82,6 +82,17 @@ describe("buildServiceWorker ignorePaths", () => {
     );
   });
 
+  it("serves the app shell network-first so a plain tab isn't pinned to a stale build", () => {
+    // A cache-first shell reads as "the site is cached and only private mode is
+    // fresh" (the worker controls a normal browser tab too). Network-first with
+    // a `reload` fetch bypasses the HTTP cache and only falls back to the
+    // precached shell when offline.
+    expect(root).toContain(
+      'const fresh = await fetch(new Request(INDEX, { cache: "reload" }));',
+    );
+    expect(root).toContain("cache.put(INDEX, fresh.clone());");
+  });
+
   it("defaults to claiming nothing extra when no siblings are nested", () => {
     const preview = buildServiceWorker(
       cacheIdForBase("/preview/"),
