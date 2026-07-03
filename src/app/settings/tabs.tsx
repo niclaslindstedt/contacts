@@ -304,16 +304,36 @@ export function StorageTab({
   const [pass, setPass] = useState("");
   const [gateOpen, setGateOpen] = useState(false);
 
+  // A cloud backend only appears in the picker when its OAuth identifier is
+  // baked into the build — an unconfigured backend can't be connected, so we
+  // hide it rather than offer a dead option. `local` is always available.
   const backendOptions = [
     { value: "local" as const, label: t("settings.storage.backendThisDevice") },
-    { value: "dropbox" as const, label: t("settings.storage.backendDropbox") },
-    { value: "gdrive" as const, label: t("settings.storage.backendGdrive") },
+    ...(DROPBOX_APP_KEY
+      ? [
+          {
+            value: "dropbox" as const,
+            label: t("settings.storage.backendDropbox"),
+          },
+        ]
+      : []),
+    ...(GOOGLE_CLIENT_ID
+      ? [
+          {
+            value: "gdrive" as const,
+            label: t("settings.storage.backendGdrive"),
+          },
+        ]
+      : []),
   ];
 
   // The picker shows the *target* backend; an unconnected cloud pick shows its
   // Connect affordance until the OAuth flow lands.
   const [picked, setPicked] = useState(sync.backend);
   const pickedCloud = picked !== "local" ? picked : null;
+  // Unconfigured backends are hidden above, so this only fires for a backend
+  // persisted by an earlier build that had the key and this one doesn't —
+  // still worth explaining rather than leaving the picker silently stuck.
   const missingKey =
     (pickedCloud === "dropbox" && !DROPBOX_APP_KEY) ||
     (pickedCloud === "gdrive" && !GOOGLE_CLIENT_ID);
