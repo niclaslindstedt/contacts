@@ -31,9 +31,16 @@ type Props = {
     color?: string | null;
     photo?: string | null;
   }) => void;
+  // The avatar size the trigger wears. The card identity block uses `hero`;
+  // callers that want the compact trigger omit it.
+  size?: "header" | "hero";
 };
 
-export function ContactAppearancePopover({ contact, onChange }: Props) {
+export function ContactAppearancePopover({
+  contact,
+  onChange,
+  size = "header",
+}: Props) {
   const t = useT();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -62,7 +69,7 @@ export function ContactAppearancePopover({ contact, onChange }: Props) {
         onClick={() => setOpen((v) => !v)}
         className="shrink-0 cursor-pointer rounded-full hover:opacity-80"
       >
-        <Avatar contact={contact} size="header" />
+        <Avatar contact={contact} size={size} />
       </button>
 
       <FloatingPanel
