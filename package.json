@@ -1,8 +1,8 @@
 {
   "name": "contacts",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "A local-first contacts PWA built on @niclaslindstedt/oss-framework \u2014 folders, namespaces, photos, encryption, themes, achievements, and export to vCard/CSV for Outlook, iOS, and Android.",
+  "description": "A local-first contacts PWA built on @niclaslindstedt/oss-framework — folders, namespaces, photos, encryption, themes, achievements, and export to vCard/CSV for Outlook, iOS, and Android.",
   "license": "PolyForm-Noncommercial-1.0.0",
   "author": "Niclas Lindstedt <niclas@agilator.se>",
   "type": "module",
