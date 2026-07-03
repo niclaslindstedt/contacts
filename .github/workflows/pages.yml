@@ -129,8 +129,8 @@ jobs:
           # flows are PKCE, no secret), so they're supplied as repository
           # variables and injected at build time; unset -> the backend is
           # hidden from the storage picker.
-          VITE_DROPBOX_APP_KEY: ${{ vars.DROPBOX_APP_KEY }}
-          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
 
       - name: Stash production dist
         if: steps.tag.outputs.has_release == 'true'
@@ -163,8 +163,8 @@ jobs:
           # string is falsy in a GitHub Actions expression and would fall
           # through to the paths even in the release case.
           VITE_PWA_IGNORE_PATHS: ${{ steps.tag.outputs.has_release == 'false' && '/preview/,/branch/' || '' }}
-          VITE_DROPBOX_APP_KEY: ${{ vars.DROPBOX_APP_KEY }}
-          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
 
       # ---- Optional /branch/ build + persist to orphan branch ----
       - name: Stash preview dist
@@ -188,8 +188,8 @@ jobs:
         run: npm run build
         env:
           VITE_BASE: /branch/
-          VITE_DROPBOX_APP_KEY: ${{ vars.DROPBOX_APP_KEY }}
-          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
 
       - name: Persist /branch/ build to orphan branch
         if: steps.dispatch.outputs.has_dispatch == 'true'

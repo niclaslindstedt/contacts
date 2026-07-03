@@ -7,8 +7,8 @@ server and no runtime config file). Vite reads these from the environment:
 | ----------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `VITE_BASE`             | `/`       | The deploy base path. Drives asset URLs, the service-worker scope, and the precache cache id. The site is served from the custom domain (`contacts.niclaslindstedt.se`); each release channel builds at its own base: `/` (release), `/preview/` (main), `/branch/` (the on-demand branch slot).                                                                                                              |
 | `VITE_PWA_IGNORE_PATHS` | _(unset)_ | Comma-separated absolute paths the service worker must **disown** — the sibling channels nested under this build's base. Only the root release sets it (`/preview/,/branch/`); its worker's scope `/` is a prefix of the siblings, so without this it would serve the released shell in place of a preview/branch page.                                                                                       |
-| `VITE_DROPBOX_APP_KEY`  | _(unset)_ | Dropbox app key for the OAuth PKCE connect flow. Create a Dropbox app with the `files.content.write`/`files.content.read` scopes and an app folder; no secret is needed (PKCE). When unset, the Dropbox Connect button explains what's missing.                                                                                                                                                               |
-| `VITE_GOOGLE_CLIENT_ID` | _(unset)_ | Google OAuth client id for the Google Identity Services token flow (`drive.file` scope). When unset, the Google Drive Connect button explains what's missing.                                                                                                                                                                                                                                                 |
+| `VITE_DROPBOX_APP_KEY`  | _(unset)_ | Dropbox app key for the OAuth PKCE connect flow. Create a Dropbox app with the `files.content.write`/`files.content.read` scopes and an app folder; no secret is needed (PKCE). When unset, Dropbox is hidden from the storage backend picker.                                                                                                                                                                |
+| `VITE_GOOGLE_CLIENT_ID` | _(unset)_ | Google OAuth client id for the Google Identity Services token flow (`drive.file` scope). When unset, Google Drive is hidden from the storage backend picker.                                                                                                                                                                                                                                                  |
 | `VITE_SEED`             | _(unset)_ | Boot into the developer **Fake data** backend, seeded with sample contacts. `1`/`true`/`sample` loads the curated edge-case set; a number loads roughly that many contacts; `large` loads a big stress-test spread; `0` or unset starts on the real address book. In-memory only — nothing is persisted. `npm run dev` sets this to `large` by default. See [Fake data](#fake-data--seeded-dev-server) below. |
 
 Example production build:
@@ -20,9 +20,10 @@ VITE_GOOGLE_CLIENT_ID=1234-abc.apps.googleusercontent.com \
 npm run build
 ```
 
-For the GitHub Actions deploy, set `DROPBOX_APP_KEY` / `GOOGLE_CLIENT_ID` as
-repository **variables** (they are public identifiers, not secrets) and the
-deploy workflows pass them through.
+For the GitHub Actions deploy, set `VITE_DROPBOX_APP_KEY` /
+`VITE_GOOGLE_CLIENT_ID` as repository **variables** (they are public
+identifiers, not secrets) and the deploy workflows pass them through under the
+same names.
 
 ## Fake data / seeded dev server
 
