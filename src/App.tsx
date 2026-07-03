@@ -265,6 +265,7 @@ export function App() {
           <ContactScreen
             store={store}
             sync={sync}
+            settings={settings}
             onOpenSyncDetails={() => setSyncDetailsOpen(true)}
             // Suppress pull-to-refresh while a sidebar drag owns the pointer,
             // and while the phone drawer covers the screen.

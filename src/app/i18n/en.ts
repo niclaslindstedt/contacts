@@ -194,6 +194,7 @@ export const en = {
     tabs: {
       general: "General",
       appearance: "Appearance",
+      format: "Format",
       storage: "Storage",
       developer: "Developer",
       logs: "Logs",
@@ -217,6 +218,36 @@ export const en = {
         "Reveal the Developer tab with diagnostic tools. Stays on this device.",
       optionSwipe: "Right-swipe",
       optionButton: "Floating button",
+    },
+    format: {
+      intro:
+        "How dates, phone numbers, and postal codes are displayed on your cards. These change the display only — what you typed is stored untouched.",
+      previewLabel: "Sample:",
+      dateTitle: "Date format",
+      dateHint: "How the birthday date is shown.",
+      phoneTitle: "Phone number format",
+      phoneHint:
+        "How saved phone numbers are shown. Editing a number reveals exactly what you typed.",
+      zipTitle: "Postal code format",
+      zipHint: "How postal / ZIP codes are grouped.",
+      date: {
+        iso: "ISO",
+        us: "US",
+        eu: "European",
+        long: "Long",
+      },
+      phone: {
+        raw: "As entered",
+        international: "International",
+        national: "National",
+        e164: "E.164",
+      },
+      zip: {
+        raw: "As entered",
+        us5: "US 5-digit",
+        us9: "US ZIP+4",
+        spaced: "Grouped",
+      },
     },
     storage: {
       intro:

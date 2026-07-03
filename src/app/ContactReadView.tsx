@@ -15,6 +15,8 @@ import {
   PhoneIcon,
 } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
+import { formatDate, formatPhoneValue } from "./format.ts";
+import type { AppSettings } from "./useAppSettings.ts";
 import type { Contact } from "./types.ts";
 
 // The default view when a contact is opened: its information laid out to be
@@ -24,9 +26,12 @@ import type { Contact } from "./types.ts";
 // empty one gets a gentle nudge toward the pencil.
 export function ContactReadView({
   contact,
+  settings,
   onEdit,
 }: {
   contact: Contact;
+  // The app settings — supply the phone and date display formats.
+  settings: AppSettings;
   // Jump straight into edit mode — used by the empty-card call to action.
   onEdit: () => void;
 }) {
@@ -68,7 +73,7 @@ export function ContactReadView({
                 href={`tel:${phone.value.replace(/\s+/g, "")}`}
                 icon={<PhoneIcon className="h-4 w-4" />}
                 label={t("contact.phone")}
-                value={phone.value}
+                value={formatPhoneValue(phone.value, settings.phoneFormat)}
               />
             ))}
             {emails.map((email) => (
@@ -98,7 +103,7 @@ export function ContactReadView({
               <InfoRow
                 icon={<CalendarIcon className="h-4 w-4" />}
                 label={t("contact.birthday")}
-                value={formatBirthday(birthday)}
+                value={formatDate(birthday, settings.dateFormat)}
               />
             )}
             {address && (
@@ -188,18 +193,4 @@ function IconBadge({ children }: { children: ReactNode }) {
       {children}
     </span>
   );
-}
-
-// Render an ISO `YYYY-MM-DD` birthday as a long, locale-formatted date; fall
-// back to the raw string if it isn't a plain calendar date.
-function formatBirthday(iso: string): string {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-  if (!m) return iso;
-  const date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
 }

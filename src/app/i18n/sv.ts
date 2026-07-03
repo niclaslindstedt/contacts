@@ -190,6 +190,7 @@ export const sv: Catalog = {
     tabs: {
       general: "Allmänt",
       appearance: "Utseende",
+      format: "Format",
       storage: "Lagring",
       developer: "Utvecklare",
       logs: "Loggar",
@@ -213,6 +214,36 @@ export const sv: Catalog = {
         "Visa Utvecklare-fliken med diagnostikverktyg. Stannar på den här enheten.",
       optionSwipe: "Högersvep",
       optionButton: "Flytande knapp",
+    },
+    format: {
+      intro:
+        "Hur datum, telefonnummer och postnummer visas på dina kort. Detta ändrar bara visningen — det du skrev sparas oförändrat.",
+      previewLabel: "Exempel:",
+      dateTitle: "Datumformat",
+      dateHint: "Hur födelsedagen visas.",
+      phoneTitle: "Telefonnummerformat",
+      phoneHint:
+        "Hur sparade telefonnummer visas. När du redigerar ett nummer visas exakt det du skrev.",
+      zipTitle: "Postnummerformat",
+      zipHint: "Hur postnummer grupperas.",
+      date: {
+        iso: "ISO",
+        us: "USA",
+        eu: "Europeiskt",
+        long: "Långt",
+      },
+      phone: {
+        raw: "Som angivet",
+        international: "Internationellt",
+        national: "Nationellt",
+        e164: "E.164",
+      },
+      zip: {
+        raw: "Som angivet",
+        us5: "USA 5 siffror",
+        us9: "USA ZIP+4",
+        spaced: "Grupperat",
+      },
     },
     storage: {
       intro:

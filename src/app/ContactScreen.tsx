@@ -20,6 +20,7 @@ import { contactToVCard, exportFileStem } from "./export.ts";
 import { downloadText, MIME_VCARD } from "./download.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { SyncEngine } from "./useSyncEngine.ts";
+import type { AppSettings } from "./useAppSettings.ts";
 import type { Contact } from "./types.ts";
 import { displayName } from "./types.ts";
 
@@ -31,12 +32,15 @@ import { displayName } from "./types.ts";
 export function ContactScreen({
   store,
   sync,
+  settings,
   onOpenSyncDetails,
   pullEnabled = true,
 }: {
   store: ContactStore;
   // The app's sync engine — drives the header `SyncStatus` glyph.
   sync: SyncEngine;
+  // The app settings — the read view formats dates and phone numbers with them.
+  settings: AppSettings;
   // Open the framework `SyncDetailsModal` (mounted by the app shell).
   onOpenSyncDetails: () => void;
   // Gate the pull-to-refresh gesture. The shell drops this to false while a
@@ -68,6 +72,7 @@ export function ContactScreen({
         contact={activeContact}
         updateContact={updateContact}
         sync={sync}
+        settings={settings}
         onOpenSyncDetails={onOpenSyncDetails}
       />
     </div>
@@ -81,11 +86,13 @@ function ContactCard({
   contact,
   updateContact,
   sync,
+  settings,
   onOpenSyncDetails,
 }: {
   contact: Contact;
   updateContact: (id: string, patch: Partial<Contact>) => void;
   sync: SyncEngine;
+  settings: AppSettings;
   onOpenSyncDetails: () => void;
 }) {
   const t = useT();
@@ -172,7 +179,11 @@ function ContactCard({
         {editing ? (
           <ContactEditView contact={contact} updateContact={updateContact} />
         ) : (
-          <ContactReadView contact={contact} onEdit={() => setEditing(true)} />
+          <ContactReadView
+            contact={contact}
+            settings={settings}
+            onEdit={() => setEditing(true)}
+          />
         )}
       </div>
     </>
