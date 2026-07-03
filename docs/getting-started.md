@@ -29,8 +29,10 @@ On first launch you land in the **Personal** namespace with one blank card.
 
 Settings → **Format**: pick how dates, phone numbers, and postal codes are
 shown. Dates (the birthday) render as ISO, US, European, or a long `3 July 2026`
-form; phone numbers as entered, international, national, or compact E.164; postal
-codes as entered, a US 5-digit ZIP, US ZIP+4, or a grouped `123 45` style. Each
+form; phone numbers as entered, international, national, Swedish (a leading `0`
+trunk prefix, e.g. `076 811 256`), or compact E.164; postal codes as entered, a
+US 5-digit ZIP, US ZIP+4, the Swedish five-digit `xxx xx` form, or a grouped
+`123 45` style. Each
 picker previews your choice with a live sample. These change the display only —
 what you typed is stored untouched, and focusing a phone field reveals the raw
 value for editing.

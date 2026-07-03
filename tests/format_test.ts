@@ -76,6 +76,14 @@ describe("formatPhone", () => {
     expect(formatPhone(parsed, "national")).toBe("812 345 678");
   });
 
+  it("adds the leading 0 trunk prefix for the Swedish style", () => {
+    // A country-code number is dialled nationally with a single leading 0.
+    expect(formatPhone(parsed, "swedish")).toBe("081 234 567 8");
+    // A bare local number keeps its single leading 0, never doubling it.
+    expect(formatPhoneValue("076811256", "swedish")).toBe("076 811 256");
+    expect(formatPhoneValue("+46768112567", "swedish")).toBe("076 811 256 7");
+  });
+
   it("compacts to a separator-free E.164 string", () => {
     expect(formatPhone(parsed, "e164")).toBe("+46812345678");
   });
@@ -111,6 +119,14 @@ describe("formatZip", () => {
   it("renders ZIP+4 when there are enough digits", () => {
     expect(formatZip("123456789", "us9")).toBe("12345-6789");
     expect(formatZip("12345", "us9")).toBe("12345");
+  });
+
+  it("renders the five-digit Swedish 'xxx xx' form", () => {
+    expect(formatZip("12345", "se")).toBe("123 45");
+    expect(formatZip("123 45", "se")).toBe("123 45");
+    // Extra digits are clamped to five; a short draft stays untouched.
+    expect(formatZip("123456789", "se")).toBe("123 45");
+    expect(formatZip("12", "se")).toBe("12");
   });
 
   it("splits the last two digits for the spaced style", () => {
