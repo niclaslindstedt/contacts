@@ -4,9 +4,10 @@
 // it inside the circle with zoom/pan and bakes the visible region to a square
 // *display* JPEG (`bakeCircleCrop`). The display JPEG is what the avatar and
 // the vCard export read; the source is kept so the crop can be re-adjusted, and
-// on a cloud backend it is externalised to a real file at a deterministic path
-// (`photoPathFor`) — the `dataUrl`⇄`bytes` seam below is what the externaliser
-// moves across (see `photoStore.ts`).
+// on a cloud backend both are externalised to real binary JPEG files at
+// deterministic paths (`photoPathFor` / `photoSourcePathFor`) — the
+// `dataUrl`⇄`bytes` seam below is what the externaliser decodes across so what
+// lands on the drive is image bytes, not base64 text (see `photoStore.ts`).
 //
 // The transform math is resolution-independent (see `PhotoTransform`): the same
 // framing renders in the cropper's viewport and bakes at the output size from
@@ -118,22 +119,37 @@ export async function bakeCircleCrop(
 
 // --- deterministic file path -------------------------------------------------
 
-/** The file path a contact's original is externalised to on a cloud backend:
- *  `photos/<name-slug>-<id>.jpg`. Built from the display name (reusing the
- *  export filename slug) and the stable id, so it is deterministic, unique
- *  across name collisions, and easy to find in the drive. */
-export function photoPathFor(contact: {
+/** A contact reference the deterministic photo paths are built from. */
+type PhotoNamed = {
   id: string;
   firstName?: string;
   lastName?: string;
   company?: string;
-}): string {
+};
+
+/** The file path a contact's *display* crop is externalised to on a cloud
+ *  backend: `photos/<name-slug>-<id>.jpg`. Built from the display name (reusing
+ *  the export filename slug) and the stable id, so it is deterministic, unique
+ *  across name collisions, and — as a real binary JPEG — easy to preview in the
+ *  drive. */
+export function photoPathFor(contact: PhotoNamed): string {
+  return `photos/${photoStem(contact)}.jpg`;
+}
+
+/** The file path a contact's larger *source* original is externalised to:
+ *  `photos/<name-slug>-<id>-source.jpg`. Sits beside the display crop so a
+ *  fresh device can re-open the cropper on the original. */
+export function photoSourcePathFor(contact: PhotoNamed): string {
+  return `photos/${photoStem(contact)}-source.jpg`;
+}
+
+function photoStem(contact: PhotoNamed): string {
   const stem = exportFileStem({
     firstName: contact.firstName ?? "",
     lastName: contact.lastName ?? "",
     company: contact.company,
   } as Contact);
-  return `photos/${stem}-${contact.id}.jpg`;
+  return `${stem}-${contact.id}`;
 }
 
 // --- data URL ⇄ bytes (the externalisation seam) -----------------------------
