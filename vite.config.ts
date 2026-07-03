@@ -50,17 +50,32 @@ const buildNumber = process.env.GITHUB_RUN_NUMBER ?? "dev";
 
 const here = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
-// The app's released version, surfaced in the side menu's About dropdown.
+// The app's released version, the base of the About dropdown's build label.
 const appVersion = (
   JSON.parse(readFileSync(here("./package.json"), "utf8")) as {
     version: string;
   }
 ).version;
 
+// The build identifier shown in the side menu's About dropdown. Shape:
+// `<version>[.<run>][-<slot>][+<commit>]` — `<run>` is the CI run number,
+// `<slot>` is `pre` for the `/preview/` deploy and `br` for `/branch/`
+// (omitted for the production `/` build), and `<commit>` is the short
+// commit hash as semver build metadata. A local build collapses to just
+// `<version>`. Mirrors the checklist reference app's BUILD_LABEL.
+const buildSlot =
+  base === "/preview/" ? "pre" : base === "/branch/" ? "br" : "";
+const buildLabel =
+  appVersion +
+  (process.env.GITHUB_RUN_NUMBER ? `.${process.env.GITHUB_RUN_NUMBER}` : "") +
+  (buildSlot ? `-${buildSlot}` : "") +
+  (process.env.GITHUB_SHA ? `+${process.env.GITHUB_SHA.slice(0, 7)}` : "");
+
 export default defineConfig({
   base,
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
+    __BUILD_LABEL__: JSON.stringify(buildLabel),
     __BUILD_COMMIT__: JSON.stringify(commit),
     __BUILD_NUMBER__: JSON.stringify(buildNumber),
   },
