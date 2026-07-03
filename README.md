@@ -85,6 +85,9 @@ Enter — and start filling in the card.
   emails, addresses, and notes (`*`/`?` wildcards, `/regex/`).
 - **Export** — the download button in the card header (single vCard) or
   Settings → Storage (all contacts as `.vcf`, CSV, or JSON).
+- **Import** — drag a `.vcf` (or CSV / JSON backup) straight onto the contact
+  screen — handy for dropping a card shared out of the iOS Contacts app — or
+  pick a file from Settings → Storage. See [`docs/features/export.md`](docs/features/export.md).
 - **Sync** — Settings → Storage: connect Dropbox or Google Drive; the cloud
   glyph in the card header shows the save state and opens the sync command
   centre.

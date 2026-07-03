@@ -14,6 +14,14 @@ export const en = {
     clear: "Clear",
     resetToDefaults: "Reset to defaults",
   },
+  import: {
+    // The drag-and-drop import overlay + result banner.
+    dropTitle: "Drop to import contacts",
+    dropHint: "vCard (.vcf), CSV, or a JSON backup",
+    done: "Imported {n} contacts",
+    doneOne: "Imported 1 contact",
+    none: "No contacts found in that file",
+  },
   menu: {
     namespaces: "Namespaces",
     switchToNamespace: "Switch to {name}",
@@ -324,6 +332,10 @@ export const en = {
       gateDeriving: "Checking your passphrase…",
       gateDecrypting: "Decrypting your contacts…",
       gateWrong: "Wrong passphrase. Try again.",
+      importTitle: "Import",
+      importIntro:
+        "Bring contacts in from another address book. Choose a file — or drag one straight onto the contact screen. vCard (.vcf) from iOS/Android/Outlook, an Outlook-style CSV, and the app's own JSON backup all work; several files can be imported at once.",
+      importChoose: "Choose a file…",
       exportTitle: "Export",
       exportIntro:
         "Take your contacts anywhere. vCard imports directly into Outlook, iOS, and Android/Google Contacts; CSV matches Outlook's import columns; JSON is the app's own backup format.",

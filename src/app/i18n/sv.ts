@@ -11,6 +11,13 @@ export const sv: Catalog = {
     clear: "Rensa",
     resetToDefaults: "Återställ till standard",
   },
+  import: {
+    dropTitle: "Släpp för att importera kontakter",
+    dropHint: "vCard (.vcf), CSV eller en JSON-säkerhetskopia",
+    done: "Importerade {n} kontakter",
+    doneOne: "Importerade 1 kontakt",
+    none: "Inga kontakter hittades i filen",
+  },
   menu: {
     namespaces: "Namnrymder",
     switchToNamespace: "Byt till {name}",
@@ -321,6 +328,10 @@ export const sv: Catalog = {
       gateDeriving: "Kontrollerar din lösenfras…",
       gateDecrypting: "Dekrypterar dina kontakter…",
       gateWrong: "Fel lösenfras. Försök igen.",
+      importTitle: "Importera",
+      importIntro:
+        "Hämta in kontakter från en annan adressbok. Välj en fil — eller dra en direkt till kontaktskärmen. vCard (.vcf) från iOS/Android/Outlook, en CSV i Outlook-stil och appens egen JSON-säkerhetskopia fungerar alla; flera filer kan importeras samtidigt.",
+      importChoose: "Välj en fil…",
       exportTitle: "Exportera",
       exportIntro:
         "Ta med dina kontakter vart som helst. vCard importeras direkt i Outlook, iOS och Android/Google Kontakter; CSV matchar Outlooks importkolumner; JSON är appens eget säkerhetskopieringsformat.",

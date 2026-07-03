@@ -35,6 +35,7 @@ import {
 
 import { ArchiveScreen } from "./app/ArchiveScreen.tsx";
 import { ContactScreen } from "./app/ContactScreen.tsx";
+import { ImportDropZone } from "./app/ImportDropZone.tsx";
 import { RELEASES, FEATURE_DOCS } from "./app/changelog.ts";
 import { SearchOverlay } from "./app/SearchOverlay.tsx";
 import { SettingsModal } from "./app/SettingsModal.tsx";
@@ -270,19 +271,24 @@ export function App() {
       </Sidebar>
 
       <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-        {view === "archive" ? (
-          <ArchiveScreen store={store} />
-        ) : (
-          <ContactScreen
-            store={store}
-            sync={sync}
-            settings={settings}
-            onOpenSyncDetails={() => setSyncDetailsOpen(true)}
-            // Suppress pull-to-refresh while a sidebar drag owns the pointer,
-            // and while the phone drawer covers the screen.
-            pullEnabled={!sidebarDragging && (pinned || !drawerOpen)}
-          />
-        )}
+        {/* Drag a `.vcf` (or CSV / JSON) onto the main area to import — the
+            drop reads the cards and files them into the address book. Wraps
+            both views so a drop lands whether the card or the archive shows. */}
+        <ImportDropZone store={store}>
+          {view === "archive" ? (
+            <ArchiveScreen store={store} />
+          ) : (
+            <ContactScreen
+              store={store}
+              sync={sync}
+              settings={settings}
+              onOpenSyncDetails={() => setSyncDetailsOpen(true)}
+              // Suppress pull-to-refresh while a sidebar drag owns the pointer,
+              // and while the phone drawer covers the screen.
+              pullEnabled={!sidebarDragging && (pinned || !drawerOpen)}
+            />
+          )}
+        </ImportDropZone>
       </main>
 
       <SettingsModal
