@@ -32,4 +32,7 @@ interface ImportMetaEnv {
   // Google OAuth client id (GIS token client). Unset hides the Google Drive
   // storage backend. See `src/app/useSyncEngine.ts`.
   readonly VITE_GOOGLE_CLIENT_ID?: string;
+  // Donate link target for the side-menu footer's Donate row. Unset falls back
+  // to the project's GitHub Sponsors page. See `src/app/SideMenuContent.tsx`.
+  readonly VITE_DONATE_URL?: string;
 }

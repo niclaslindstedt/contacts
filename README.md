@@ -105,6 +105,7 @@ see [docs/configuration.md](docs/configuration.md):
 | ----------------------- | ----------------------------------------------------------------------- |
 | `VITE_DROPBOX_APP_KEY`  | Dropbox app key (PKCE flow, no secret)                                  |
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth client id (GIS token flow)                                 |
+| `VITE_DONATE_URL`       | Donate link target (defaults to the project's GitHub Sponsors page)     |
 | `VITE_BASE`             | Deploy base path — `/` (release), `/preview/` (main), `/branch/` (slot) |
 
 ## Examples

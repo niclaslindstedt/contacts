@@ -146,6 +146,7 @@ jobs:
           VITE_PWA_IGNORE_PATHS: /preview/,/branch/
           VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          VITE_DONATE_URL: ${{ vars.VITE_DONATE_URL }}
 
       - name: Commit + tag
         env:
