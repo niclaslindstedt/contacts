@@ -5,19 +5,58 @@
 // namespace persists. Contacts are stored as JSON (see `migrations.ts` for the
 // on-disk versioning) and export as vCard / CSV (see `export.ts`).
 
-/** One phone number on a contact card. `label` is a free-form tag ("mobile",
- *  "work"); it maps onto the vCard TEL TYPE on export. */
+/** The type of a phone number or email address. A contact method is either a
+ *  personal ("private") one or a work one — the two the edit form's type
+ *  selector offers. Stored in the row's `label`; `methodKind` reads it back,
+ *  folding any legacy free-form label ("mobile", "home", …) onto these two. */
+export type ContactMethodKind = "private" | "work";
+
+/** Normalise a stored `label` to one of the two contact-method kinds. Anything
+ *  that isn't explicitly "work" reads as "private" — so a legacy "mobile" /
+ *  "home" / "personal" label, and an absent one, all show as Private. */
+export function methodKind(label: string | undefined): ContactMethodKind {
+  return (label ?? "").trim().toLowerCase() === "work" ? "work" : "private";
+}
+
+/** One phone number on a contact card. `label` carries the {@link
+ *  ContactMethodKind} ("private" / "work"); it maps onto the vCard TEL TYPE on
+ *  export. */
 export type Phone = {
   id: string;
   value: string;
   label?: string;
 };
 
-/** One email address on a contact card. */
+/** One email address on a contact card. `label` carries the {@link
+ *  ContactMethodKind}, the same way a phone's does. */
 export type Email = {
   id: string;
   value: string;
   label?: string;
+};
+
+/** One postal address on a contact card. A card can hold several — a home, a
+ *  cabin, a workplace — each with a free-text `label` ("Home", "Cabin",
+ *  "Work"). Any of the three structured parts (see `address.ts`) may be absent. */
+export type Address = {
+  id: string;
+  /** Free-text title for the address ("Home", "Cabin", "Work"). */
+  label?: string;
+  street?: string;
+  zip?: string;
+  city?: string;
+};
+
+/** One important date on a contact card, beyond the birthday — a name day, an
+ *  anniversary, whatever the card's owner wants to be reminded of. `label` is
+ *  free text ("Anniversary", "Name day"); `date` is a full ISO `YYYY-MM-DD`
+ *  when the year is known, or a bare `MM-DD` when it isn't (see
+ *  `importantDates.ts`). Tapping the date in the read view hands a yearly
+ *  reminder — titled "{label} {name}" — to the device calendar. */
+export type ImportantDate = {
+  id: string;
+  label?: string;
+  date: string;
 };
 
 /** How a contact photo is framed inside the circle — the Facebook-style
@@ -40,13 +79,17 @@ export type Contact = {
   company?: string;
   phones: Phone[];
   emails: Email[];
-  /** Postal address, split into street / postal code / city (see
-   *  `address.ts`). Any part may be absent. */
-  street?: string;
-  zip?: string;
-  city?: string;
-  /** ISO date (`YYYY-MM-DD`). */
+  /** Postal addresses, each split into street / postal code / city (see
+   *  `address.ts`) and titled with a free-text label. A card may carry none,
+   *  one, or several. */
+  addresses: Address[];
+  /** The birthday, kept as its own field so it can drive the age readout and
+   *  the vCard `BDAY`. Always a full ISO date (`YYYY-MM-DD`). Other notable
+   *  dates live in `importantDates`. */
   birthday?: string;
+  /** Extra notable dates — name days, anniversaries, … — each with its own
+   *  free-text label. Separate from `birthday`, which stays special. */
+  importantDates: ImportantDate[];
   notes?: string;
   /** The contact's face, shown everywhere the avatar appears: the baked
    *  circular-crop square JPEG data URI (see `photo.ts`), or absent. Small

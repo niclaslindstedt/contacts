@@ -203,6 +203,8 @@ export function useContactStore(
         ...splitFullName(fullName),
         phones: [],
         emails: [],
+        addresses: [],
+        importantDates: [],
         folderId,
       };
       commit({

@@ -17,6 +17,8 @@ const doc: AppData = {
       lastName: "Lovelace",
       phones: [{ id: "p1", value: "+46701234567" }],
       emails: [],
+      addresses: [],
+      importantDates: [],
       folderId: "f1",
     },
   ],
@@ -47,7 +49,7 @@ describe("serializeDoc / parseDoc", () => {
     expect(upgraded.activeContactId).toBe("x");
   });
 
-  it("splits a legacy free-form address into street / zip / city", () => {
+  it("carries a legacy free-form address forward into the addresses array", () => {
     const legacy = JSON.stringify({
       version: 1,
       folders: [],
@@ -65,12 +67,60 @@ describe("serializeDoc / parseDoc", () => {
       activeContactId: "c1",
     });
     const upgraded = parseDoc(legacy);
-    expect(upgraded.contacts[0]).toMatchObject({
-      street: "Main St 1",
-      zip: "111 22",
-      city: "Stockholm",
+    const contact = upgraded.contacts[0]!;
+    // v1→v2 split the blob into parts; v2→v3 moved them into the first address.
+    expect(contact.addresses).toEqual([
+      {
+        id: "c1-address",
+        street: "Main St 1",
+        zip: "111 22",
+        city: "Stockholm",
+      },
+    ]);
+    expect(contact.importantDates).toEqual([]);
+    expect("street" in contact).toBe(false);
+    expect("address" in contact).toBe(false);
+  });
+
+  it("folds a v2 flat address into addresses and seeds importantDates", () => {
+    const v2 = JSON.stringify({
+      version: 2,
+      folders: [],
+      contacts: [
+        {
+          id: "c1",
+          firstName: "Ada",
+          lastName: "Lovelace",
+          phones: [],
+          emails: [],
+          folderId: null,
+          street: "Main St 1",
+          zip: "111 22",
+          city: "Stockholm",
+        },
+        // A contact with no address at all still gets both empty arrays.
+        {
+          id: "c2",
+          firstName: "Bo",
+          lastName: "Ek",
+          phones: [],
+          emails: [],
+          folderId: null,
+        },
+      ],
+      activeContactId: "c1",
     });
-    expect("address" in upgraded.contacts[0]!).toBe(false);
+    const upgraded = parseDoc(v2);
+    expect(upgraded.contacts[0]!.addresses).toEqual([
+      {
+        id: "c1-address",
+        street: "Main St 1",
+        zip: "111 22",
+        city: "Stockholm",
+      },
+    ]);
+    expect(upgraded.contacts[1]!.addresses).toEqual([]);
+    expect(upgraded.contacts[1]!.importantDates).toEqual([]);
   });
 
   it("normalises a wiped or malformed file into an empty document", () => {

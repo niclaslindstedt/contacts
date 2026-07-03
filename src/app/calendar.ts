@@ -11,6 +11,7 @@
 // already-translated event title so this module stays free of the i18n runtime.
 
 import { parseBirthday } from "./birthday.ts";
+import { parseFlexDate } from "./importantDates.ts";
 
 /** Escape a text value per RFC 5545 §3.3.11: backslash, semicolon, comma,
  *  newline. */
@@ -75,19 +76,85 @@ export function birthdayIcs(opts: {
     endDate.getMonth() + 1,
     endDate.getDate(),
   );
+  return vcalendar({
+    prodId: "-//contacts//birthday//EN",
+    uid: opts.uid,
+    start,
+    end,
+    summary: opts.summary,
+    now: opts.now,
+  });
+}
+
+/** One important date as an importable `.ics` calendar, the same yearly all-day
+ *  event shape as `birthdayIcs` but for a flexible date (`types.ts`): a full ISO
+ *  `YYYY-MM-DD`, or a bare `MM-DD` with no year. A yearless date is anchored on
+ *  its next occurrence from `now`, so the reminder starts in the future and then
+ *  recurs every year on the same month/day. Returns null when the value isn't a
+ *  real date. `summary` is the (already translated and name-woven) title — e.g.
+ *  "Anniversary Sarah Connor". */
+export function dateEventIcs(opts: {
+  value: string;
+  summary: string;
+  uid: string;
+  now: Date;
+}): string | null {
+  const p = parseFlexDate(opts.value);
+  if (!p) return null;
+  // A yearless date has no natural anchor year; start it at the next occurrence
+  // so the first reminder lands in the future. A dated one anchors on its year.
+  let year = p.y;
+  if (year === null) {
+    year = opts.now.getFullYear();
+    const thisYear = new Date(year, p.m - 1, p.d);
+    const today = new Date(
+      opts.now.getFullYear(),
+      opts.now.getMonth(),
+      opts.now.getDate(),
+    );
+    if (thisYear.getTime() < today.getTime()) year += 1;
+  }
+  const start = icsDate(year, p.m, p.d);
+  const endDate = new Date(year, p.m - 1, p.d + 1);
+  const end = icsDate(
+    endDate.getFullYear(),
+    endDate.getMonth() + 1,
+    endDate.getDate(),
+  );
+  return vcalendar({
+    prodId: "-//contacts//important-date//EN",
+    uid: opts.uid,
+    start,
+    end,
+    summary: opts.summary,
+    now: opts.now,
+  });
+}
+
+/** Wrap a single yearly all-day VEVENT in a VCALENDAR envelope. Shared by the
+ *  birthday and important-date renderers, which differ only in their PRODID and
+ *  how they derive the start/end dates. */
+function vcalendar(opts: {
+  prodId: string;
+  uid: string;
+  start: string;
+  end: string;
+  summary: string;
+  now: Date;
+}): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//contacts//birthday//EN",
+    `PRODID:${opts.prodId}`,
     "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
     `UID:${icsEscape(opts.uid)}`,
     `DTSTAMP:${icsStamp(opts.now)}`,
-    `DTSTART;VALUE=DATE:${start}`,
-    `DTEND;VALUE=DATE:${end}`,
+    `DTSTART;VALUE=DATE:${opts.start}`,
+    `DTEND;VALUE=DATE:${opts.end}`,
     "RRULE:FREQ=YEARLY",
     `SUMMARY:${icsEscape(opts.summary)}`,
-    // A birthday shouldn't mark you busy.
+    // These reminders shouldn't mark you busy.
     "TRANSP:TRANSPARENT",
     "END:VEVENT",
     "END:VCALENDAR",

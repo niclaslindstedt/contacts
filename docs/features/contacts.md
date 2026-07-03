@@ -1,19 +1,34 @@
 # Contact cards
 
 Every contact is a card: a name, any number of phone numbers and email
-addresses, a company, a postal address (street, postal code, city), a birthday,
+addresses (each typed **Private** or **Work**), a company, any number of postal
+addresses (each with a free-text title), a birthday, other important dates,
 notes, and a photo.
 
 - **Read mode by default.** Opening a contact shows it laid out to be read —
   the avatar and name lead the card, phone numbers and emails become tap-to-call
   and tap-to-email links, and the details and notes render as plain, legible
   text. Only the parts a card actually carries are shown.
-- **Tap the address for a map.** In read mode the address is a link — tapping it
-  hands the address off to your maps app (or opens Google Maps in the browser).
+- **Private / work types.** Each phone number and email address carries a type —
+  Private or Work — chosen from a small dropdown in edit mode. The type is shown
+  as the row's label in read mode and maps onto the standard vCard TYPE on
+  export.
+- **Several titled addresses.** A card can hold more than one postal address — a
+  home, a cabin, a workplace. Each has a free-text **Title** (defaulting to the
+  "Home" placeholder) over the street / postal code / city fields. In read mode
+  each address is a link — tapping it hands the address off to your maps app (or
+  opens Google Maps in the browser).
 - **Birthday at a glance.** The birthday row shows a countdown chip — "Today",
   "Tomorrow", or "in N days" until the next one — and tapping the date reveals
   the contact's current age. Tapping the countdown chip hands the birthday off
   to your calendar app as an all-day event that recurs every year.
+- **Other important dates.** Beyond the birthday, add any number of important
+  dates — a name day, an anniversary — each with a free-text occasion. A date can
+  be a full date (month, day, and year) or **day and month only** (leave the year
+  blank). Like the birthday, each shows a countdown chip; tapping it hands a
+  yearly reminder to your calendar, titled with the occasion and the contact's
+  name (e.g. "Anniversary Sarah Connor"). When a date carries a year, tapping it
+  reveals how many years have passed.
 - **Edit with the pencil.** The pencil in the toolbar flips the card into edit
   mode; the check flips it back. In edit mode, tap the name to rename and fill in
   the field form. Every field commits when you leave it, and each committed edit

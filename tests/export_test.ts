@@ -16,6 +16,8 @@ function card(overrides: Partial<Contact> = {}): Contact {
     lastName: "Lovelace",
     phones: [],
     emails: [],
+    addresses: [],
+    importantDates: [],
     folderId: null,
     ...overrides,
   };
@@ -50,11 +52,56 @@ describe("contactToVCard", () => {
     expect(v).toContain("NOTE:line one\\nsemi\\; comma\\, back\\\\slash");
   });
 
-  it("writes a structured ADR from street / city / zip", () => {
+  it("tags emails with their private / work type", () => {
     const v = contactToVCard(
-      card({ street: "Main St 1", zip: "111 22", city: "Stockholm" }),
+      card({
+        emails: [
+          { id: "e1", value: "me@home.example", label: "private" },
+          { id: "e2", value: "me@work.example", label: "work" },
+        ],
+      }),
+    );
+    expect(v).toContain("EMAIL;TYPE=INTERNET,HOME:me@home.example");
+    expect(v).toContain("EMAIL;TYPE=INTERNET,WORK:me@work.example");
+  });
+
+  it("writes one structured ADR per address, typed by its title", () => {
+    const v = contactToVCard(
+      card({
+        addresses: [
+          {
+            id: "a1",
+            label: "Home",
+            street: "Main St 1",
+            zip: "111 22",
+            city: "Stockholm",
+          },
+          {
+            id: "a2",
+            label: "Work",
+            street: "Office Rd 5",
+            city: "Gothenburg",
+          },
+        ],
+      }),
     );
     expect(v).toContain("ADR;TYPE=HOME:;;Main St 1;Stockholm;;111 22;");
+    expect(v).toContain("ADR;TYPE=WORK:;;Office Rd 5;Gothenburg;;;");
+  });
+
+  it("exports full-date important dates as grouped X-ABDATE items", () => {
+    const v = contactToVCard(
+      card({
+        importantDates: [
+          { id: "d1", label: "Anniversary", date: "2010-06-15" },
+          // A yearless date can't ride a vCard 3.0 date property — it's skipped.
+          { id: "d2", label: "Name day", date: "05-20" },
+        ],
+      }),
+    );
+    expect(v).toContain("item1.X-ABDATE;VALUE=DATE:2010-06-15");
+    expect(v).toContain("item1.X-ABLABEL:Anniversary");
+    expect(v).not.toContain("05-20");
   });
 
   it("embeds a data-URI photo as a base64 PHOTO line", () => {

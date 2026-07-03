@@ -11,6 +11,8 @@ function card(overrides: Partial<Contact>): Contact {
     lastName: "",
     phones: [],
     emails: [],
+    addresses: [],
+    importantDates: [],
     folderId: null,
     ...overrides,
   };
@@ -25,6 +27,15 @@ const data: AppData = {
       lastName: "Lovelace",
       phones: [{ id: "p1", value: "+46 70 123 45 67" }],
       emails: [{ id: "e1", value: "ada@analytical.engine" }],
+      addresses: [
+        {
+          id: "a1",
+          label: "Cabin",
+          street: "Ferndown Cottage",
+          city: "Ashdown",
+        },
+      ],
+      importantDates: [{ id: "d1", label: "Anniversary", date: "1835-07-08" }],
       notes: "Met at the difference engine meetup.",
     }),
     card({ id: "bo", firstName: "Bo", lastName: "Ek", archived: true }),
@@ -49,6 +60,18 @@ describe("runSearch", () => {
       /^email-/,
     );
     expect(runSearch(data, "meetup").results[0]!.fields[0]!.key).toBe("notes");
+  });
+
+  it("matches an address title / parts and an important date", () => {
+    expect(runSearch(data, "Ferndown").results[0]!.fields[0]!.key).toMatch(
+      /^address-/,
+    );
+    expect(runSearch(data, "Cabin").results[0]!.fields[0]!.key).toMatch(
+      /^address-/,
+    );
+    expect(runSearch(data, "Anniversary").results[0]!.fields[0]!.key).toMatch(
+      /^date-/,
+    );
   });
 
   it("skips archived contacts", () => {

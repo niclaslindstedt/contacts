@@ -26,7 +26,9 @@ export const DATE_FORMATS: readonly DateFormat[] = [
   "long",
 ] as const;
 
-const MONTHS_EN = [
+/** English month names, index 0 = January. Shared with the important-date
+ *  formatter so its "long" form matches the birthday's. */
+export const MONTHS_EN = [
   "January",
   "February",
   "March",

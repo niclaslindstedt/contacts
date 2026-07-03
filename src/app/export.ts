@@ -14,8 +14,9 @@
 // (Blob + anchor click) lives in `download.ts`.
 
 import { formatAddress, hasAddress } from "./address.ts";
+import { parseFlexDate } from "./importantDates.ts";
 import type { Contact } from "./types.ts";
-import { displayName } from "./types.ts";
+import { displayName, methodKind } from "./types.ts";
 
 // --- vCard -------------------------------------------------------------------
 
@@ -69,19 +70,37 @@ export function contactToVCard(c: Contact): string {
   }
   for (const e of c.emails) {
     if (e.value.trim()) {
-      lines.push(`EMAIL;TYPE=INTERNET:${vEscape(e.value)}`);
+      const type = methodKind(e.label) === "work" ? "WORK" : "HOME";
+      lines.push(`EMAIL;TYPE=INTERNET,${type}:${vEscape(e.value)}`);
     }
   }
-  if (hasAddress(c)) {
-    // ADR fields, in RFC 2426 order: PO box; extended; street; city; region;
-    // postal code; country. We carry street, city, and postal code.
-    lines.push(
-      `ADR;TYPE=HOME:;;${vEscape(c.street ?? "")};${vEscape(
-        c.city ?? "",
-      )};;${vEscape(c.zip ?? "")};`,
-    );
+  for (const a of c.addresses) {
+    if (hasAddress(a)) {
+      // ADR fields, in RFC 2426 order: PO box; extended; street; city; region;
+      // postal code; country. We carry street, city, and postal code. The
+      // free-text title maps onto the closest standard TYPE (WORK / HOME).
+      const type =
+        (a.label ?? "").trim().toLowerCase() === "work" ? "WORK" : "HOME";
+      lines.push(
+        `ADR;TYPE=${type}:;;${vEscape(a.street ?? "")};${vEscape(
+          a.city ?? "",
+        )};;${vEscape(a.zip ?? "")};`,
+      );
+    }
   }
   if (c.birthday?.trim()) lines.push(`BDAY:${vEscape(c.birthday)}`);
+  // Extra dates ride as Apple-style grouped X-ABDATE / X-ABLABEL items, which
+  // iOS/macOS Contacts restore under their title. Only full (year-known) dates
+  // export — vCard 3.0 has no clean yearless date.
+  let item = 0;
+  for (const d of c.importantDates) {
+    const p = parseFlexDate(d.date);
+    if (!p || p.y === null) continue;
+    item += 1;
+    const g = `item${item}`;
+    lines.push(`${g}.X-ABDATE;VALUE=DATE:${vEscape(d.date)}`);
+    lines.push(`${g}.X-ABLABEL:${vEscape(d.label?.trim() || "Date")}`);
+  }
   if (c.notes?.trim()) lines.push(`NOTE:${vEscape(c.notes)}`);
   const photo = photoPayload(c.photo);
   if (photo) lines.push(`PHOTO;ENCODING=b;TYPE=${photo.type}:${photo.base64}`);
@@ -130,16 +149,22 @@ function csvField(value: string): string {
   return value;
 }
 
-function phoneFor(c: Contact, kind: "mobile" | "home" | "work"): string {
-  const byLabel = c.phones.find(
-    (p) => (p.label ?? "").toLowerCase() === (kind === "work" ? "work" : kind),
-  );
-  if (byLabel) return byLabel.value;
-  // Unlabelled numbers fill the mobile column, first come first served.
-  if (kind === "mobile") {
-    return c.phones.find((p) => !p.label)?.value ?? c.phones[0]?.value ?? "";
+function phoneFor(c: Contact, column: "mobile" | "home" | "work"): string {
+  // Work-kind numbers fill the Business column. A legacy "home" label still
+  // routes to the Home column; everything else (private / mobile / unlabelled)
+  // fills the Mobile column, so nothing is silently dropped on export.
+  const isHome = (label: string | undefined) =>
+    (label ?? "").trim().toLowerCase() === "home";
+  if (column === "work") {
+    return c.phones.find((p) => methodKind(p.label) === "work")?.value ?? "";
   }
-  return "";
+  if (column === "home") {
+    return c.phones.find((p) => isHome(p.label))?.value ?? "";
+  }
+  return (
+    c.phones.find((p) => methodKind(p.label) !== "work" && !isHome(p.label))
+      ?.value ?? ""
+  );
 }
 
 /** All contacts as an Outlook-compatible CSV. */
@@ -154,7 +179,7 @@ export function contactsToCsv(contacts: readonly Contact[]): string {
       phoneFor(c, "work"),
       c.emails[0]?.value ?? "",
       c.emails[1]?.value ?? "",
-      formatAddress(c),
+      formatAddress(c.addresses.find(hasAddress) ?? {}),
       c.birthday ?? "",
       c.notes ?? "",
     ]

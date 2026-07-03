@@ -15,12 +15,22 @@
 //
 // The dataset leans deliberately into the awkward: nameless (company-only)
 // cards, first/last-name-only cards, very long strings, unicode / emoji / RTL,
-// many phones and emails, leap-day and far-past/future birthdays, and every
-// phone / postal-code style the Format tab can render. Everything here is
+// many phones and emails (private and work), several titled addresses (home,
+// cabin, work), important dates both dated and yearless, leap-day and
+// far-past/future birthdays, and every phone / postal-code style the Format tab
+// can render. Everything here is
 // deterministic (no `Math.random`, no clock) so the same seed always builds
 // the same document — reproducible bug reports, stable tests.
 
-import type { AppData, Contact, Email, Folder, Phone } from "../types.ts";
+import type {
+  Address,
+  AppData,
+  Contact,
+  Email,
+  Folder,
+  ImportantDate,
+  Phone,
+} from "../types.ts";
 
 /** How much fake data to build: the curated `"sample"` set, or that set plus
  *  enough generated cards to reach roughly N contacts (a number), with
@@ -151,6 +161,8 @@ function sequencer(prefix: string): () => string {
 function curatedContacts(): Contact[] {
   const ph = sequencer("seed-ph");
   const em = sequencer("seed-em");
+  const ad = sequencer("seed-ad");
+  const dt = sequencer("seed-dt");
   const phone = (value: string, label?: string): Phone => ({
     id: ph(),
     value,
@@ -160,6 +172,11 @@ function curatedContacts(): Contact[] {
     id: em(),
     value,
     ...(label ? { label } : {}),
+  });
+  const address = (a: Omit<Address, "id">): Address => ({ id: ad(), ...a });
+  const date = (d: Omit<ImportantDate, "id">): ImportantDate => ({
+    id: dt(),
+    ...d,
   });
 
   return [
@@ -171,17 +188,37 @@ function curatedContacts(): Contact[] {
       lastName: "Lovelace",
       company: "Analytical Engines Ltd",
       phones: [
-        phone("+46 8 123 45 67", "mobile"),
+        phone("+46 8 123 45 67", "private"),
         phone("+44 20 7946 0958", "work"),
       ],
       emails: [
-        email("ada@example.com", "personal"),
+        email("ada@example.com", "private"),
         email("a.lovelace@analytical.example", "work"),
       ],
-      street: "12 Marylebone Rd",
-      zip: "12345-6789",
-      city: "London",
+      addresses: [
+        address({
+          label: "Home",
+          street: "12 Marylebone Rd",
+          zip: "12345-6789",
+          city: "London",
+        }),
+        address({
+          label: "Cabin",
+          street: "Ferndown Cottage",
+          city: "Ashdown Forest",
+        }),
+        address({
+          label: "Work",
+          street: "5 Devonshire St",
+          zip: "W1G 7AB",
+          city: "London",
+        }),
+      ],
       birthday: "1815-12-10",
+      importantDates: [
+        date({ label: "Anniversary", date: "1835-07-08" }),
+        date({ label: "Name day", date: "12-01" }),
+      ],
       notes: "First programmer. Prefers letters to phone calls.",
       photo: PIXEL_PHOTO,
       glyph: "star",
@@ -195,9 +232,10 @@ function curatedContacts(): Contact[] {
       firstName: "",
       lastName: "",
       company: "Globex Corporation",
-      phones: [phone("+1 (555) 010-0100", "reception")],
-      emails: [email("hello@globex.example")],
-      city: "Springfield",
+      phones: [phone("+1 (555) 010-0100", "work")],
+      emails: [email("hello@globex.example", "work")],
+      addresses: [address({ label: "Head office", city: "Springfield" })],
+      importantDates: [],
       folderId: FLD_WORK,
       glyph: "building",
       color: "#93c5fd",
@@ -209,6 +247,8 @@ function curatedContacts(): Contact[] {
       lastName: "",
       phones: [phone("555-0142")],
       emails: [],
+      addresses: [],
+      importantDates: [date({ label: "Name day", date: "05-20" })],
       folderId: null,
     },
     // Last name only (a formal "Dr. …" with no given name recorded).
@@ -219,6 +259,8 @@ function curatedContacts(): Contact[] {
       company: "St Thomas' Hospital",
       phones: [],
       emails: [email("ward@example.org", "work")],
+      addresses: [],
+      importantDates: [],
       glyph: "cross",
       color: "#fca5a5",
       folderId: FLD_WORK,
@@ -230,15 +272,27 @@ function curatedContacts(): Contact[] {
       lastName: "Featherstonehaugh-Vandermeer",
       company:
         "The Extraordinarily Long Company Name for Testing Layout Overflow, Incorporated",
-      phones: [phone("+1 (555) 111-2222", "this is an unusually long label")],
+      phones: [phone("+1 (555) 111-2222", "work")],
       emails: [
         email(
           "an.extremely.long.email.address.for.wrapping@some.very.long.subdomain.example.com",
         ),
       ],
-      street: "1000 Really Long Boulevard of Broken Layouts, Suite 4000",
-      zip: "99950",
-      city: "A City With A Remarkably Long Name Upon The River",
+      addresses: [
+        address({
+          label:
+            "A Remarkably Long Address Title That Also Has To Wrap Gracefully",
+          street: "1000 Really Long Boulevard of Broken Layouts, Suite 4000",
+          zip: "99950",
+          city: "A City With A Remarkably Long Name Upon The River",
+        }),
+      ],
+      importantDates: [
+        date({
+          label: "An unusually long important-date label for wrapping tests",
+          date: "03-14",
+        }),
+      ],
       notes:
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do " +
         "eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim " +
@@ -256,6 +310,8 @@ function curatedContacts(): Contact[] {
       company: "会社 🏢",
       phones: [phone("+81 3-1234-5678", "携帯")],
       emails: [email("test@example.jp")],
+      addresses: [],
+      importantDates: [date({ label: "記念日 🎌", date: "2011-03-11" })],
       notes: "Emoji 🎉🚀 and mixed scripts: Ελληνικά, Русский, 中文.",
       folderId: FLD_FAMILY,
       glyph: "gift",
@@ -267,7 +323,8 @@ function curatedContacts(): Contact[] {
       lastName: "الأحمد",
       phones: [phone("+20 2 1234 5678")],
       emails: [email("mohammed@example.eg")],
-      city: "القاهرة",
+      addresses: [address({ label: "المنزل", city: "القاهرة" })],
+      importantDates: [],
       folderId: null,
     },
     // Many phones and many emails — the field lists at their tallest.
@@ -293,6 +350,20 @@ function curatedContacts(): Contact[] {
         email("p@ex.io"),
         email("polly@subdomain.example.co.uk", "uk"),
       ],
+      addresses: [
+        address({ label: "Home", street: "1 Rotary Way", city: "Dialtown" }),
+        address({ label: "Cabin", city: "Lakeside" }),
+        address({
+          label: "Work",
+          street: "9 Exchange Plaza",
+          city: "Dialtown",
+        }),
+      ],
+      importantDates: [
+        date({ label: "Anniversary", date: "1998-06-06" }),
+        date({ label: "Name day", date: "09-15" }),
+        date({ label: "Work start", date: "2015-08-01" }),
+      ],
       folderId: FLD_WORK,
       glyph: "person",
       color: "#5eead4",
@@ -304,7 +375,10 @@ function curatedContacts(): Contact[] {
       lastName: "Yearsley",
       phones: [],
       emails: [],
+      addresses: [],
       birthday: "2000-02-29",
+      // A yearless important date that also lands on the leap day.
+      importantDates: [date({ label: "Name day", date: "02-29" })],
       notes: "Born on a leap day — only has a 'real' birthday every 4 years.",
       folderId: FLD_FAMILY,
       glyph: "gift",
@@ -316,7 +390,9 @@ function curatedContacts(): Contact[] {
       lastName: "Elder",
       phones: [],
       emails: [],
+      addresses: [],
       birthday: "1900-01-01",
+      importantDates: [],
       folderId: null,
     },
     {
@@ -325,7 +401,9 @@ function curatedContacts(): Contact[] {
       lastName: "Child",
       phones: [],
       emails: [],
+      addresses: [],
       birthday: "2099-12-31",
+      importantDates: [],
       folderId: FLD_FAMILY,
     },
     // Postal-code variety — the shapes each country's Format renderer handles.
@@ -335,9 +413,15 @@ function curatedContacts(): Contact[] {
       lastName: "Svensson",
       phones: [phone("+46 8 555 123")],
       emails: [],
-      street: "Storgatan 1",
-      zip: "11122",
-      city: "Stockholm",
+      addresses: [
+        address({
+          label: "Home",
+          street: "Storgatan 1",
+          zip: "11122",
+          city: "Stockholm",
+        }),
+      ],
+      importantDates: [],
       folderId: null,
       glyph: "home",
       color: "#86efac",
@@ -348,9 +432,15 @@ function curatedContacts(): Contact[] {
       lastName: "Zipcode",
       phones: [],
       emails: [],
-      street: "742 Evergreen Terrace",
-      zip: "902100000",
-      city: "Los Angeles",
+      addresses: [
+        address({
+          label: "Home",
+          street: "742 Evergreen Terrace",
+          zip: "902100000",
+          city: "Los Angeles",
+        }),
+      ],
+      importantDates: [],
       folderId: null,
     },
     // A photo card — exercises the avatar's image path over the glyph fallback.
@@ -358,8 +448,10 @@ function curatedContacts(): Contact[] {
       id: "seed-c-photo",
       firstName: "Photo",
       lastName: "Person",
-      phones: [phone("+1 555-0199", "mobile")],
-      emails: [email("photo@example.com")],
+      phones: [phone("+1 555-0199", "private")],
+      emails: [email("photo@example.com", "private")],
+      addresses: [],
+      importantDates: [],
       photo: PIXEL_PHOTO,
       folderId: FLD_FAMILY,
     },
@@ -371,6 +463,8 @@ function curatedContacts(): Contact[] {
       lastName: "",
       phones: [],
       emails: [],
+      addresses: [],
+      importantDates: [],
       folderId: null,
     },
     // Archived cards: one inside the archived folder, one standalone. Both stay
@@ -380,8 +474,10 @@ function curatedContacts(): Contact[] {
       firstName: "Former",
       lastName: "Coworker",
       company: "Previous Employer AB",
-      phones: [phone("+46 8 555 999")],
-      emails: [email("former@old.example")],
+      phones: [phone("+46 8 555 999", "work")],
+      emails: [email("former@old.example", "work")],
+      addresses: [],
+      importantDates: [],
       folderId: FLD_ARCHIVED,
       archived: true,
     },
@@ -391,6 +487,8 @@ function curatedContacts(): Contact[] {
       lastName: "Standalone",
       phones: [],
       emails: [],
+      addresses: [],
+      importantDates: [],
       folderId: null,
       archived: true,
     },
@@ -413,7 +511,7 @@ function generatedContact(i: number): Contact {
           {
             id: `seed-gph-${seq}`,
             value: `+1 555-${seq}`,
-            label: i % 3 === 0 ? "work" : "mobile",
+            label: i % 3 === 0 ? "work" : "private",
           },
         ];
   const emails: Email[] =
@@ -422,11 +520,41 @@ function generatedContact(i: number): Contact {
           {
             id: `seed-gem-${seq}`,
             value: `${first.toLowerCase()}.${seq}@example.com`,
+            label: i % 2 === 0 ? "work" : "private",
           },
         ]
       : [];
 
   const folderId = i % 5 === 0 ? FLD_FAMILY : i % 5 === 1 ? FLD_WORK : null;
+
+  const addresses: Address[] =
+    i % 7 === 0
+      ? [
+          {
+            id: `seed-gad-${seq}`,
+            // A spread of titles, including some yearless/second addresses.
+            label: i % 14 === 0 ? "Cabin" : "Home",
+            street: `${100 + i} Test Street`,
+            zip: String(10000 + (i % 89999)).padStart(5, "0"),
+            city: "Testville",
+          },
+        ]
+      : [];
+
+  const importantDates: ImportantDate[] =
+    i % 9 === 0
+      ? [
+          {
+            id: `seed-gdt-${seq}`,
+            label: i % 18 === 0 ? "Anniversary" : "Name day",
+            // Alternate between a full date and a yearless one.
+            date:
+              i % 18 === 0
+                ? `20${String(10 + (i % 15)).padStart(2, "0")}-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}`
+                : `${String((i % 12) + 1).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}`,
+          },
+        ]
+      : [];
 
   const contact: Contact = {
     id: `seed-gen-${seq}`,
@@ -434,17 +562,14 @@ function generatedContact(i: number): Contact {
     lastName: last,
     phones,
     emails,
+    addresses,
+    importantDates,
     folderId,
     glyph: GLYPHS[i % GLYPHS.length]!,
     color: COLORS[i % COLORS.length]!,
   };
 
   if (i % 6 === 0) contact.company = `${last} & Co`;
-  if (i % 7 === 0) {
-    contact.street = `${100 + i} Test Street`;
-    contact.zip = String(10000 + (i % 89999)).padStart(5, "0");
-    contact.city = "Testville";
-  }
   if (i % 8 === 0) {
     const month = String((i % 12) + 1).padStart(2, "0");
     const day = String((i % 28) + 1).padStart(2, "0");
