@@ -78,6 +78,15 @@ export, and formatters always have realistic input to shake out edge cases.
   so it must follow conventional-commit format.
 - Breaking changes use `<type>!:` or a `BREAKING CHANGE:` footer.
 
+### Watching a PR after you open it
+
+Don't babysit a PR with polling. **Do not** schedule `send_later`, cron jobs,
+`ScheduleWakeup`, or timed self-check-ins to re-check CI or merge state — those
+just burn turns. Open the PR, confirm the checks you can see are green, then
+stop. CI failures and review comments are delivered to the session as webhook
+events, so you'll be woken when there's actually something to act on. React to
+those events when they arrive; otherwise consider the PR handed off.
+
 ## Architecture summary
 
 This is a **frontend-only, local-first PWA** — there is no server. It is an
