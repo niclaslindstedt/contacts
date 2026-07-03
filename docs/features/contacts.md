@@ -39,7 +39,10 @@ notes, and a photo.
   circle cropper: drag to move and pinch or scroll (or drag the slider) to zoom,
   choosing exactly which part of the photo the circle shows — the rest is
   trimmed away. **Adjust** reopens the cropper at the same framing so you can
-  re-position later. In read mode, tapping the photo opens it full-screen; swipe
+  re-position later. Quicker still: **drag an image straight onto the open
+  contact** — a dashed drop zone appears over the card, and releasing opens the
+  same cropper — no need to be in edit mode first. In read mode, tapping the
+  photo opens it full-screen; swipe
   down (or press Escape) to dismiss. No photo? Pick an icon and accent colour
   instead. On a connected cloud drive the original is filed at a tidy
   `photos/<name>-<id>.jpg` path so it's easy to find — see

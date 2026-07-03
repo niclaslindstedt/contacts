@@ -13,6 +13,7 @@ import { unlock } from "@niclaslindstedt/oss-framework/achievements";
 
 import { ContactEditView } from "./ContactEditView.tsx";
 import { ContactIdentity } from "./ContactIdentity.tsx";
+import { ContactPhotoDropZone } from "./ContactPhotoDropZone.tsx";
 import { ContactReadView } from "./ContactReadView.tsx";
 import { DownloadIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
@@ -62,7 +63,14 @@ export function ContactScreen({
   if (!activeContact) return null;
 
   return (
-    <div className="relative mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-[calc(1.25rem+env(safe-area-inset-top))]">
+    // Dropping a photo anywhere on the open card sets its picture (see
+    // `ContactPhotoDropZone`) — the container is the drop target and, being
+    // `relative`, anchors the drop-zone overlay.
+    <ContactPhotoDropZone
+      contact={activeContact}
+      updateContact={updateContact}
+      className="relative mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-[calc(1.25rem+env(safe-area-inset-top))]"
+    >
       <PullToRefreshIndicator
         state={pull.state}
         pullDistance={pull.pullDistance}
@@ -77,7 +85,7 @@ export function ContactScreen({
         settings={settings}
         onOpenSyncDetails={onOpenSyncDetails}
       />
-    </div>
+    </ContactPhotoDropZone>
   );
 }
 
