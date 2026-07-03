@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { InlineEditField } from "@niclaslindstedt/oss-framework/components";
 
@@ -28,6 +28,16 @@ export function ContactIdentity({
   // Tapping the name in edit mode swaps it for an inline editor (select-all on
   // focus, so the first keystroke replaces the name); this holds that mode.
   const [editingName, setEditingName] = useState(false);
+  // The framework's InlineEditField renders a bare <input> with no
+  // autocapitalize hint. Names are proper nouns, so tell the on-screen keyboard
+  // to capitalise each word. Set it here, in a layout effect, so the attribute
+  // lands before InlineEditField's own focus effect opens the keyboard.
+  const nameEditRef = useRef<HTMLHeadingElement>(null);
+  useLayoutEffect(() => {
+    if (!editingName) return;
+    const input = nameEditRef.current?.querySelector("input");
+    input?.setAttribute("autocapitalize", "words");
+  }, [editingName]);
   // Read mode: tapping the photo opens it full-screen. Holds the shown source
   // (the original when kept, else the baked crop), or null when closed.
   const [viewing, setViewing] = useState<string | null>(null);
@@ -66,7 +76,7 @@ export function ContactIdentity({
 
       {editing ? (
         editingName ? (
-          <h1 className="w-full max-w-xs">
+          <h1 className="w-full max-w-xs" ref={nameEditRef}>
             <InlineEditField
               initial={name}
               ariaLabel={t("contact.renameContact")}

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // Generate the PWA install icons and the social-preview image from the same
-// geometry as public/icons/icon.svg — a person silhouette on the app's dark
-// surface. Pure Node (zlib + a minimal PNG encoder), so the pipeline needs no
-// native image dependencies. Rerun with `npm run icons` / `make icons` after
-// changing the mark.
+// geometry as public/icons/icon.svg — a person outline drawn as a gradient
+// stroke on the app's dark surface (the line-art style shared with the sibling
+// notes and checklist apps). Pure Node (zlib + a minimal PNG encoder), so the
+// pipeline needs no native image dependencies. Rerun with `npm run icons` /
+// `make icons` after changing the mark.
 import { deflateSync } from "node:zlib";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -13,9 +14,26 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const iconsDir = join(root, "public", "icons");
 mkdirSync(iconsDir, { recursive: true });
 
-// The app look's surface + accent (see src/app/look.ts).
+// The app look's surface (see src/app/look.ts) and the mark's blue gradient —
+// a distinct hue from the green-marked sibling apps. Kept in lockstep with the
+// <linearGradient> stops in public/icons/icon.svg.
 const BG = [11, 13, 16]; // #0b0d10
-const FG = [134, 239, 172]; // #86efac
+const GRAD_TOP = [125, 211, 252]; // #7dd3fc
+const GRAD_BOT = [59, 130, 246]; // #3b82f6
+// The gradient runs top-to-bottom over the mark's vertical extent (unit space),
+// matching the userSpaceOnUse y1=0.25 / y2=0.76 span in the SVG.
+const GRAD_Y0 = 0.25;
+const GRAD_Y1 = 0.76;
+
+// The stroke ink at unit-space height `y`, interpolated along the gradient.
+function markInk(y) {
+  const t = Math.max(0, Math.min(1, (y - GRAD_Y0) / (GRAD_Y1 - GRAD_Y0)));
+  return [
+    GRAD_TOP[0] + (GRAD_BOT[0] - GRAD_TOP[0]) * t,
+    GRAD_TOP[1] + (GRAD_BOT[1] - GRAD_TOP[1]) * t,
+    GRAD_TOP[2] + (GRAD_BOT[2] - GRAD_TOP[2]) * t,
+  ];
+}
 
 // --- minimal PNG encoder ----------------------------------------------------
 
@@ -61,15 +79,24 @@ function encodePng(width, height, rgba) {
 
 // --- the mark ----------------------------------------------------------------
 
-// Signed distance to the person silhouette in unit space (0..1): a head circle
-// over a shoulders disc clipped to its upper half. Negative = inside.
-function silhouetteDistance(x, y) {
-  const head = Math.hypot(x - 0.5, y - 0.36) - 0.155;
-  const shoulders = Math.max(
-    Math.hypot((x - 0.5) / 1.35, (y - 0.78) / 1.0) - 0.21,
-    0.585 - y, // keep only the upper half of the disc
-  );
-  return Math.min(head, shoulders);
+// Half the stroke width in unit space (SVG stroke-width 8 on the 100 viewBox).
+const STROKE_HALF = 0.04;
+
+// Whether unit-space point (x, y) lands on the person outline: a head ring over
+// an open shoulders arc with rounded ends. Mirrors the <circle>/<path> geometry
+// in public/icons/icon.svg. The shoulders live on a circle centred at
+// (0.5, 0.781) r=0.231; only its upper arc (down to y≈0.76) is drawn, capped by
+// discs at the two endpoints so the ends read as round.
+function inStroke(x, y) {
+  const head = Math.abs(Math.hypot(x - 0.5, y - 0.38) - 0.13);
+  if (head < STROKE_HALF) return true;
+  if (y <= 0.767) {
+    const shoulders = Math.abs(Math.hypot(x - 0.5, y - 0.781) - 0.231);
+    if (shoulders < STROKE_HALF) return true;
+  }
+  if (Math.hypot(x - 0.27, y - 0.76) < STROKE_HALF) return true;
+  if (Math.hypot(x - 0.73, y - 0.76) < STROKE_HALF) return true;
+  return false;
 }
 
 // Render size×size RGBA. `pad` insets the mark (maskable icons need a safe
@@ -85,22 +112,20 @@ function renderIcon(size, { pad = 0.12, radius = 0.2 } = {}) {
       const dy = Math.max(r - py, py - (size - 1 - r), 0);
       const outside = Math.hypot(dx, dy) - r;
       const bgAlpha = Math.max(0, Math.min(1, 0.5 - outside));
-      // Silhouette coverage in padded unit space, 2×2 supersampled.
+      // Stroke coverage in padded unit space, 3×3 supersampled for smooth
+      // edges on the thin outline. The gradient ink is sampled at the pixel's
+      // own height so the stroke shades top-to-bottom.
       let hit = 0;
-      for (const [ox, oy] of [
-        [0.25, 0.25],
-        [0.75, 0.25],
-        [0.25, 0.75],
-        [0.75, 0.75],
-      ]) {
-        const ux = (px + ox) / size;
-        const uy = (py + oy) / size;
-        const sx = (ux - pad) / (1 - 2 * pad);
-        const sy = (uy - pad) / (1 - 2 * pad);
-        if (silhouetteDistance(sx, sy) < 0) hit += 0.25;
+      for (const oy of [1 / 6, 0.5, 5 / 6]) {
+        for (const ox of [1 / 6, 0.5, 5 / 6]) {
+          const sx = ((px + ox) / size - pad) / (1 - 2 * pad);
+          const sy = ((py + oy) / size - pad) / (1 - 2 * pad);
+          if (inStroke(sx, sy)) hit += 1 / 9;
+        }
       }
       const [br, bg2, bb] = BG;
-      const [fr, fg2, fb] = FG;
+      const sy = ((py + 0.5) / size - pad) / (1 - 2 * pad);
+      const [fr, fg2, fb] = markInk(sy);
       rgba[i] = Math.round(br + (fr - br) * hit);
       rgba[i + 1] = Math.round(bg2 + (fg2 - bg2) * hit);
       rgba[i + 2] = Math.round(bb + (fb - bb) * hit);
@@ -119,6 +144,8 @@ function renderOg() {
   const markSize = 440;
   const markX = 120;
   const markY = (h - markSize) / 2;
+  // The row bars pick up a mid-gradient accent so they sit with the mark.
+  const BAR = markInk(0.5);
   const rows = [
     { x: 640, y: 200, w: 380, h: 26, a: 1 },
     { x: 640, y: 260, w: 300, h: 18, a: 0.55 },
@@ -130,7 +157,7 @@ function renderOg() {
     for (let px = 0; px < w; px++) {
       const i = (py * w + px) * 4;
       let [cr, cg, cb] = BG;
-      // The silhouette.
+      // The person outline, drawn with the same gradient stroke as the icons.
       if (
         px >= markX &&
         px < markX + markSize &&
@@ -139,7 +166,7 @@ function renderOg() {
       ) {
         const sx = (px - markX) / markSize;
         const sy = (py - markY) / markSize;
-        if (silhouetteDistance(sx, sy) < 0) [cr, cg, cb] = FG;
+        if (inStroke(sx, sy)) [cr, cg, cb] = markInk(sy).map(Math.round);
       }
       // The row bars.
       for (const rrow of rows) {
@@ -149,9 +176,9 @@ function renderOg() {
           py >= rrow.y &&
           py < rrow.y + rrow.h
         ) {
-          cr = Math.round(BG[0] + (FG[0] - BG[0]) * rrow.a);
-          cg = Math.round(BG[1] + (FG[1] - BG[1]) * rrow.a);
-          cb = Math.round(BG[2] + (FG[2] - BG[2]) * rrow.a);
+          cr = Math.round(BG[0] + (BAR[0] - BG[0]) * rrow.a);
+          cg = Math.round(BG[1] + (BAR[1] - BG[1]) * rrow.a);
+          cb = Math.round(BG[2] + (BAR[2] - BG[2]) * rrow.a);
         }
       }
       rgba[i] = cr;
