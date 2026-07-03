@@ -184,6 +184,17 @@ export const sv: Catalog = {
     addDateToCalendar: "Lägg till påminnelse i kalendern",
     notes: "Anteckningar",
     notesPlaceholder: "Något värt att minnas…",
+    // Autoarkivering: ett schema som lägger undan kontakten av sig själv.
+    autoArchive: "Autoarkivering",
+    autoArchiveToggle: "Lägg undan kontakten automatiskt",
+    autoArchiveHint:
+      "Välj ett datum så städar kortet undan sig självt — smidigt för ett ställe du bara behöver ett tag, som en pizzeria du la till inför en resa.",
+    autoArchiveDate: "Detta datum",
+    autoArchiveAction: "Sedan",
+    autoArchiveArchive: "Arkivera",
+    autoArchiveDelete: "Ta bort",
+    autoArchiveArchivesOn: "Arkiveras {date}",
+    autoArchiveDeletesOn: "Tas bort {date}",
     archive: "Arkivera kontakt",
     delete: "Ta bort kontakt",
   },

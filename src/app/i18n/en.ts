@@ -187,6 +187,17 @@ export const en = {
     addDateToCalendar: "Add reminder to calendar",
     notes: "Notes",
     notesPlaceholder: "Anything worth remembering…",
+    // Auto-archive: a self-filing schedule on the card.
+    autoArchive: "Auto-archive",
+    autoArchiveToggle: "File this contact away automatically",
+    autoArchiveHint:
+      "Pick a date and this card tidies itself away — handy for a place you only need for a while, like a pizzeria added for a trip.",
+    autoArchiveDate: "On this date",
+    autoArchiveAction: "Then",
+    autoArchiveArchive: "Archive",
+    autoArchiveDelete: "Delete",
+    autoArchiveArchivesOn: "Archives itself on {date}",
+    autoArchiveDeletesOn: "Deletes itself on {date}",
     archive: "Archive contact",
     delete: "Delete contact",
   },

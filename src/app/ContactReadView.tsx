@@ -2,11 +2,14 @@
 import { useState, type ReactNode } from "react";
 
 import {
+  ArchiveIcon,
   Button,
   PencilIcon,
   Section,
+  TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
 
+import { autoArchiveAction } from "./autoArchive.ts";
 import { addressLines, hasAddress, mapsUrl } from "./address.ts";
 import { ageOn, daysUntilBirthday } from "./birthday.ts";
 import { birthdayIcs, dateEventIcs } from "./calendar.ts";
@@ -66,11 +69,22 @@ export function ContactReadView({
   const addresses = contact.addresses.filter(hasAddress);
   const dates = contact.importantDates.filter((d) => isValidFlexDate(d.date));
   const notes = contact.notes?.trim();
+  // A valid, full-ISO auto-archive date drives the schedule banner; a
+  // half-typed value stays hidden until it's a real date.
+  const autoArchiveDate = contact.autoArchiveDate?.trim();
+  const scheduled =
+    autoArchiveDate && /^\d{4}-\d{2}-\d{2}$/.test(autoArchiveDate)
+      ? autoArchiveDate
+      : null;
 
   const hasContactMethods = phones.length > 0 || emails.length > 0;
   const hasDetails = !!company || !!birthday || dates.length > 0;
   const isEmpty =
-    !hasContactMethods && !hasDetails && addresses.length === 0 && !notes;
+    !hasContactMethods &&
+    !hasDetails &&
+    addresses.length === 0 &&
+    !notes &&
+    !scheduled;
 
   if (isEmpty) {
     return (
@@ -167,6 +181,55 @@ export function ContactReadView({
           </p>
         </Section>
       )}
+
+      {scheduled && (
+        <Section title={t("contact.autoArchive")}>
+          <AutoArchiveRow
+            iso={scheduled}
+            action={autoArchiveAction(contact)}
+            settings={settings}
+          />
+        </Section>
+      )}
+    </div>
+  );
+}
+
+// The read-view banner for a scheduled self-filing: an icon that matches the
+// outcome (archive box vs trash), the date it fires on, and a one-line note of
+// what will happen then. Only shown when the contact carries a valid schedule.
+function AutoArchiveRow({
+  iso,
+  action,
+  settings,
+}: {
+  iso: string;
+  action: "archive" | "delete";
+  settings: AppSettings;
+}) {
+  const t = useT();
+  const date = formatDate(iso, settings.dateFormat);
+  return (
+    <div className="flex items-start gap-3 px-2 py-2">
+      <IconBadge>
+        {action === "delete" ? (
+          <TrashIcon className="h-4 w-4" />
+        ) : (
+          <ArchiveIcon className="h-4 w-4" />
+        )}
+      </IconBadge>
+      <span className="flex min-w-0 flex-col">
+        <span className="text-xs text-muted">
+          {action === "delete"
+            ? t("contact.autoArchiveDelete")
+            : t("contact.autoArchiveArchive")}
+        </span>
+        <span className="text-sm text-fg">
+          {action === "delete"
+            ? t("contact.autoArchiveDeletesOn", { date })
+            : t("contact.autoArchiveArchivesOn", { date })}
+        </span>
+      </span>
     </div>
   );
 }

@@ -180,6 +180,21 @@ export function App() {
     status("App started");
   }, []);
 
+  // File away contacts whose auto-archive date has arrived (see
+  // `autoArchive.ts`). Runs when the app opens and whenever a namespace switch
+  // or fake-data takeover swaps in a fresh document, so a card scheduled to
+  // self-archive or self-destruct while the app was closed tidies itself on the
+  // next visit. The sweep is a no-op when nothing is due, so it never stacks an
+  // empty undo step or loops.
+  const sweepAutoArchive = store.sweepAutoArchive;
+  useEffect(() => {
+    sweepAutoArchive();
+    // Keyed on the active document (slug + backend), not on `sweepAutoArchive`
+    // itself — the callback's identity changes on every edit, and re-sweeping
+    // then would be redundant.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ns.activeSlug, backend]);
+
   // The achievements trophy, seated as a row at the foot of the sidebar (or
   // nothing when achievements are switched off).
   const trophyRow = achievementsEnabled ? (
