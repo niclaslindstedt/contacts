@@ -13,6 +13,7 @@
 // is unit-testable in node (see `tests/export_test.ts`). The download glue
 // (Blob + anchor click) lives in `download.ts`.
 
+import { formatAddress, hasAddress } from "./address.ts";
 import type { Contact } from "./types.ts";
 import { displayName } from "./types.ts";
 
@@ -71,10 +72,14 @@ export function contactToVCard(c: Contact): string {
       lines.push(`EMAIL;TYPE=INTERNET:${vEscape(e.value)}`);
     }
   }
-  if (c.address?.trim()) {
-    // The whole free-form address rides in the street slot; importers show it
-    // verbatim rather than us guessing at a street/city/zip split.
-    lines.push(`ADR;TYPE=HOME:;;${vEscape(c.address)};;;;`);
+  if (hasAddress(c)) {
+    // ADR fields, in RFC 2426 order: PO box; extended; street; city; region;
+    // postal code; country. We carry street, city, and postal code.
+    lines.push(
+      `ADR;TYPE=HOME:;;${vEscape(c.street ?? "")};${vEscape(
+        c.city ?? "",
+      )};;${vEscape(c.zip ?? "")};`,
+    );
   }
   if (c.birthday?.trim()) lines.push(`BDAY:${vEscape(c.birthday)}`);
   if (c.notes?.trim()) lines.push(`NOTE:${vEscape(c.notes)}`);
@@ -149,7 +154,7 @@ export function contactsToCsv(contacts: readonly Contact[]): string {
       phoneFor(c, "work"),
       c.emails[0]?.value ?? "",
       c.emails[1]?.value ?? "",
-      c.address ?? "",
+      formatAddress(c),
       c.birthday ?? "",
       c.notes ?? "",
     ]

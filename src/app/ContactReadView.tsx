@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import {
   Button,
@@ -7,6 +7,8 @@ import {
   Section,
 } from "@niclaslindstedt/oss-framework/components";
 
+import { addressLines, hasAddress, mapsUrl } from "./address.ts";
+import { ageOn, daysUntilBirthday } from "./birthday.ts";
 import {
   BuildingIcon,
   CalendarIcon,
@@ -15,9 +17,11 @@ import {
   PhoneIcon,
 } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
-import { formatDate, formatPhoneValue } from "./format.ts";
+import { formatDate, formatPhoneValue, formatZip } from "./format.ts";
 import type { AppSettings } from "./useAppSettings.ts";
 import type { Contact } from "./types.ts";
+
+type Translate = ReturnType<typeof useT>;
 
 // The default view when a contact is opened: its information laid out to be
 // read, not edited. Phone numbers and emails become tap-to-act links; the
@@ -41,11 +45,11 @@ export function ContactReadView({
   const emails = contact.emails.filter((e) => e.value.trim());
   const company = contact.company?.trim();
   const birthday = contact.birthday?.trim();
-  const address = contact.address?.trim();
+  const address = hasAddress(contact);
   const notes = contact.notes?.trim();
 
   const hasContactMethods = phones.length > 0 || emails.length > 0;
-  const hasDetails = !!company || !!birthday || !!address;
+  const hasDetails = !!company || !!birthday || address;
   const isEmpty = !hasContactMethods && !hasDetails && !notes;
 
   if (isEmpty) {
@@ -99,21 +103,8 @@ export function ContactReadView({
                 value={company}
               />
             )}
-            {birthday && (
-              <InfoRow
-                icon={<CalendarIcon className="h-4 w-4" />}
-                label={t("contact.birthday")}
-                value={formatDate(birthday, settings.dateFormat)}
-              />
-            )}
-            {address && (
-              <InfoRow
-                icon={<MapPinIcon className="h-4 w-4" />}
-                label={t("contact.address")}
-                value={address}
-                multiline
-              />
-            )}
+            {birthday && <BirthdayRow iso={birthday} settings={settings} />}
+            {address && <AddressRow contact={contact} settings={settings} />}
           </div>
         </Section>
       )}
@@ -159,29 +150,23 @@ function ActionRow({
   );
 }
 
-// A read-only detail (company / birthday / address): same shape as an action
-// row, but the value is plain text — nothing to tap.
+// A read-only detail (the company row): same shape as an action row, but the
+// value is plain text — nothing to tap.
 function InfoRow({
   icon,
   label,
   value,
-  multiline = false,
 }: {
   icon: ReactNode;
   label: string;
   value: string;
-  multiline?: boolean;
 }) {
   return (
     <div className="flex items-start gap-3 px-2 py-2">
       <IconBadge>{icon}</IconBadge>
       <span className="flex min-w-0 flex-col">
         <span className="text-xs text-muted">{label}</span>
-        <span
-          className={`text-sm text-fg ${multiline ? "whitespace-pre-line" : "truncate"}`}
-        >
-          {value}
-        </span>
+        <span className="truncate text-sm text-fg">{value}</span>
       </span>
     </div>
   );
@@ -192,5 +177,101 @@ function IconBadge({ children }: { children: ReactNode }) {
     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted">
       {children}
     </span>
+  );
+}
+// The birthday row. Reads as a date (in the chosen date format), wears a "days
+// until" countdown chip, and taps to reveal the contact's current age — the two
+// things the raw date can't say at a glance. When today *is* the birthday the
+// chip celebrates instead of counting.
+function BirthdayRow({
+  iso,
+  settings,
+}: {
+  iso: string;
+  settings: AppSettings;
+}) {
+  const t = useT();
+  const [showAge, setShowAge] = useState(false);
+  const now = new Date();
+  const age = ageOn(iso, now);
+  const days = daysUntilBirthday(iso, now);
+
+  return (
+    <button
+      type="button"
+      onClick={() => setShowAge((v) => !v)}
+      aria-pressed={showAge}
+      title={t("contact.showAge")}
+      className="group flex w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-surface-2"
+    >
+      <IconBadge>
+        <CalendarIcon className="h-4 w-4" />
+      </IconBadge>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="text-xs text-muted">{t("contact.birthday")}</span>
+        <span className="truncate text-sm text-fg">
+          {showAge && age !== null
+            ? t("contact.ageValue", { n: String(age) })
+            : formatDate(iso, settings.dateFormat)}
+        </span>
+      </span>
+      {days !== null && (
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+            days === 0
+              ? "bg-accent/15 text-accent"
+              : "bg-surface-2 text-muted group-hover:bg-surface-1"
+          }`}
+        >
+          {countdownLabel(days, t)}
+        </span>
+      )}
+    </button>
+  );
+}
+
+// Turn a days-until count into a short chip label: today, tomorrow, or "in N
+// days".
+function countdownLabel(days: number, t: Translate): string {
+  if (days === 0) return t("contact.birthdayToday");
+  if (days === 1) return t("contact.birthdayTomorrow");
+  return t("contact.birthdayInDays", { n: String(days) });
+}
+
+// The address row. Same shape as an action row — the whole row is a link — but
+// it opens the address in a maps app rather than dialling or composing. The
+// postal code is shown in the chosen zip format; the maps query keeps the raw
+// address so the lookup stays accurate.
+function AddressRow({
+  contact,
+  settings,
+}: {
+  contact: Contact;
+  settings: AppSettings;
+}) {
+  const t = useT();
+  const lines = addressLines({
+    street: contact.street,
+    zip: formatZip(contact.zip ?? "", settings.zipFormat),
+    city: contact.city,
+  });
+  return (
+    <a
+      href={mapsUrl(contact)}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={t("contact.openMaps")}
+      className="group flex items-start gap-3 rounded-md px-2 py-2 hover:bg-surface-2"
+    >
+      <IconBadge>
+        <MapPinIcon className="h-4 w-4" />
+      </IconBadge>
+      <span className="flex min-w-0 flex-col">
+        <span className="text-xs text-muted">{t("contact.address")}</span>
+        <span className="text-sm whitespace-pre-line text-accent group-hover:underline">
+          {lines.join("\n")}
+        </span>
+      </span>
+    </a>
   );
 }

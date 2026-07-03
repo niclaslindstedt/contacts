@@ -5,6 +5,7 @@ import {
   type MatchRange,
 } from "@niclaslindstedt/oss-framework/search";
 
+import { formatAddress } from "./address.ts";
 import type { AppData } from "./types.ts";
 import { displayName } from "./types.ts";
 
@@ -75,7 +76,7 @@ export function runSearch(data: AppData, raw: string): SearchOutcome {
     tryField("company", contact.company);
     for (const p of contact.phones) tryField(`phone-${p.id}`, p.value);
     for (const e of contact.emails) tryField(`email-${e.id}`, e.value);
-    tryField("address", contact.address);
+    tryField("address", formatAddress(contact));
 
     // Notes can be long — clip the hit to a focused window.
     if (contact.notes) {

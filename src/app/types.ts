@@ -28,8 +28,11 @@ export type Contact = {
   company?: string;
   phones: Phone[];
   emails: Email[];
-  /** Free-form postal address (multi-line). */
-  address?: string;
+  /** Postal address, split into street / postal code / city (see
+   *  `address.ts`). Any part may be absent. */
+  street?: string;
+  zip?: string;
+  city?: string;
   /** ISO date (`YYYY-MM-DD`). */
   birthday?: string;
   notes?: string;

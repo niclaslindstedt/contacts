@@ -50,6 +50,13 @@ describe("contactToVCard", () => {
     expect(v).toContain("NOTE:line one\\nsemi\\; comma\\, back\\\\slash");
   });
 
+  it("writes a structured ADR from street / city / zip", () => {
+    const v = contactToVCard(
+      card({ street: "Main St 1", zip: "111 22", city: "Stockholm" }),
+    );
+    expect(v).toContain("ADR;TYPE=HOME:;;Main St 1;Stockholm;;111 22;");
+  });
+
   it("embeds a data-URI photo as a base64 PHOTO line", () => {
     const v = contactToVCard(
       card({ photo: "data:image/jpeg;base64,aGVsbG8=" }),

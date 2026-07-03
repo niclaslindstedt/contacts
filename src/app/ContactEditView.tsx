@@ -68,12 +68,23 @@ export function ContactEditView({
             onCommit={(birthday) => updateContact(contact.id, { birthday })}
           />
         </div>
-        <LabeledTextarea
-          label={t("contact.address")}
-          value={contact.address ?? ""}
-          rows={3}
-          onCommit={(address) => updateContact(contact.id, { address })}
+        <LabeledInput
+          label={t("contact.street")}
+          value={contact.street ?? ""}
+          onCommit={(street) => updateContact(contact.id, { street })}
         />
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <LabeledInput
+            label={t("contact.zip")}
+            value={contact.zip ?? ""}
+            onCommit={(zip) => updateContact(contact.id, { zip })}
+          />
+          <LabeledInput
+            label={t("contact.city")}
+            value={contact.city ?? ""}
+            onCommit={(city) => updateContact(contact.id, { city })}
+          />
+        </div>
       </Section>
 
       <Section title={t("contact.notes")}>
