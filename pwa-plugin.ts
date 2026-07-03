@@ -47,6 +47,68 @@ const PUBLIC_SKIP = new Set([
   "og.png",
 ]);
 
+// Per-release-channel PWA display name. The three Pages channels share one
+// origin, so a channel-specific name installs the preview/branch builds as
+// visibly separate home-screen tiles instead of three identical "Contacts"
+// icons that are impossible to tell apart once installed.
+function channelName(base: string): { name: string; short_name: string } {
+  if (base === "/preview/")
+    return { name: "Contacts (preview)", short_name: "Contacts pre" };
+  if (base === "/branch/")
+    return { name: "Contacts (branch)", short_name: "Contacts br" };
+  return {
+    name: "Contacts — a local-first address book",
+    short_name: "Contacts",
+  };
+}
+
+// Build the web app manifest for a given deploy base. Emitted per build rather
+// than shipped as a static `public/` file because the install *identity* must
+// differ per channel: `id`, `start_url`, and `scope` are resolved relative to
+// the *origin* (not the manifest URL) by some engines — notably iOS Safari's
+// "Add to Home Screen" — so a relative `"./"` collapses every channel onto the
+// root app (installing from `/preview/` silently installs the `/` app). Pinning
+// them to the absolute `base` (`/`, `/preview/`, `/branch/`) gives each channel
+// an unambiguous, distinct identity. Icon `src`s are base-qualified for the
+// same reason.
+export function buildManifest(base: string): string {
+  const { name, short_name } = channelName(base);
+  const manifest = {
+    name,
+    short_name,
+    description:
+      "A privacy-first contacts PWA: local-only or cloud-synced (Dropbox, Google Drive), optional encryption at rest, themes, achievements, and vCard/CSV export.",
+    id: base,
+    start_url: base,
+    scope: base,
+    display: "standalone",
+    orientation: "any",
+    background_color: "#0b0d10",
+    theme_color: "#0b0d10",
+    icons: [
+      {
+        src: `${base}icons/pwa-192.png`,
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: `${base}icons/pwa-512.png`,
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: `${base}icons/pwa-512-maskable.png`,
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+    ],
+  };
+  return `${JSON.stringify(manifest, null, 2)}\n`;
+}
+
 function listFiles(dir: string): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -256,9 +318,20 @@ export function appPwa({
         }
       }
 
+      // The web manifest is generated here (not shipped from `public/`) so its
+      // identity fields are base-correct per channel; add it to the precache so
+      // the installed shell resolves its icons and identity offline.
+      const manifestSource = buildManifest(base);
+      add(`${base}manifest.webmanifest`, Buffer.byteLength(manifestSource));
+
       const precache = Object.keys(assets);
       const totalBytes = Object.values(assets).reduce((a, b) => a + b, 0);
 
+      this.emitFile({
+        type: "asset",
+        fileName: "manifest.webmanifest",
+        source: manifestSource,
+      });
       this.emitFile({
         type: "asset",
         fileName: "sw.js",

@@ -1,41 +1,46 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-
 import { describe, expect, it } from "vitest";
 
-import { buildServiceWorker } from "../pwa-plugin.ts";
+import { buildManifest, buildServiceWorker } from "../pwa-plugin.ts";
 import { cacheIdForBase } from "../src/app/pwa.ts";
-
-const manifest = JSON.parse(
-  readFileSync(
-    fileURLToPath(new URL("../public/manifest.webmanifest", import.meta.url)),
-    "utf8",
-  ),
-) as Record<string, unknown>;
 
 // The three release channels share one Pages origin, so their service workers
 // must not collide: each needs its own precache cache id, and the root worker —
 // whose scope is a prefix of the sibling channels — must disown their paths.
 
-describe("web app manifest identity", () => {
-  // One static manifest is copied verbatim to every channel's deploy path
-  // (`/`, `/preview/`, `/branch/<name>/`) on a single origin. The install
-  // identity must differ per channel so installing from `/preview/` installs
-  // the preview app, not the root app.
-  it("does not pin an explicit id", () => {
-    // The manifest `id` member resolves relative to the *origin*, not the
-    // manifest URL — so a relative id like "./" collapses to "<origin>/" for
-    // every channel, giving all channels the same identity. Omitting `id`
-    // makes the identity fall back to the (per-channel) resolved `start_url`.
-    expect(manifest).not.toHaveProperty("id");
+describe("buildManifest identity", () => {
+  const parse = (base: string) =>
+    JSON.parse(buildManifest(base)) as Record<string, unknown>;
+
+  it("pins id/start_url/scope to the absolute base per channel", () => {
+    // These members resolve relative to the *origin* (not the manifest URL) in
+    // some engines — iOS Safari's Add to Home Screen among them — so a relative
+    // "./" collapses every channel onto the root app. Absolute base paths give
+    // each channel a distinct, unambiguous install identity.
+    for (const base of ["/", "/preview/", "/branch/"]) {
+      const m = parse(base);
+      expect(m.id).toBe(base);
+      expect(m.start_url).toBe(base);
+      expect(m.scope).toBe(base);
+    }
   });
 
-  it("keeps start_url and scope relative so they resolve per channel", () => {
-    // Relative to the manifest URL, "./" resolves to `/preview/` for the
-    // preview build and `/` for the root build — distinct per channel.
-    expect(manifest.start_url).toBe("./");
-    expect(manifest.scope).toBe("./");
+  it("gives each channel a distinct identity and tile name", () => {
+    const bases = ["/", "/preview/", "/branch/"];
+    const ids = bases.map((b) => parse(b).id);
+    const names = bases.map((b) => parse(b).name);
+    expect(new Set(ids).size).toBe(bases.length);
+    // Distinct names so the installed tiles are told apart on the home screen.
+    expect(new Set(names).size).toBe(bases.length);
+    expect(parse("/preview/").name).toContain("preview");
+    expect(parse("/branch/").name).toContain("branch");
+  });
+
+  it("base-qualifies icon srcs so they resolve per channel", () => {
+    const icons = parse("/preview/").icons as { src: string }[];
+    expect(icons.length).toBeGreaterThan(0);
+    for (const icon of icons)
+      expect(icon.src.startsWith("/preview/")).toBe(true);
   });
 });
 
