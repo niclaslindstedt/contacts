@@ -212,22 +212,34 @@ function LabeledInput({
   value,
   type = "text",
   placeholder,
+  required = false,
+  invalid = false,
   onCommit,
 }: {
   label: string;
   value: string;
   type?: string;
   placeholder?: string;
+  // `required` flags the field as mandatory (a11y + a marker on the label);
+  // `invalid` paints the border and sets `aria-invalid` when the value is
+  // missing, so the caller drives the error state it wants to show.
+  required?: boolean;
+  invalid?: boolean;
   onCommit: (next: string) => void;
 }) {
   const [draft, setDraft] = useState(value);
   return (
     <label className="flex min-w-0 flex-col gap-1">
-      <span className="text-xs text-muted">{label}</span>
+      <span className="text-xs text-muted">
+        {label}
+        {required && <span className="text-danger"> *</span>}
+      </span>
       <input
         type={type}
         value={draft}
         placeholder={placeholder}
+        required={required}
+        aria-invalid={invalid || undefined}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => {
           if (draft !== value) onCommit(draft);
@@ -235,7 +247,7 @@ function LabeledInput({
         onKeyDown={(e) => {
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         }}
-        className={inputClass}
+        className={invalid ? `${inputClass} border-danger` : inputClass}
       />
     </label>
   );
@@ -551,31 +563,45 @@ function ImportantDateRows({
 
   return (
     <div className="flex flex-col gap-3">
-      {rows.map((row) => (
-        <div
-          key={row.id}
-          className="flex flex-col gap-2 rounded-md border border-line bg-surface-1 p-2.5"
-        >
-          <div className="flex items-end gap-2">
-            <div className="min-w-0 flex-1">
-              <LabeledInput
-                label={t("contact.importantDateLabel")}
-                value={row.label ?? ""}
-                placeholder={t("contact.importantDateLabelPlaceholder")}
-                onCommit={(label) => patch(row.id, { label })}
+      {rows.map((row) => {
+        // The occasion is required — a dateless "Anniversary" is meaningless,
+        // and the calendar reminder and read-view label both lean on it. Flag
+        // a blank one inline; the card still commits (there is no save gate),
+        // but the empty field is clearly called out.
+        const occasionMissing = !row.label?.trim();
+        return (
+          <div
+            key={row.id}
+            className="flex flex-col gap-2 rounded-md border border-line bg-surface-1 p-2.5"
+          >
+            <div className="flex items-end gap-2">
+              <div className="min-w-0 flex-1">
+                <LabeledInput
+                  label={t("contact.importantDateLabel")}
+                  value={row.label ?? ""}
+                  placeholder={t("contact.importantDateLabelPlaceholder")}
+                  required
+                  invalid={occasionMissing}
+                  onCommit={(label) => patch(row.id, { label })}
+                />
+              </div>
+              <RemoveButton
+                label={t("contact.removeImportantDate")}
+                onClick={() => onCommit(rows.filter((d) => d.id !== row.id))}
               />
             </div>
-            <RemoveButton
-              label={t("contact.removeImportantDate")}
-              onClick={() => onCommit(rows.filter((d) => d.id !== row.id))}
+            {occasionMissing && (
+              <p className="text-xs text-danger">
+                {t("contact.importantDateLabelRequired")}
+              </p>
+            )}
+            <FlexDateInput
+              value={row.date}
+              onChange={(date) => patch(row.id, { date })}
             />
           </div>
-          <FlexDateInput
-            value={row.date}
-            onChange={(date) => patch(row.id, { date })}
-          />
-        </div>
-      ))}
+        );
+      })}
       <Button variant="ghost" className="self-start" onClick={addDate}>
         <span className="flex items-center gap-1.5">
           <PlusIcon className="h-4 w-4" />
