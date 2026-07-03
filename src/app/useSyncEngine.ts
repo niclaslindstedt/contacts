@@ -18,6 +18,11 @@ import {
   type StorageAdapter,
 } from "@niclaslindstedt/oss-framework/storage";
 import { withEncryption } from "@niclaslindstedt/oss-framework/encryption";
+import {
+  dropboxPhotoStore,
+  gdrivePhotoStore,
+  withExternalPhotos,
+} from "./photoStore.ts";
 import type {
   BackendKind,
   ConnectionProbeResult,
@@ -173,31 +178,35 @@ export function useSyncEngine(
   // encrypted at the byte boundary (`withEncryption`).
   const adapter: StorageAdapter | null = useMemo(() => {
     if (backend === "dropbox" && dropboxTokens) {
-      const cloud = createDropboxAdapter(
-        {
-          accessToken: dropboxTokens.accessToken,
-          refreshToken: dropboxTokens.refreshToken,
-          onAccessTokenRefreshed: (accessToken) => {
-            const next = { ...dropboxTokens, accessToken };
-            writeDropboxTokens(next);
-            setDropboxTokens(next);
-          },
+      const dropboxAuth = {
+        accessToken: dropboxTokens.accessToken,
+        refreshToken: dropboxTokens.refreshToken,
+        onAccessTokenRefreshed: (accessToken: string) => {
+          const next = { ...dropboxTokens, accessToken };
+          writeDropboxTokens(next);
+          setDropboxTokens(next);
         },
-        {
-          appKey: DROPBOX_APP_KEY || undefined,
-          fileName: cloudFileName(slug),
-          logger: logStore.createLogger("dropbox"),
-        },
-      );
+      };
+      const cloud = createDropboxAdapter(dropboxAuth, {
+        appKey: DROPBOX_APP_KEY || undefined,
+        fileName: cloudFileName(slug),
+        logger: logStore.createLogger("dropbox"),
+      });
       const cached = withLocalCache(cloud, {
         storage: localStorage,
         key: localCacheKey("dropbox", slug),
       });
+      // Encrypted: keep photos inside the AES-GCM envelope. Plaintext: file each
+      // contact's original out to `photos/<name>-<id>.jpg` in the Dropbox app
+      // folder (see `photoStore.ts`).
       return encrypted
         ? withEncryption(cached, passwordRef, {
             logger: logStore.createLogger("encrypt"),
           })
-        : cached;
+        : withExternalPhotos(
+            cached,
+            dropboxPhotoStore(dropboxAuth, DROPBOX_APP_KEY || undefined),
+          );
     }
     if (backend === "gdrive" && gdriveToken) {
       const cloud = createGdriveAdapter(gdriveToken, {
@@ -213,7 +222,7 @@ export function useSyncEngine(
         ? withEncryption(cached, passwordRef, {
             logger: logStore.createLogger("encrypt"),
           })
-        : cached;
+        : withExternalPhotos(cached, gdrivePhotoStore(gdriveToken));
     }
     return null;
     // eslint-disable-next-line react-hooks/exhaustive-deps

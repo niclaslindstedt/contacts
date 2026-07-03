@@ -18,7 +18,16 @@ notes, and a photo.
   mode; the check flips it back. In edit mode, tap the name to rename and fill in
   the field form. Every field commits when you leave it, and each committed edit
   is one undo step. A brand-new contact opens straight in edit mode.
-- **Photos.** In edit mode, tap the avatar to upload a picture (downscaled
-  on-device to a compact thumbnail) or pick an icon and accent colour instead.
+- **Photos.** In edit mode, tap the avatar to open the appearance popover. Its
+  **Photo** section — above the colour and icon pickers — carries three glyph
+  buttons: **upload**, **adjust**, and **remove**. Uploading a picture opens a
+  circle cropper: drag to move and pinch or scroll (or drag the slider) to zoom,
+  choosing exactly which part of the photo the circle shows — the rest is
+  trimmed away. **Adjust** reopens the cropper at the same framing so you can
+  re-position later. In read mode, tapping the photo opens it full-screen; swipe
+  down (or press Escape) to dismiss. No photo? Pick an icon and accent colour
+  instead. On a connected cloud drive the original is filed at a tidy
+  `photos/<name>-<id>.jpg` path so it's easy to find — see
+  [Cloud sync](feature:sync).
 - **Archive, don't lose.** Swipe a contact right in the side menu (or drag it
   onto Archive) to shelve it. The Archive page restores or deletes for good.

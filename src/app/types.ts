@@ -20,6 +20,18 @@ export type Email = {
   label?: string;
 };
 
+/** How a contact photo is framed inside the circle — the Facebook-style
+ *  zoom/pan the cropper produces and restores. `scale` multiplies the
+ *  cover-fit baseline (1 = the image just fills the circle); `x`/`y` pan the
+ *  source within the crop viewport, in unit-square terms (0 = centred, ±0.5 =
+ *  an edge at the centre). Kept resolution-independent so the same framing
+ *  bakes at any output size. */
+export type PhotoTransform = {
+  scale: number;
+  x: number;
+  y: number;
+};
+
 /** A single contact card, optionally inside a folder. */
 export type Contact = {
   id: string;
@@ -36,8 +48,25 @@ export type Contact = {
   /** ISO date (`YYYY-MM-DD`). */
   birthday?: string;
   notes?: string;
-  /** Contact photo as a data URI (downscaled JPEG), or absent. */
+  /** The contact's face, shown everywhere the avatar appears: the baked
+   *  circular-crop square JPEG data URI (see `photo.ts`), or absent. Small
+   *  enough to ride inline in the document so the menu renders without fetching
+   *  originals. The three fields below describe how it was made so the crop can
+   *  be re-adjusted and the original re-exported. */
   photo?: string | null;
+  /** The resized original the crop was taken from (a larger JPEG data URI),
+   *  kept so "Adjust" reopens the cropper at the same source. On a cloud
+   *  backend this is the payload externalised to `photoPath`; stripped from the
+   *  synced document once the file is written (see `photoStore.ts`). */
+  photoSource?: string | null;
+  /** The framing the last crop used, so the cropper restores it: `scale` is the
+   *  zoom over the cover-fit baseline, `x`/`y` the pan offset in the crop
+   *  viewport's unit square (0 = centred). */
+  photoTransform?: PhotoTransform | null;
+  /** The deterministic file path the original lives at on a cloud backend
+   *  (`photos/<name>-<id>.jpg`) — easy to find in the drive. Absent until a
+   *  photo is externalised. */
+  photoPath?: string | null;
   // `null` for a standalone (ungrouped) contact shown at the menu's root.
   folderId: string | null;
   // The card's appearance when it has no photo — a glyph name (from the
