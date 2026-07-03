@@ -11,8 +11,9 @@ notes, and a photo.
 - **Tap the address for a map.** In read mode the address is a link — tapping it
   hands the address off to your maps app (or opens Google Maps in the browser).
 - **Birthday at a glance.** The birthday row shows a countdown chip — "Today",
-  "Tomorrow", or "in N days" until the next one — and tapping the row reveals the
-  contact's current age.
+  "Tomorrow", or "in N days" until the next one — and tapping the date reveals
+  the contact's current age. Tapping the countdown chip hands the birthday off
+  to your calendar app as an all-day event that recurs every year.
 - **Edit with the pencil.** The pencil in the toolbar flips the card into edit
   mode; the check flips it back. In edit mode, tap the name to rename and fill in
   the field form. Every field commits when you leave it, and each committed edit

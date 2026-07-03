@@ -142,6 +142,8 @@ export const sv: Catalog = {
     birthdayToday: "Idag",
     birthdayTomorrow: "Imorgon",
     birthdayInDays: "om {n} dagar",
+    addToCalendar: "Lägg till födelsedag i kalendern",
+    birthdayEventTitle: "{name}s födelsedag",
     notes: "Anteckningar",
     notesPlaceholder: "Något värt att minnas…",
     archive: "Arkivera kontakt",

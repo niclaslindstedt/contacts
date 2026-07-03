@@ -9,6 +9,9 @@ import {
 
 import { addressLines, hasAddress, mapsUrl } from "./address.ts";
 import { ageOn, daysUntilBirthday } from "./birthday.ts";
+import { birthdayIcs } from "./calendar.ts";
+import { downloadText, MIME_ICS } from "./download.ts";
+import { exportFileStem } from "./export.ts";
 import {
   BuildingIcon,
   CalendarIcon,
@@ -20,6 +23,7 @@ import { useT } from "./i18n/index.ts";
 import { formatDate, formatPhoneValue, formatZip } from "./format.ts";
 import type { AppSettings } from "./useAppSettings.ts";
 import type { Contact } from "./types.ts";
+import { displayName } from "./types.ts";
 
 type Translate = ReturnType<typeof useT>;
 
@@ -103,7 +107,13 @@ export function ContactReadView({
                 value={company}
               />
             )}
-            {birthday && <BirthdayRow iso={birthday} settings={settings} />}
+            {birthday && (
+              <BirthdayRow
+                iso={birthday}
+                contact={contact}
+                settings={settings}
+              />
+            )}
             {address && <AddressRow contact={contact} settings={settings} />}
           </div>
         </Section>
@@ -179,15 +189,18 @@ function IconBadge({ children }: { children: ReactNode }) {
     </span>
   );
 }
-// The birthday row. Reads as a date (in the chosen date format), wears a "days
-// until" countdown chip, and taps to reveal the contact's current age — the two
-// things the raw date can't say at a glance. When today *is* the birthday the
-// chip celebrates instead of counting.
+// The birthday row. Reads as a date (in the chosen date format) and splits into
+// two taps: the date itself toggles to reveal the contact's current age, while
+// the "days until" countdown chip hands the birthday off to the device calendar
+// as a yearly-recurring event — the two things the raw date can't say or do at a
+// glance. When today *is* the birthday the chip celebrates instead of counting.
 function BirthdayRow({
   iso,
+  contact,
   settings,
 }: {
   iso: string;
+  contact: Contact;
   settings: AppSettings;
 }) {
   const t = useT();
@@ -196,37 +209,55 @@ function BirthdayRow({
   const age = ageOn(iso, now);
   const days = daysUntilBirthday(iso, now);
 
+  // Download a one-event `.ics` for the calendar app to open and add. Recurs
+  // yearly and stays a single entry across re-imports via a stable UID.
+  const addToCalendar = () => {
+    const name = displayName(contact) || t("contact.unnamed");
+    const ics = birthdayIcs({
+      iso,
+      summary: t("contact.birthdayEventTitle", { name }),
+      uid: `birthday-${contact.id}@contacts.app`,
+      now,
+    });
+    if (ics) {
+      downloadText(`${exportFileStem(contact)}-birthday.ics`, ics, MIME_ICS);
+    }
+  };
+
   return (
-    <button
-      type="button"
-      onClick={() => setShowAge((v) => !v)}
-      aria-pressed={showAge}
-      title={t("contact.showAge")}
-      className="group flex w-full items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-surface-2"
-    >
-      <IconBadge>
-        <CalendarIcon className="h-4 w-4" />
-      </IconBadge>
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-xs text-muted">{t("contact.birthday")}</span>
-        <span className="truncate text-sm text-fg">
-          {showAge && age !== null
-            ? t("contact.ageValue", { n: String(age) })
-            : formatDate(iso, settings.dateFormat)}
+    <div className="flex items-center gap-2 pr-2">
+      <button
+        type="button"
+        onClick={() => setShowAge((v) => !v)}
+        aria-pressed={showAge}
+        title={t("contact.showAge")}
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-surface-2"
+      >
+        <IconBadge>
+          <CalendarIcon className="h-4 w-4" />
+        </IconBadge>
+        <span className="flex min-w-0 flex-col">
+          <span className="text-xs text-muted">{t("contact.birthday")}</span>
+          <span className="truncate text-sm text-fg">
+            {showAge && age !== null
+              ? t("contact.ageValue", { n: String(age) })
+              : formatDate(iso, settings.dateFormat)}
+          </span>
         </span>
-      </span>
+      </button>
       {days !== null && (
-        <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-            days === 0
-              ? "bg-accent/15 text-accent"
-              : "bg-surface-2 text-muted group-hover:bg-surface-1"
+        <button
+          type="button"
+          onClick={addToCalendar}
+          title={t("contact.addToCalendar")}
+          className={`shrink-0 cursor-pointer rounded-full px-2 py-0.5 text-xs font-medium transition-opacity hover:opacity-80 ${
+            days === 0 ? "bg-accent/15 text-accent" : "bg-surface-2 text-muted"
           }`}
         >
           {countdownLabel(days, t)}
-        </span>
+        </button>
       )}
-    </button>
+    </div>
   );
 }
 

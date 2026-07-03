@@ -8,8 +8,11 @@
 // (see `tests/birthday_test.ts`).
 
 /** Parse a plain calendar `YYYY-MM-DD` into its parts, or null when the string
- *  isn't a real date (rejects impossible days like `2001-02-30`). */
-function parseIso(iso: string): { y: number; m: number; d: number } | null {
+ *  isn't a real date (rejects impossible days like `2001-02-30`). Shared with
+ *  `calendar.ts`, which turns the same date into a recurring event. */
+export function parseBirthday(
+  iso: string,
+): { y: number; m: number; d: number } | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
   if (!m) return null;
   const y = Number(m[1]);
@@ -29,7 +32,7 @@ function parseIso(iso: string): { y: number; m: number; d: number } | null {
 /** Whole years old on `now`, or null when the date is invalid or lies in the
  *  future (a not-yet-born birthday has no age to show). */
 export function ageOn(iso: string, now: Date): number | null {
-  const p = parseIso(iso);
+  const p = parseBirthday(iso);
   if (!p) return null;
   const monthNow = now.getMonth() + 1;
   const hadBirthdayThisYear =
@@ -42,7 +45,7 @@ export function ageOn(iso: string, now: Date): number | null {
  *  day before, counting forward to the same date next year. null when the date
  *  is invalid. A Feb-29 birthday rolls onto Mar 1 in common years. */
 export function daysUntilBirthday(iso: string, now: Date): number | null {
-  const p = parseIso(iso);
+  const p = parseBirthday(iso);
   if (!p) return null;
   const MS_PER_DAY = 86_400_000;
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());

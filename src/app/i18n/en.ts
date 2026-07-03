@@ -144,6 +144,8 @@ export const en = {
     birthdayToday: "Today",
     birthdayTomorrow: "Tomorrow",
     birthdayInDays: "in {n} days",
+    addToCalendar: "Add birthday to calendar",
+    birthdayEventTitle: "{name}'s birthday",
     notes: "Notes",
     notesPlaceholder: "Anything worth remembering…",
     archive: "Archive contact",
