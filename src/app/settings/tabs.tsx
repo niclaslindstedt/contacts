@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import {
   Button,
   SegmentedControl,
   Section,
+  SelectPicker,
   ToggleRow,
   UnlockGate,
 } from "@niclaslindstedt/oss-framework/components";
@@ -17,6 +18,17 @@ import { useT } from "../i18n/index.ts";
 import { contactsToCsv, contactsToVCards } from "../export.ts";
 import { serializeDoc } from "../migrations.ts";
 import { downloadText, MIME_CSV, MIME_JSON, MIME_VCARD } from "../download.ts";
+import {
+  DATE_FORMATS,
+  PHONE_FORMATS,
+  ZIP_FORMATS,
+  formatDate,
+  formatPhoneValue,
+  formatZip,
+  type DateFormat,
+  type PhoneFormat,
+  type ZipFormat,
+} from "../format.ts";
 import type { AppSettings } from "../useAppSettings.ts";
 import type { ContactStore } from "../useContactStore.ts";
 import {
@@ -97,6 +109,117 @@ export function GeneralTab({
           onChange={(next) => update("devMode", next)}
         />
       </Section>
+    </div>
+  );
+}
+
+// --- Format ----------------------------------------------------------------
+
+// Representative samples the pickers preview each style with. The phone sample
+// carries an explicit country code so the international / national styles read
+// differently; the zip sample carries the extra digits ZIP+4 needs.
+const SAMPLE_DATE = "2026-07-03";
+const SAMPLE_PHONE = "+46812345678";
+const SAMPLE_ZIP = "12345-6789";
+
+// Display styles for the value-shaped fields — dates, phone numbers, postal
+// codes. Each picker previews every option with a live sample (its `hint`) and
+// echoes the current pick beneath. These are staged like the other draft
+// settings and only bite on Save.
+export function FormatTab({
+  settings,
+  update,
+}: {
+  settings: AppSettings;
+  update: Update;
+}) {
+  const t = useT();
+
+  const dateOptions = DATE_FORMATS.map((value) => ({
+    value,
+    label: t(`settings.format.date.${value}`),
+    hint: formatDate(SAMPLE_DATE, value),
+  }));
+  const phoneOptions = PHONE_FORMATS.map((value) => ({
+    value,
+    label: t(`settings.format.phone.${value}`),
+    hint: formatPhoneValue(SAMPLE_PHONE, value),
+  }));
+  const zipOptions = ZIP_FORMATS.map((value) => ({
+    value,
+    label: t(`settings.format.zip.${value}`),
+    hint: formatZip(SAMPLE_ZIP, value),
+  }));
+
+  return (
+    <div>
+      <p className="mb-3 text-xs text-muted">{t("settings.format.intro")}</p>
+
+      <Section title={t("settings.format.dateTitle")}>
+        <FormatField
+          preview={formatDate(SAMPLE_DATE, settings.dateFormat)}
+          hint={t("settings.format.dateHint")}
+        >
+          <SelectPicker<DateFormat>
+            value={settings.dateFormat}
+            options={dateOptions}
+            onChange={(next) => update("dateFormat", next)}
+            ariaLabel={t("settings.format.dateTitle")}
+          />
+        </FormatField>
+      </Section>
+
+      <Section title={t("settings.format.phoneTitle")}>
+        <FormatField
+          preview={formatPhoneValue(SAMPLE_PHONE, settings.phoneFormat)}
+          hint={t("settings.format.phoneHint")}
+        >
+          <SelectPicker<PhoneFormat>
+            value={settings.phoneFormat}
+            options={phoneOptions}
+            onChange={(next) => update("phoneFormat", next)}
+            ariaLabel={t("settings.format.phoneTitle")}
+          />
+        </FormatField>
+      </Section>
+
+      <Section title={t("settings.format.zipTitle")}>
+        <FormatField
+          preview={formatZip(SAMPLE_ZIP, settings.zipFormat)}
+          hint={t("settings.format.zipHint")}
+        >
+          <SelectPicker<ZipFormat>
+            value={settings.zipFormat}
+            options={zipOptions}
+            onChange={(next) => update("zipFormat", next)}
+            ariaLabel={t("settings.format.zipTitle")}
+          />
+        </FormatField>
+      </Section>
+    </div>
+  );
+}
+
+// The picker + a live "Sample: …" line + the explanatory hint, laid out the
+// same way for all three format rows.
+function FormatField({
+  preview,
+  hint,
+  children,
+}: {
+  preview: string;
+  hint: string;
+  children: ReactNode;
+}) {
+  const t = useT();
+  return (
+    <div className="flex flex-col gap-1">
+      {children}
+      <p className="text-xs text-muted">
+        {t("settings.format.previewLabel")}{" "}
+        <span className="font-mono text-fg">{preview}</span>
+      </p>
+      <p className="text-xs text-muted">{hint}</p>
     </div>
   );
 }

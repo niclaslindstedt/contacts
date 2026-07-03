@@ -2,12 +2,14 @@
 import { useCallback } from "react";
 
 import { useLocalStorageState } from "./useLocalStorageState.ts";
+import type { DateFormat, PhoneFormat, ZipFormat } from "./format.ts";
 
 // The app's own (non-theme) settings — how the side menu opens, achievements,
-// developer mode, log capture. The framework deliberately leaves this in the
-// app; it only owns the appearance projection. (The active *language* is owned
-// by the framework i18n runtime — see `i18n/index.ts`.) Persisted to
-// localStorage so a reload keeps your choices.
+// developer mode, log capture, and the display formats for dates / phone
+// numbers / postal codes. The framework deliberately leaves this in the app;
+// it only owns the appearance projection. (The active *language* is owned by
+// the framework i18n runtime — see `i18n/index.ts`.) Persisted to localStorage
+// so a reload keeps your choices.
 
 export type MenuMode = "swipe" | "button";
 
@@ -16,6 +18,11 @@ export type AppSettings = {
   disableAchievements: boolean;
   devMode: boolean;
   captureLogs: boolean;
+  // How value-shaped fields render — see `format.ts`. These affect display
+  // only; the stored value stays exactly as the user typed it.
+  dateFormat: DateFormat;
+  phoneFormat: PhoneFormat;
+  zipFormat: ZipFormat;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -27,6 +34,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   disableAchievements: false,
   devMode: false,
   captureLogs: false,
+  // Formats default to leaving values untouched, so an existing document reads
+  // the same until the owner deliberately picks a style.
+  dateFormat: "iso",
+  phoneFormat: "raw",
+  zipFormat: "raw",
 };
 
 const STORAGE_KEY = "contacts:settings";

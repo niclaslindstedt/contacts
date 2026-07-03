@@ -17,7 +17,7 @@ import {
   type ThemeAppearance,
 } from "@niclaslindstedt/oss-framework/theme";
 
-import { CodeIcon, ScrollTextIcon } from "./icons.tsx";
+import { CodeIcon, FormatIcon, ScrollTextIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { APP_LOOK } from "./look.ts";
 import { DEFAULT_SETTINGS, type AppSettings } from "./useAppSettings.ts";
@@ -25,6 +25,7 @@ import type { ContactStore } from "./useContactStore.ts";
 import type { MutablePasswordRef, SyncEngine } from "./useSyncEngine.ts";
 import {
   DeveloperTab,
+  FormatTab,
   GeneralTab,
   LogsTab,
   StorageTab,
@@ -38,7 +39,8 @@ import {
 // (Cancel reverts). The Storage tab's backend/encryption/export controls
 // apply live — they are device state, not draft settings.
 
-type TabId = "general" | "appearance" | "storage" | "developer" | "logs";
+type TabId =
+  "general" | "appearance" | "format" | "storage" | "developer" | "logs";
 
 // A typed message key (the argument `useT`'s `t` accepts), so each tab's
 // label stays a compile-checked catalog path.
@@ -53,6 +55,7 @@ type TabDef = {
 const TABS: TabDef[] = [
   { id: "general", labelKey: "settings.tabs.general", icon: SlidersIcon },
   { id: "appearance", labelKey: "settings.tabs.appearance", icon: PaletteIcon },
+  { id: "format", labelKey: "settings.tabs.format", icon: FormatIcon },
   { id: "storage", labelKey: "settings.tabs.storage", icon: DatabaseIcon },
   { id: "developer", labelKey: "settings.tabs.developer", icon: CodeIcon },
   { id: "logs", labelKey: "settings.tabs.logs", icon: ScrollTextIcon },
@@ -216,6 +219,9 @@ export function SettingsModal({
         )}
         {activeTab === "appearance" && (
           <AppearancePicker appearance={appearance} onChange={setAppearance} />
+        )}
+        {activeTab === "format" && (
+          <FormatTab settings={draft} update={update} />
         )}
         {activeTab === "storage" && (
           <StorageTab store={store} sync={sync} passwordRef={passwordRef} />

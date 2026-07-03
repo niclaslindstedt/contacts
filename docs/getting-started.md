@@ -23,6 +23,16 @@ On first launch you land in the **Personal** namespace with one blank card.
 5. **Install it** — the deployed site is an installable PWA and works fully
    offline; updates arrive through an in-app prompt.
 
+## Choose your formats (optional)
+
+Settings → **Format**: pick how dates, phone numbers, and postal codes are
+shown. Dates (the birthday) render as ISO, US, European, or a long `3 July 2026`
+form; phone numbers as entered, international, national, or compact E.164; postal
+codes as entered, a US 5-digit ZIP, US ZIP+4, or a grouped `123 45` style. Each
+picker previews your choice with a live sample. These change the display only —
+what you typed is stored untouched, and focusing a phone field reveals the raw
+value for editing.
+
 ## Keep it synced (optional)
 
 Settings → Storage → _Where your data lives_: pick Dropbox or Google Drive and

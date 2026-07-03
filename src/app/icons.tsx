@@ -67,6 +67,26 @@ export function ScrollTextIcon({ className }: IconProps) {
   );
 }
 
+/** A hash / number sign — the Format surface (date, phone, and postal-code
+ *  display styles). */
+export function FormatIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable={false}
+      className={className}
+    >
+      <path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18" />
+    </svg>
+  );
+}
+
 /** A downward tray arrow — the export/download affordance. */
 export function DownloadIcon({ className }: IconProps) {
   return (
