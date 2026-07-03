@@ -25,15 +25,6 @@ const ignorePaths = (process.env.VITE_PWA_IGNORE_PATHS ?? "")
   .map((p) => p.trim())
   .filter(Boolean);
 
-// The label the PWA update toast shows for the incoming build. Prefer the
-// deploying commit (the workflow exposes GITHUB_SHA); fall back to a build
-// timestamp for a local build. It also lands in the generated `sw.js`, so the
-// worker's bytes change every deploy and the browser reliably discovers the
-// update.
-const version = process.env.GITHUB_SHA
-  ? process.env.GITHUB_SHA.slice(0, 7)
-  : new Date().toISOString();
-
 // Build identity for the Developer tab's "Build" grid.
 const commit =
   process.env.GITHUB_SHA?.slice(0, 7) ??
@@ -70,6 +61,18 @@ const buildLabel =
   (process.env.GITHUB_RUN_NUMBER ? `.${process.env.GITHUB_RUN_NUMBER}` : "") +
   (buildSlot ? `-${buildSlot}` : "") +
   (process.env.GITHUB_SHA ? `+${process.env.GITHUB_SHA.slice(0, 7)}` : "");
+
+// The label the PWA update toast shows for the incoming build — the full
+// build identifier (`buildLabel`, e.g. `1.3.0.237-pre+4f23a97`) so the prompt
+// names the same version as the About dropdown rather than a bare commit sha.
+// It also lands in the generated `sw.js`, so the worker's bytes change every
+// deploy and the browser reliably discovers the update; a CI build's label
+// carries the run number and commit, so it is unique per deploy. A local
+// build's label collapses to just `<version>`, so append a timestamp there to
+// keep the per-build uniqueness the worker relies on.
+const version = process.env.GITHUB_SHA
+  ? buildLabel
+  : `${buildLabel}+${new Date().toISOString()}`;
 
 export default defineConfig({
   base,
