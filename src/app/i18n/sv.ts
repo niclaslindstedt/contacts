@@ -123,6 +123,10 @@ export const sv: Catalog = {
     adjustPhoto: "Justera foto",
     removePhoto: "Ta bort foto",
     viewPhoto: "Visa foto",
+    // Överlägget som visas när en bild dras till den öppna kontakten.
+    dropPhotoTitle: "Släpp för att ange foto",
+    dropPhotoHint: "Släpp för att ange kontaktens foto",
+    dropPhotoHintNamed: "Släpp för att ange foto för {name}",
     cropTitle: "Placera foto",
     cropHint:
       "Dra för att flytta, nyp eller skrolla för att zooma. Cirkeln är det som visas.",

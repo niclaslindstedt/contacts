@@ -126,6 +126,10 @@ export const en = {
     adjustPhoto: "Adjust photo",
     removePhoto: "Remove photo",
     viewPhoto: "View photo",
+    // The overlay shown when an image is dragged onto the open contact.
+    dropPhotoTitle: "Drop to set photo",
+    dropPhotoHint: "Release to set this contact's photo",
+    dropPhotoHintNamed: "Release to set {name}'s photo",
     cropTitle: "Position photo",
     cropHint:
       "Drag to move, and pinch or scroll to zoom. The circle is what shows.",
