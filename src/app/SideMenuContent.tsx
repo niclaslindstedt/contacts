@@ -4,6 +4,8 @@ import { createPortal } from "react-dom";
 
 import {
   ArchiveIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   CogIcon,
   ExternalLinkIcon,
   FloatingPanel,
@@ -39,6 +41,7 @@ import { Avatar } from "./Avatar.tsx";
 import { emergencyContacts, reorderIds, sortFolders } from "./contactList.ts";
 import { FavoriteIcon, IceIcon, ListIcon, PersonIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
+import { useLocalStorageState } from "./useLocalStorageState.ts";
 import type { FolderSort } from "./useAppSettings.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { Contact } from "./types.ts";
@@ -85,6 +88,9 @@ const BUILD_LABEL = __BUILD_LABEL__;
 
 type Props = {
   store: ContactStore;
+  // True when the sidebar is docked (wide viewports). Only then is the footer
+  // collapse control offered — on a phone drawer the footer always shows.
+  pinned: boolean;
   // The workspace the menu's contacts belong to — heads the framework
   // `NamespaceSwitcher`, which highlights its row as active.
   activeNamespace: Namespace;
@@ -122,6 +128,7 @@ type Props = {
 
 export function SideMenuContent({
   store,
+  pinned,
   onDraggingChange,
   activeNamespace,
   namespaces,
@@ -254,6 +261,15 @@ export function SideMenuContent({
   >(false);
   // The folder / contact whose name is being edited in place, or `null`.
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+  // On wide viewports the footer (Donate / trophy / About / update / Settings)
+  // can be folded away with the thin chevron rail above it, freeing the space
+  // for the contact list. The choice is remembered across reloads; it only
+  // takes effect while docked, so a phone drawer always shows the footer.
+  const [footerCollapsed, setFooterCollapsed] = useLocalStorageState(
+    "contacts:footer-collapsed",
+    false,
+  );
+  const footerHidden = pinned && footerCollapsed;
   // The footer "About" dropdown, anchored to `aboutRef` and flipped upward.
   const [aboutOpen, setAboutOpen] = useState(false);
   const aboutRef = useRef<HTMLButtonElement>(null);
@@ -692,50 +708,66 @@ export function SideMenuContent({
         </div>
       </div>
 
+      {/* Footer collapse rail — wide viewports only. A thin, full-width chevron
+          button seated just above the footer that folds it away (and back), so
+          the contact list can claim the freed vertical space. */}
+      {pinned && (
+        <FooterCollapseRail
+          collapsed={footerCollapsed}
+          label={
+            footerCollapsed ? t("menu.expandFooter") : t("menu.collapseFooter")
+          }
+          onClick={() => setFooterCollapsed((v) => !v)}
+        />
+      )}
+
       {/* Footer — fixed. Donate (an external link), the trophy, an About
           dropdown, the framework's "check for updates" row, and Settings
-          pinned last under the thumb. */}
-      <div className="flex shrink-0 flex-col border-t border-line [padding-top:calc(1.25rem-var(--density-row-py))]">
-        <FooterLink
-          icon={<FavoriteIcon filled className="h-5 w-5 text-danger" />}
-          href={DONATE_URL}
-          external
-        >
-          {t("menu.donate")}
-        </FooterLink>
-        {trophy}
-        <button
-          ref={aboutRef}
-          type="button"
-          aria-haspopup="menu"
-          aria-expanded={aboutOpen}
-          onClick={() => setAboutOpen((v) => !v)}
-          className="flex w-full cursor-pointer items-center gap-3 px-5 py-[var(--density-row-py)] text-left text-sm text-fg hover:bg-surface-2 hover:text-fg-bright"
-        >
-          <span className="text-muted">
-            <HelpCircleIcon className="h-5 w-5" />
-          </span>
-          <span className="flex-1">{t("menu.about")}</span>
-        </button>
-        <CheckForUpdatesItem
-          checking={checkingUpdate}
-          updateAvailable={updateAvailable}
-          onCheck={onCheckUpdate}
-          labels={{
-            idle: t("menu.checkUpdates"),
-            checking: t("menu.checkingUpdates"),
-            upToDate: t("menu.upToDate"),
-            updateAvailable: t("menu.updateAvailable"),
-            unavailable: t("menu.updatesUnavailable"),
-          }}
-        />
-        <FooterRow
-          icon={<CogIcon className="h-5 w-5" />}
-          onClick={onOpenSettings}
-        >
-          {t("menu.settings")}
-        </FooterRow>
-      </div>
+          pinned last under the thumb. Foldable away on wide viewports via the
+          rail above. */}
+      {!footerHidden && (
+        <div className="flex shrink-0 flex-col border-t border-line [padding-top:calc(1.25rem-var(--density-row-py))]">
+          <FooterLink
+            icon={<FavoriteIcon filled className="h-5 w-5 text-danger" />}
+            href={DONATE_URL}
+            external
+          >
+            {t("menu.donate")}
+          </FooterLink>
+          {trophy}
+          <button
+            ref={aboutRef}
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={aboutOpen}
+            onClick={() => setAboutOpen((v) => !v)}
+            className="flex w-full cursor-pointer items-center gap-3 px-5 py-[var(--density-row-py)] text-left text-sm text-fg hover:bg-surface-2 hover:text-fg-bright"
+          >
+            <span className="text-muted">
+              <HelpCircleIcon className="h-5 w-5" />
+            </span>
+            <span className="flex-1">{t("menu.about")}</span>
+          </button>
+          <CheckForUpdatesItem
+            checking={checkingUpdate}
+            updateAvailable={updateAvailable}
+            onCheck={onCheckUpdate}
+            labels={{
+              idle: t("menu.checkUpdates"),
+              checking: t("menu.checkingUpdates"),
+              upToDate: t("menu.upToDate"),
+              updateAvailable: t("menu.updateAvailable"),
+              unavailable: t("menu.updatesUnavailable"),
+            }}
+          />
+          <FooterRow
+            icon={<CogIcon className="h-5 w-5" />}
+            onClick={onOpenSettings}
+          >
+            {t("menu.settings")}
+          </FooterRow>
+        </div>
+      )}
 
       {/* The About dropdown — portalled and positioned by the framework
           `FloatingPanel`. "What's new" opens the changelog dialog; "Source
@@ -1094,6 +1126,37 @@ function DragPreview({
       <span className="truncate">{label}</span>
     </div>,
     document.body,
+  );
+}
+
+// The thin chevron rail above the footer (wide viewports only). A full-width
+// button one line tall: clicking it folds the footer away to give the contact
+// list more room, and again to bring it back. The chevron points down to
+// collapse (fold the footer down out of view) and up to restore it.
+function FooterCollapseRail({
+  collapsed,
+  label,
+  onClick,
+}: {
+  collapsed: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      aria-expanded={!collapsed}
+      title={label}
+      className="flex w-full shrink-0 cursor-pointer items-center justify-center border-t border-line py-1 text-muted hover:bg-surface-2 hover:text-fg-bright"
+    >
+      {collapsed ? (
+        <ChevronUpIcon className="h-4 w-4" />
+      ) : (
+        <ChevronDownIcon className="h-4 w-4" />
+      )}
+    </button>
   );
 }
 

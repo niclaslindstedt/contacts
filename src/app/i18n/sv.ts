@@ -33,6 +33,8 @@ export const sv: Catalog = {
     newContactIn: "Ny kontakt i {name}",
     collapseAllFolders: "Fäll ihop alla mappar",
     expandAllFolders: "Fäll ut alla mappar",
+    collapseFooter: "Fäll ihop sidfot",
+    expandFooter: "Fäll ut sidfot",
     contactName: "Kontaktens namn",
     renameContact: "Byt namn",
     deleteContact: "Ta bort",
