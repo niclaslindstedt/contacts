@@ -28,6 +28,12 @@ export type MenuMode = "swipe" | "button";
  *  up so it's easy to see; `compact` keeps rows dense so more fit on screen. */
 export type ListDensity = "compact" | "spacious";
 
+/** Which phone number(s) the List view prefers under each name: the contact's
+ *  private one, their work one, or both. When the preferred kind is absent the
+ *  view falls back to whatever the contact has — a glance is meant to be handy,
+ *  not exact, and the card is one tap away. */
+export type ListPhonePriority = "private" | "work" | "both";
+
 export type AppSettings = {
   menuMode: MenuMode;
   disableAchievements: boolean;
@@ -55,6 +61,8 @@ export type AppSettings = {
   /** How large each contact row is in the list view (bigger photos when
    *  spacious). */
   listDensity: ListDensity;
+  /** Which phone number(s) the list view prefers under each name. */
+  listPhonePriority: ListPhonePriority;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -83,6 +91,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   // Dense by default so the overview fits as many contacts as possible; the
   // spacious option trades that for a bigger, easier-to-see photo.
   listDensity: "compact",
+  // Show every number by default; the user can narrow the list to just private
+  // or just work numbers to keep rows tidy.
+  listPhonePriority: "both",
 };
 
 const STORAGE_KEY = "contacts:settings";

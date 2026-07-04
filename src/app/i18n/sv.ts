@@ -127,6 +127,7 @@ export const sv: Catalog = {
     fullNamePlaceholder: "För- och efternamn",
     editContact: "Redigera kontakt",
     doneEditing: "Klar",
+    backToList: "Tillbaka till listan",
     reachTitle: "Kom i kontakt",
     phone: "Telefon",
     email: "E-post",
@@ -294,6 +295,10 @@ export const sv: Catalog = {
       showPhone: "Visa telefonnummer",
       showPhoneHint:
         "Visa varje kontakts telefonnummer under namnet. Tryck på ett för att ringa.",
+      priorityTitle: "Föredra nummer",
+      priorityBoth: "Båda",
+      priorityHint:
+        "Vilket nummer som visas under ett namn. En kontakt utan nummer av vald typ visar det den har — öppna kortet om fel nummer visas.",
       showEmail: "Visa e-postadresser",
       showEmailHint:
         "Visa varje kontakts e-postadresser under namnet. Tryck på en för att skriva.",

@@ -87,6 +87,10 @@ export function App() {
   // List page, or the Archive page (both reached from the side menu's action
   // grid).
   const [view, setView] = useState<"contact" | "archive" | "list">("contact");
+  // True when the current contact card was opened from the List page, so its
+  // header offers a back button to that list. Cleared by any other way into a
+  // card (a sidebar pick, a search hit, a fresh contact).
+  const [fromList, setFromList] = useState(false);
   // The "What's new" dialog, opened from the side menu's About dropdown.
   const [changelogOpen, setChangelogOpen] = useState(false);
   const { settings, setSettings } = useAppSettings();
@@ -272,7 +276,9 @@ export function App() {
             setChangelogOpen(true);
           }}
           onNavigate={() => {
-            // Selecting or creating a contact always lands on the card view.
+            // Selecting or creating a contact always lands on the card view —
+            // not via the list, so no back button.
+            setFromList(false);
             setView("contact");
             if (!pinned) setDrawerOpen(false);
           }}
@@ -305,6 +311,7 @@ export function App() {
               settings={settings}
               onOpenContact={(id) => {
                 store.setActive(id);
+                setFromList(true);
                 setView("contact");
                 if (!pinned) setDrawerOpen(false);
               }}
@@ -315,6 +322,8 @@ export function App() {
               sync={sync}
               settings={settings}
               onOpenSyncDetails={() => setSyncDetailsOpen(true)}
+              // A card opened from the List page carries a back button to it.
+              onBack={fromList ? () => setView("list") : undefined}
               // Suppress pull-to-refresh while a sidebar drag owns the pointer,
               // and while the phone drawer covers the screen.
               pullEnabled={!sidebarDragging && (pinned || !drawerOpen)}
@@ -452,6 +461,7 @@ export function App() {
         onClose={() => setSearchOpen(false)}
         store={store}
         onNavigate={() => {
+          setFromList(false);
           setView("contact");
           if (!pinned) setDrawerOpen(false);
         }}

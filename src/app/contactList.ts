@@ -6,8 +6,9 @@
 // `tests/contactList_test.ts`). It reads the same "archived things drop out of
 // the view but stay in the document" rule the side menu follows.
 
-import type { AppData, Contact, Folder } from "./types.ts";
-import { compareContacts } from "./types.ts";
+import type { ListPhonePriority } from "./useAppSettings.ts";
+import type { AppData, Contact, Folder, Phone } from "./types.ts";
+import { compareContacts, methodKind } from "./types.ts";
 
 /** One folder's worth of the list view: the folder heading (or `null` for the
  *  ungrouped contacts shown at the root), and the active contacts it holds,
@@ -44,4 +45,18 @@ export function groupContactsByFolder(data: AppData): ContactGroup[] {
  *  the groups render — the corpus a "select all" acts over. */
 export function listedContacts(groups: readonly ContactGroup[]): Contact[] {
   return groups.flatMap((g) => g.contacts);
+}
+
+/** The phone numbers the List view shows for a contact under the chosen
+ *  priority. `both` keeps every number; `private` / `work` keep just that kind
+ *  — but when the contact has none of the preferred kind the whole set is
+ *  returned rather than nothing, so a row never goes blank when a number exists.
+ *  The caller has already dropped empty values. */
+export function prioritizePhones(
+  phones: readonly Phone[],
+  priority: ListPhonePriority,
+): Phone[] {
+  if (priority === "both") return [...phones];
+  const preferred = phones.filter((p) => methodKind(p.label) === priority);
+  return preferred.length > 0 ? preferred : [...phones];
 }

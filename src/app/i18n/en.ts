@@ -129,6 +129,7 @@ export const en = {
     fullNamePlaceholder: "First and last name",
     editContact: "Edit contact",
     doneEditing: "Done",
+    backToList: "Back to list",
     reachTitle: "Get in touch",
     phone: "Phone",
     email: "Email",
@@ -299,6 +300,10 @@ export const en = {
       showPhone: "Show phone numbers",
       showPhoneHint:
         "List each contact's phone numbers under their name. Tap one to call.",
+      priorityTitle: "Prefer number",
+      priorityBoth: "Both",
+      priorityHint:
+        "Which number to show under a name. A contact with no number of the chosen type shows whatever it has — open the card if the wrong one appears.",
       showEmail: "Show email addresses",
       showEmailHint:
         "List each contact's email addresses under their name. Tap one to write.",

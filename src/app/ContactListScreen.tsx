@@ -22,10 +22,14 @@ import { formatPhoneValue } from "./countries/index.ts";
 import { phoneOptions, type AppSettings } from "./useAppSettings.ts";
 import { contactsToCsv, contactsToVCards } from "./export.ts";
 import { downloadText, MIME_CSV, MIME_VCARD } from "./download.ts";
-import { groupContactsByFolder, listedContacts } from "./contactList.ts";
+import {
+  groupContactsByFolder,
+  listedContacts,
+  prioritizePhones,
+} from "./contactList.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { Contact } from "./types.ts";
-import { displayName } from "./types.ts";
+import { displayName, methodKind } from "./types.ts";
 
 // The overview list — a third top-level view, reached from the side menu's
 // List button. Where the card screen shows one contact and the sidebar is a
@@ -359,11 +363,17 @@ function ContactRow({
   const t = useT();
   const name = displayName(contact);
   const phones = settings.listShowPhone
-    ? contact.phones.filter((p) => p.value.trim())
+    ? prioritizePhones(
+        contact.phones.filter((p) => p.value.trim()),
+        settings.listPhonePriority,
+      )
     : [];
   const emails = settings.listShowEmail
     ? contact.emails.filter((e) => e.value.trim())
     : [];
+  // With more than one number on show, prefix each with its Private / Work type
+  // so it's clear which is which; a lone number needs no such label.
+  const showPhoneKind = phones.length > 1;
   // The card-size setting drives both the avatar size and the row's breathing
   // room, so a spacious list reads bigger throughout, not just its photos.
   const spacious = settings.listDensity === "spacious";
@@ -398,13 +408,14 @@ function ContactRow({
         <span className="flex min-w-0 flex-1 flex-col">
           {nameNode}
           <ContactMethodsText
-            phones={phones.map((p) =>
-              formatPhoneValue(
+            phones={phones.map((p) => {
+              const value = formatPhoneValue(
                 p.value,
                 settings.country,
                 phoneOptions(settings),
-              ),
-            )}
+              );
+              return showPhoneKind ? `${kindText(p.label, t)} ${value}` : value;
+            })}
             emails={emails.map((e) => e.value)}
           />
         </span>
@@ -447,6 +458,11 @@ function ContactRow({
                 href={`tel:${phone.value.replace(/\s+/g, "")}`}
                 className="w-fit max-w-full truncate text-xs text-accent hover:underline sm:text-right"
               >
+                {showPhoneKind && (
+                  <span className="text-muted">
+                    {kindText(phone.label, t)}{" "}
+                  </span>
+                )}
                 {formatPhoneValue(
                   phone.value,
                   settings.country,
@@ -474,6 +490,17 @@ function ContactRow({
       </div>
     </div>
   );
+}
+
+// The Private / Work label for a phone number, shown as a prefix when a row
+// carries more than one so it's clear which is which.
+function kindText(
+  label: string | undefined,
+  t: ReturnType<typeof useT>,
+): string {
+  return methodKind(label) === "work"
+    ? t("contact.kindWork")
+    : t("contact.kindPrivate");
 }
 
 // The plain-text echo of a contact's methods shown under the name while

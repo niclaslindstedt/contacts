@@ -17,8 +17,12 @@ notes, and a photo.
   optionally, their emails (tap to write). On wider screens the numbers sit to
   the right of the name; on a phone they stack under it. **Settings → List**
   toggles what shows and picks the card size — **Compact** to fit more
-  contacts, or **Spacious** for a larger, easier-to-see photo. Tap a row to open
-  that contact's card. The **Select**
+  contacts, or **Spacious** for a larger, easier-to-see photo — and chooses which
+  number to prefer (**Private**, **Work**, or **Both**); a contact with no number
+  of the chosen type shows whatever it has, so open the card if the wrong one
+  appears. When a row shows more than one number, each is tagged with its type.
+  Tap a row to open that contact's card — its header carries a **back button**
+  to return to the list. The **Select**
   button turns the list into a multi-select: tick as many contacts as you like,
   then **Copy** them as one vCard block to the clipboard or **Export** the
   selection to a vCard or CSV file (see [Export & import](feature:export)).
