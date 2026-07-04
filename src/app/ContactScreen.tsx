@@ -16,7 +16,7 @@ import { ContactEditView } from "./ContactEditView.tsx";
 import { ContactIdentity } from "./ContactIdentity.tsx";
 import { ContactPhotoDropZone } from "./ContactPhotoDropZone.tsx";
 import { ContactReadView } from "./ContactReadView.tsx";
-import { DownloadIcon, IceIcon } from "./icons.tsx";
+import { DownloadIcon, FavoriteIcon, IceIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { contactToVCard, exportFileStem } from "./export.ts";
 import { downloadText, MIME_VCARD } from "./download.ts";
@@ -181,6 +181,34 @@ function ContactCard({
           }`}
         >
           <IceIcon className="h-4 w-4" />
+        </button>
+
+        {/* Star this card as a favorite — it gathers on the Favorites page.
+            Filled accent heart when starred, a hollow one otherwise. Sits next
+            to the emergency toggle so the two per-card flags read as a pair. */}
+        <button
+          type="button"
+          onClick={() =>
+            updateContact(contact.id, { favorite: !contact.favorite })
+          }
+          aria-pressed={!!contact.favorite}
+          title={
+            contact.favorite
+              ? t("contact.removeFavorite")
+              : t("contact.addFavorite")
+          }
+          aria-label={
+            contact.favorite
+              ? t("contact.removeFavorite")
+              : t("contact.addFavorite")
+          }
+          className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border ${
+            contact.favorite
+              ? "border-accent bg-accent/15 text-accent"
+              : "border-line text-muted hover:bg-surface-2 hover:text-fg"
+          }`}
+        >
+          <FavoriteIcon className="h-4 w-4" filled={!!contact.favorite} />
         </button>
 
         <div className="min-w-0 flex-1" />

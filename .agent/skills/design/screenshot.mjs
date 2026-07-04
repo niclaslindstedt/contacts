@@ -185,6 +185,21 @@ export async function openList(page) {
     .waitFor();
 }
 
+// Open the Favorites page from the side-menu action grid. Same shape as
+// `openList` — the button and the page heading share the "Favorites" name, so
+// match the heading role to confirm the page (not the button) rendered.
+export async function openFavorites(page) {
+  await openSidebar(page);
+  await page
+    .getByRole("button", { name: /^Favorites$/ })
+    .first()
+    .click();
+  await page
+    .getByRole("heading", { name: /^Favorites$/ })
+    .first()
+    .waitFor();
+}
+
 // Create a fresh contact and land on its card. A brand-new contact opens
 // straight in edit mode (see `ContactScreen` `isEmptyContact`), so this
 // is also the entry point for designing the edit form and the appearance
@@ -312,8 +327,8 @@ async function recipe(page) {
   // Default: the seeded contact card with the appearance popover open,
   // so its Photos / Colour / Icon layout is on screen. Swap for
   // `openPhotoCropper(page)` to design the cropper, `openApp(page)` to
-  // shoot the read-mode card, or `openSettings(page)` for the settings
-  // dialog.
+  // shoot the read-mode card, `openList(page)` / `openFavorites(page)` for
+  // the overview pages, or `openSettings(page)` for the settings dialog.
   await openApp(page);
   await openAppearancePopover(page);
   await page.waitForTimeout(200);

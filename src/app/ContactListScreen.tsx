@@ -15,7 +15,12 @@ import {
 import { unlock } from "@niclaslindstedt/oss-framework/achievements";
 
 import { Avatar } from "./Avatar.tsx";
-import { CheckSquareIcon, DownloadIcon, ListIcon } from "./icons.tsx";
+import {
+  CheckSquareIcon,
+  DownloadIcon,
+  FavoriteIcon,
+  ListIcon,
+} from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { formatPhoneValue } from "./countries/index.ts";
 import { phoneOptions, type AppSettings } from "./useAppSettings.ts";
@@ -30,13 +35,18 @@ import type { ContactStore } from "./useContactStore.ts";
 import type { Contact } from "./types.ts";
 import { displayName, methodKind } from "./types.ts";
 
-// The overview list — a third top-level view, reached from the side menu's
-// List button. Where the card screen shows one contact and the sidebar is a
-// terse switcher, this lays every active contact out in the main area, grouped
-// under the folder it belongs to (each folder a collapsible section, expanded
-// by default). Each row wears a big avatar with the name beside it and, when
-// the List settings tab enables them, the contact's phone numbers (tap to call)
-// and emails (tap to compose) under it.
+// The overview list — a top-level view, reached from the side menu's List
+// button. Where the card screen shows one contact and the sidebar is a terse
+// switcher, this lays every active contact out in the main area, grouped under
+// the folder it belongs to (each folder a collapsible section, expanded by
+// default). Each row wears a big avatar with the name beside it and, when the
+// List settings tab enables them, the contact's phone numbers (tap to call)
+// and emails (tap to compose) under it, then a heart to star the card.
+//
+// The same screen doubles as the Favorites page: pass `variant="favorites"`
+// and it renders the identical folder-grouped layout over just the starred
+// contacts (empty folders drop out the same way). Its own List button and the
+// Favorites button in the side menu both land here — one filtered, one not.
 //
 // A "Select" toggle turns the rows into a multi-select: tick as many as you
 // like, then copy them as one vCard block or export the selection to a vCard /
@@ -57,15 +67,27 @@ export function ContactListScreen({
   store,
   settings,
   onOpenContact,
+  variant = "all",
 }: {
   store: ContactStore;
   settings: AppSettings;
   // Open a contact on its card (sets it active and returns to the card view).
   onOpenContact: (id: string) => void;
+  // "all" is the List page (every active contact); "favorites" is the
+  // Favorites page (only starred cards), same layout over a filtered set.
+  variant?: "all" | "favorites";
 }) {
   const t = useT();
-  const { data } = store;
-  const groups = useMemo(() => groupContactsByFolder(data), [data]);
+  const { data, updateContact } = store;
+  const favoritesOnly = variant === "favorites";
+  const groups = useMemo(
+    () => groupContactsByFolder(data, { favoritesOnly }),
+    [data, favoritesOnly],
+  );
+  // Star / unstar a card. Reuses the same field-patch path every other edit
+  // takes, so a favorite toggle is one undoable step and syncs like any change.
+  const toggleFavorite = (contact: Contact) =>
+    updateContact(contact.id, { favorite: !contact.favorite });
 
   // Which sections are collapsed. Default-expanded — local view state, it
   // doesn't travel with the document.
@@ -122,10 +144,14 @@ export function ContactListScreen({
       ) : (
         <header className="mb-2 flex items-center gap-3 border-b border-line px-1 pb-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
-            <ListIcon className="h-5 w-5" />
+            {favoritesOnly ? (
+              <FavoriteIcon className="h-5 w-5" filled />
+            ) : (
+              <ListIcon className="h-5 w-5" />
+            )}
           </span>
           <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-wide text-fg-bright">
-            {t("list.title")}
+            {favoritesOnly ? t("favorites.title") : t("list.title")}
           </h1>
           {total > 0 && (
             <button
@@ -144,7 +170,7 @@ export function ContactListScreen({
       <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-10 [overscroll-behavior:contain]">
         {total === 0 && groups.length === 0 ? (
           <p className="px-2 py-10 text-center text-sm text-muted">
-            {t("list.empty")}
+            {favoritesOnly ? t("favorites.empty") : t("list.empty")}
           </p>
         ) : (
           groups.map((group) => {
@@ -175,6 +201,7 @@ export function ContactListScreen({
                           selected={selected.has(contact.id)}
                           onOpen={() => onOpenContact(contact.id)}
                           onToggleSelected={() => toggleSelected(contact.id)}
+                          onToggleFavorite={() => toggleFavorite(contact)}
                         />
                       </li>
                     ))}
@@ -361,6 +388,7 @@ function ContactRow({
   selected,
   onOpen,
   onToggleSelected,
+  onToggleFavorite,
 }: {
   contact: Contact;
   settings: AppSettings;
@@ -368,6 +396,7 @@ function ContactRow({
   selected: boolean;
   onOpen: () => void;
   onToggleSelected: () => void;
+  onToggleFavorite: () => void;
 }) {
   const t = useT();
   const name = displayName(contact);
@@ -503,7 +532,49 @@ function ContactRow({
           )
         )}
       </div>
+      {/* Star toggle, pinned to the row's trailing edge — outline when the card
+          isn't a favorite, a filled accent heart when it is. On the Favorites
+          page this is how a card leaves the list. */}
+      <FavoriteToggle
+        favorite={!!contact.favorite}
+        name={name || t("contact.unnamed")}
+        onToggle={onToggleFavorite}
+      />
     </div>
+  );
+}
+
+// The trailing heart on a list row. A small, thumb-sized toggle that flips a
+// card's favorite flag in place without opening it — muted and hollow at rest,
+// filled in the accent once starred.
+function FavoriteToggle({
+  favorite,
+  name,
+  onToggle,
+}: {
+  favorite: boolean;
+  name: string;
+  onToggle: () => void;
+}) {
+  const t = useT();
+  const label = favorite
+    ? t("contact.removeFavorite")
+    : t("contact.addFavorite");
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={favorite}
+      aria-label={`${label} — ${name}`}
+      title={label}
+      className={`ml-2 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors ${
+        favorite
+          ? "text-accent hover:bg-accent/10"
+          : "text-muted hover:bg-surface-2 hover:text-fg"
+      }`}
+    >
+      <FavoriteIcon className="h-5 w-5" filled={favorite} />
+    </button>
   );
 }
 

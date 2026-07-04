@@ -42,6 +42,7 @@ export const sv: Catalog = {
     dropToArchive: "Släpp här för att arkivera",
     archive: "Arkiv",
     list: "Lista",
+    favorites: "Favoriter",
     undo: "Ångra",
     redo: "Gör om",
     search: "Sök",
@@ -71,6 +72,11 @@ export const sv: Catalog = {
     restoreContact: "Återställ kontakt",
     delete: "Ta bort",
     rowActions: "Arkivåtgärder",
+  },
+  favorites: {
+    title: "Favoriter",
+    empty:
+      "Inga favoriter ännu. Öppna en kontakt och tryck på hjärtat för att lägga till den i den här kortlistan.",
   },
   list: {
     title: "Lista",
@@ -133,6 +139,8 @@ export const sv: Catalog = {
     backToList: "Tillbaka till listan",
     markIce: "Markera som nödkontakt",
     unmarkIce: "Ta bort nödkontakt",
+    addFavorite: "Lägg till i favoriter",
+    removeFavorite: "Ta bort från favoriter",
     reachTitle: "Kom i kontakt",
     phone: "Telefon",
     email: "E-post",

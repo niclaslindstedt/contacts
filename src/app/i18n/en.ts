@@ -48,6 +48,7 @@ export const en = {
     dropToArchive: "Drop here to archive",
     archive: "Archive",
     list: "List",
+    favorites: "Favorites",
     undo: "Undo",
     redo: "Redo",
     search: "Search",
@@ -77,6 +78,11 @@ export const en = {
     restoreContact: "Restore contact",
     delete: "Delete",
     rowActions: "Archive actions",
+  },
+  favorites: {
+    title: "Favorites",
+    empty:
+      "No favorites yet. Open a contact and tap the heart to add it to this shortlist.",
   },
   list: {
     title: "List",
@@ -138,6 +144,8 @@ export const en = {
     // The card-header toggle that flags the contact as in-case-of-emergency.
     markIce: "Mark as emergency contact",
     unmarkIce: "Remove emergency contact",
+    addFavorite: "Add to favorites",
+    removeFavorite: "Remove from favorites",
     reachTitle: "Get in touch",
     phone: "Phone",
     email: "Email",

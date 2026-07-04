@@ -38,7 +38,7 @@ import {
 
 import { Avatar } from "./Avatar.tsx";
 import { emergencyContacts } from "./contactList.ts";
-import { IceIcon, ListIcon, PersonIcon } from "./icons.tsx";
+import { FavoriteIcon, IceIcon, ListIcon, PersonIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { Contact } from "./types.ts";
@@ -97,12 +97,14 @@ type Props = {
   // Close the drawer after a navigation (a no-op when the sidebar is docked)
   // and return the main area to the contact view.
   onNavigate: () => void;
-  // The active top-level view — highlights the List / Archive buttons when
-  // their page shows.
-  view: "contact" | "archive" | "list";
+  // The active top-level view — highlights the List / Favorites / Archive
+  // buttons when their page shows.
+  view: "contact" | "archive" | "list" | "favorites";
   onShowArchive: () => void;
   // Open the overview List page (all contacts, grouped by folder).
   onShowList: () => void;
+  // Open the Favorites page (starred contacts, same folder-grouped layout).
+  onShowFavorites: () => void;
   // PWA update state, threaded from `usePwaUpdate`.
   checkingUpdate: boolean;
   updateAvailable: boolean;
@@ -129,6 +131,7 @@ export function SideMenuContent({
   view,
   onShowArchive,
   onShowList,
+  onShowFavorites,
   checkingUpdate,
   updateAvailable,
   onCheckUpdate,
@@ -536,6 +539,15 @@ export function SideMenuContent({
               <ListIcon className="h-5 w-5" />
             </BarButton>
             <BarButton
+              label={t("menu.favorites")}
+              onClick={onShowFavorites}
+              current={view === "favorites"}
+            >
+              <FavoriteIcon className="h-5 w-5" filled={view === "favorites"} />
+            </BarButton>
+          </div>
+          <div className="flex divide-x divide-line">
+            <BarButton
               label={dnd.dragging ? t("menu.dropToArchive") : t("menu.archive")}
               badge={archivedCount > 0 ? String(archivedCount) : undefined}
               onClick={onShowArchive}
@@ -546,8 +558,6 @@ export function SideMenuContent({
             >
               <ArchiveIcon className="h-5 w-5" />
             </BarButton>
-          </div>
-          <div className="flex divide-x divide-line">
             <BarButton
               label={t("menu.undo")}
               disabled={!canUndo}

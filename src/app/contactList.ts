@@ -19,23 +19,38 @@ export type ContactGroup = {
   contacts: Contact[];
 };
 
+/** Options narrowing which active contacts the overview groups. Defaults to
+ *  every active card; `favoritesOnly` keeps just the starred ones — the
+ *  Favorites page is the same folder-grouped layout over that shortlist. */
+export type GroupOptions = {
+  /** When set, keep only contacts flagged `favorite`. */
+  favoritesOnly?: boolean;
+};
+
 /** Group a document's active contacts by folder for the overview screen.
  *  Non-archived folders come first in document order, then the ungrouped
  *  contacts as a trailing `null` group — each group shown only when it holds
  *  at least one active contact, so empty folders drop out of the list.
  *  Archived folders and archived contacts are left out; contacts within each
  *  group are sorted by display name (nameless last), the same order the side
- *  menu uses. */
-export function groupContactsByFolder(data: AppData): ContactGroup[] {
+ *  menu uses. With `favoritesOnly`, only starred contacts are kept — so a
+ *  folder with no favorites drops out just as an empty one does, and the
+ *  Favorites page reuses this whole shape. */
+export function groupContactsByFolder(
+  data: AppData,
+  opts: GroupOptions = {},
+): ContactGroup[] {
+  const keep = (c: Contact) =>
+    !c.archived && (!opts.favoritesOnly || !!c.favorite);
   const groups: ContactGroup[] = [];
   for (const folder of data.folders.filter((f) => !f.archived)) {
     const contacts = data.contacts
-      .filter((c) => c.folderId === folder.id && !c.archived)
+      .filter((c) => c.folderId === folder.id && keep(c))
       .sort(compareContacts);
     if (contacts.length > 0) groups.push({ folder, contacts });
   }
   const standalone = data.contacts
-    .filter((c) => c.folderId === null && !c.archived)
+    .filter((c) => c.folderId === null && keep(c))
     .sort(compareContacts);
   if (standalone.length > 0)
     groups.push({ folder: null, contacts: standalone });

@@ -143,6 +143,11 @@ export type Contact = {
    *  ordinary contact. Kept app-local — it isn't written to a vCard or CSV, but
    *  it does round-trip through the JSON backup. */
   ice?: boolean;
+  // Set when the card is starred as a favorite (the heart on its screen or a
+  // List row). Favorites stay in the document like any other card, but also
+  // gather on their own Favorites page — a quick-access shortlist of the people
+  // you reach for most. Absent (or false) means not a favorite.
+  favorite?: boolean;
   /** When set, the card files itself away without being touched: on or after
    *  this day the app's sweep either archives it or deletes it (see
    *  {@link autoArchiveAction}). A full ISO `YYYY-MM-DD`. Handy for a contact

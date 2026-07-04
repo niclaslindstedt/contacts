@@ -97,6 +97,30 @@ export function CheckSquareIcon({ className }: IconProps) {
   );
 }
 
+/** A heart — the favorite affordance. Outline when a card isn't starred, a
+ *  solid fill when it is, so the toggle reads its state at a glance. The
+ *  Favorites page and the List / card toggles all draw this one mark. */
+export function FavoriteIcon({
+  className,
+  filled,
+}: IconProps & { filled?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable={false}
+      className={className}
+    >
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
+    </svg>
+  );
+}
+
 /** Angle brackets — the Developer surface. */
 export function CodeIcon({ className }: IconProps) {
   return (

@@ -23,13 +23,24 @@ notes, and one or more photos.
   number to prefer (**Private**, **Work**, or **Both**); a contact with no number
   of the chosen type shows whatever it has, so open the card if the wrong one
   appears. When a row shows more than one number, each is tagged with its type.
-  Tap a row to open that contact's card — its header carries a **back button**
-  to return to the list. The **Select**
+  Each row also carries a **heart** at its trailing edge — tap it to star (or
+  unstar) that contact as a favorite without opening the card. Tap a row to open
+  that contact's card — its header carries a **back button** to return to the
+  list. The **Select**
   button turns the list into a multi-select: tick as many contacts as you like,
   or use the **Select all** checkbox on its own row to tick — or untick — every
   contact at once, then **Copy** them as one vCard block to the clipboard or
   **Export** the selection to a vCard or CSV file (see
   [Export & import](feature:export)).
+- **Favorites.** Star the people you reach for most and they gather on their own
+  **Favorites** page — the button sits next to List in the sidebar's action
+  grid. It's the same folder-grouped layout as the List overview (with the same
+  Select / Copy / Export tools), filtered to just the starred contacts; a folder
+  with no favorites simply drops out. Toggle a favorite anywhere it shows: the
+  **heart** in a contact card's header, or the heart on any List or Favorites
+  row. A card opened from the Favorites page gets a back button to it, just like
+  the List page. Favorites are a per-contact flag stored in the document, so they
+  ride along in the JSON backup and sync across your devices.
 - **Private / work types.** Each phone number and email address carries a type —
   Private or Work — chosen from a small dropdown in edit mode. The type is shown
   as the row's label in read mode and maps onto the standard vCard TYPE on
