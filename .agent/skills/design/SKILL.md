@@ -29,22 +29,23 @@ This skill ships a small harness at
 The Read tool renders PNGs inline. That's the whole reason this skill is
 fast — you can see every iteration without leaving the session.
 
-> **Prerequisite:** the harness needs Playwright, which is **not** a
-> dependency of this repo. Install it once before the first run:
+> **Prerequisite:** the harness needs Playwright, which is deliberately
+> **not** a dependency of this repo — no build/test/lint step uses it, so
+> human contributors and CI stay lean.
 >
-> ```sh
-> npm i -D playwright-core
-> ```
+> In Claude Code **web sessions** you get it for free: the SessionStart
+> hook (`.claude/hooks/session-start.sh`) installs `playwright-core` in
+> the background (`--no-save`, so `package.json` stays clean), and a
+> Chromium build is already preinstalled under `PLAYWRIGHT_BROWSERS_PATH`
+> (`/opt/pw-browsers`) which the harness finds automatically. So a web
+> session normally needs no setup — if the first run races the background
+> install, just wait a moment and rerun (or `npm i --no-save
+> playwright-core` by hand).
 >
-> In Claude Code **web sessions** a Chromium build is preinstalled under
-> `PLAYWRIGHT_BROWSERS_PATH` (`/opt/pw-browsers`) and the harness finds
-> it automatically, so `playwright-core` alone is enough. On a **local
-> machine** with no browser yet, use
-> `npm i -D @playwright/test && npx playwright install chromium`
-> instead. The harness resolves `chromium` from whichever of
-> `playwright` / `@playwright/test` / `playwright-core` is present.
-> Nothing else in the repo depends on Playwright, so it is left out of
-> `package.json`; add it only to run this skill.
+> On a **local machine** with no browser yet, install both once:
+> `npm i -D @playwright/test && npx playwright install chromium`. The
+> harness resolves `chromium` from whichever of `playwright` /
+> `@playwright/test` / `playwright-core` is present.
 
 ## When to invoke
 
