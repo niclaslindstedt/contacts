@@ -39,8 +39,8 @@ fast — you can see every iteration without leaving the session.
 > Chromium build is already preinstalled under `PLAYWRIGHT_BROWSERS_PATH`
 > (`/opt/pw-browsers`) which the harness finds automatically. So a web
 > session normally needs no setup — if the first run races the background
-> install, just wait a moment and rerun (or `npm i --no-save
-> playwright-core` by hand).
+> install, wait a moment and rerun (or install it by hand with
+> `npm i --no-save playwright-core`).
 >
 > On a **local machine** with no browser yet, install both once:
 > `npm i -D @playwright/test && npx playwright install chromium`. The
