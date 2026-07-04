@@ -53,6 +53,18 @@ Every section previews your choice with a live sample. These change the display
 only — what you typed is stored untouched, and focusing a phone field reveals
 the raw value for editing.
 
+## Make it yours (optional)
+
+Settings → **Appearance** restyles the whole app: pick a theme (or roll your own
+palette), a font and text size, and the shape-and-feel knobs — **Corner radius**,
+**Density**, **Border width**, button and checkbox styles, and elevation. Every
+change previews live.
+
+The **Dialogs** section tunes how the page behind an open dialog looks:
+**Backdrop dimming** sets how far it's darkened (none through dark), and
+**Backdrop blur** how far it's blurred (off by default). Adjust either and the
+open Settings dialog previews the change against itself.
+
 ## Keep it synced (optional)
 
 Settings → Storage → _Where your data lives_: pick a **local folder** (a

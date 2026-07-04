@@ -16,6 +16,66 @@
 
 @source "../node_modules/@niclaslindstedt/oss-framework/dist";
 
+/* ── Appearance knob wiring ──────────────────────────────────────────────────
+   The framework's theme engine (`applyUiStyle`) publishes the global look knobs
+   as CSS variables on `<html>`, but two of them have no consumer on their own,
+   so the matching Appearance settings looked dead:
+
+   • `--border-width` (Border width: thin / normal / bold). Tailwind's `border`
+     utility hard-codes `border-width: 1px`, so single-width borders never
+     followed the knob. Route the 1-wide border utilities through the variable
+     (leaving the explicit `border-2` emphasis borders alone) so the setting
+     bites app-wide.
+   • bare `.rounded` (Corner radius). In Tailwind v4 `.rounded` is a literal
+     `0.25rem`, not a token, so the framework cards that use it — `Section` (the
+     DETAILS / addresses / notes cards) and the popovers — ignored the knob.
+     Route it through the medium radius slot the engine tunes so those corners
+     track Corner radius. The `rounded-md` / `rounded-lg` utilities already
+     reference `--radius-md` / `--radius-lg`, so they followed it all along. */
+.border {
+  border-width: var(--border-width, 1px);
+}
+.border-x {
+  border-inline-width: var(--border-width, 1px);
+}
+.border-y {
+  border-block-width: var(--border-width, 1px);
+}
+.border-t {
+  border-top-width: var(--border-width, 1px);
+}
+.border-r {
+  border-right-width: var(--border-width, 1px);
+}
+.border-b {
+  border-bottom-width: var(--border-width, 1px);
+}
+.border-l {
+  border-left-width: var(--border-width, 1px);
+}
+.rounded {
+  border-radius: var(--radius-md, 0.375rem);
+}
+
+/* ── Modal backdrop (darkness + blur) ────────────────────────────────────────
+   The framework `Modal` paints its scrim with a single `bg-black/50` element,
+   and nothing else in the app uses that utility, so routing it through two app
+   variables lets the Appearance tab drive how far the page behind a dialog is
+   dimmed and blurred. The variables are written on `<html>` from the persisted
+   settings (see `applyBackdropVars`); the defaults below match the framework's
+   original look (50% dim, no blur) so the first paint is unchanged. The scrim
+   element also carries an inline `opacity` during its swipe-to-dismiss drag —
+   that rides on top of the background alpha and still fades the whole layer. */
+:root {
+  --modal-backdrop-darkness: 0.5;
+  --modal-backdrop-blur: 0px;
+}
+.bg-black\/50 {
+  background-color: rgb(0 0 0 / var(--modal-backdrop-darkness, 0.5));
+  -webkit-backdrop-filter: blur(var(--modal-backdrop-blur, 0px));
+  backdrop-filter: blur(var(--modal-backdrop-blur, 0px));
+}
+
 /* ── App-shell layout ────────────────────────────────────────────────────────
    A full-viewport `100svh` flex app whose panes own their own scroll regions,
    so the document itself never scrolls. */

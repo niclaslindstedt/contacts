@@ -40,6 +40,31 @@ export type ListPhonePriority = "private" | "work" | "both";
  *  Either way folders come before the ungrouped contacts. */
 export type FolderSort = "alphabetical" | "manual";
 
+/** How far the page behind an open dialog is dimmed. `none` leaves it in full
+ *  view; the rest fade it toward black in increasing steps. */
+export type BackdropDarkness = "none" | "subtle" | "medium" | "dark";
+
+/** How far the page behind an open dialog is blurred. `none` keeps it crisp
+ *  (the default); the rest soften it in increasing steps. */
+export type BackdropBlur = "none" | "subtle" | "medium" | "strong";
+
+/** The black-alpha each darkness step dims the modal backdrop to. `medium`
+ *  matches the framework's original `bg-black/50` scrim. */
+export const BACKDROP_DARKNESS: Record<BackdropDarkness, number> = {
+  none: 0,
+  subtle: 0.35,
+  medium: 0.5,
+  dark: 0.75,
+};
+
+/** The blur radius (px) each step applies behind an open dialog. */
+export const BACKDROP_BLUR_PX: Record<BackdropBlur, number> = {
+  none: 0,
+  subtle: 2,
+  medium: 4,
+  strong: 8,
+};
+
 export type AppSettings = {
   menuMode: MenuMode;
   disableAchievements: boolean;
@@ -72,6 +97,10 @@ export type AppSettings = {
   /** How folders are ordered in the side menu and the List — alphabetically,
    *  or in the hand-dragged order. */
   folderSort: FolderSort;
+  /** How far the page behind an open dialog is dimmed. */
+  modalBackdropDarkness: BackdropDarkness;
+  /** How far the page behind an open dialog is blurred. */
+  modalBackdropBlur: BackdropBlur;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -106,6 +135,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   // Folders sort alphabetically out of the box — the least-surprising order for
   // a fresh address book; switching to manual unlocks drag-to-reorder.
   folderSort: "alphabetical",
+  // The dialog backdrop dims the page to 50% black (the framework's original
+  // look) and adds no blur out of the box — both are tunable in Appearance.
+  modalBackdropDarkness: "medium",
+  modalBackdropBlur: "none",
 };
 
 const STORAGE_KEY = "contacts:settings";
@@ -185,4 +218,25 @@ export function phoneOptions(s: AppSettings): PhoneOptions {
 
 export function postalOptions(s: AppSettings): PostalOptions {
   return { format: s.postalFormat, spaces: s.postalSpaces };
+}
+
+// --- Settings → modal backdrop projection ------------------------------------
+// The dialog backdrop's darkness and blur are app-owned look knobs (the
+// framework's `ThemeAppearance` doesn't model them). Project them onto `<html>`
+// as CSS variables the scrim rule in `styles.css` consumes — mirroring how the
+// framework's theme engine writes its own UI-style variables. Called from the
+// app root for the persisted settings, and live from the Appearance tab so the
+// open dialog previews the change against itself.
+export function applyBackdropVars(
+  s: AppSettings,
+  el: HTMLElement = document.documentElement,
+): void {
+  el.style.setProperty(
+    "--modal-backdrop-darkness",
+    String(BACKDROP_DARKNESS[s.modalBackdropDarkness]),
+  );
+  el.style.setProperty(
+    "--modal-backdrop-blur",
+    `${BACKDROP_BLUR_PX[s.modalBackdropBlur]}px`,
+  );
 }

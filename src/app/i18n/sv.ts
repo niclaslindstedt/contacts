@@ -331,6 +331,22 @@ export const sv: Catalog = {
       developer: "Utvecklare",
       logs: "Loggar",
     },
+    appearance: {
+      backdropTitle: "Dialoger",
+      backdropIntro:
+        "Hur sidan bakom en öppen dialog ser ut. Ändra endera så förhandsvisar den här inställningsdialogen ändringen mot sig själv.",
+      darknessLabel: "Bakgrundsdämpning",
+      darknessHint:
+        "Hur mycket sidan bakom en dialog mörkläggs. Mer dämpning håller fokus på dialogen; ingen låter sidan synas fullt ut.",
+      blurLabel: "Bakgrundsoskärpa",
+      blurHint:
+        "Hur mycket sidan bakom en dialog görs suddig. Av håller den skarp.",
+      levelNone: "Ingen",
+      levelSubtle: "Svag",
+      levelMedium: "Mellan",
+      darknessDark: "Mörk",
+      blurStrong: "Stark",
+    },
     list: {
       intro: "Hur översiktssidan Lista visar varje kontakt.",
       densityTitle: "Kortstorlek",

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import {
   Button,
@@ -9,6 +9,10 @@ import {
   ToggleRow,
   UnlockGate,
 } from "@niclaslindstedt/oss-framework/components";
+import {
+  AppearancePicker,
+  type ThemeAppearance,
+} from "@niclaslindstedt/oss-framework/theme";
 import { LogViewer } from "@niclaslindstedt/oss-framework/logging";
 import { useStandaloneMobile } from "@niclaslindstedt/oss-framework/pwa";
 import { unlock as unlockTrophy } from "@niclaslindstedt/oss-framework/achievements";
@@ -29,9 +33,12 @@ import {
   type CountryCode,
 } from "../countries/index.ts";
 import {
+  applyBackdropVars,
   phoneOptions,
   postalOptions,
   type AppSettings,
+  type BackdropBlur,
+  type BackdropDarkness,
   type FolderSort,
   type ListDensity,
   type ListPhonePriority,
@@ -51,6 +58,100 @@ type Update = <K extends keyof AppSettings>(
   key: K,
   value: AppSettings[K],
 ) => void;
+
+// --- Appearance ------------------------------------------------------------
+
+// The Appearance tab: the framework's `AppearancePicker` (theme, font, the
+// radius / density / border / component knobs) plus the app-owned dialog
+// backdrop controls. The picker edits the live appearance; the backdrop knobs
+// are staged in the settings draft like every other tab, but preview live —
+// the effect below projects the *draft* values while the tab is mounted so the
+// open Settings dialog dims and blurs against itself, and restores the
+// committed values on cancel / tab switch (Save re-applies them from the app
+// root once the draft commits).
+export function AppearanceTab({
+  appearance,
+  setAppearance,
+  draft,
+  committed,
+  update,
+}: {
+  appearance: ThemeAppearance;
+  setAppearance: (next: ThemeAppearance) => void;
+  draft: AppSettings;
+  committed: AppSettings;
+  update: Update;
+}) {
+  const t = useT();
+
+  useEffect(() => {
+    applyBackdropVars(draft);
+    return () => applyBackdropVars(committed);
+    // Keyed on the backdrop knobs of each, not the whole objects — the draft is
+    // a fresh object on every keystroke elsewhere in Settings, which would
+    // otherwise thrash this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    draft.modalBackdropDarkness,
+    draft.modalBackdropBlur,
+    committed.modalBackdropDarkness,
+    committed.modalBackdropBlur,
+  ]);
+
+  const darknessOptions = [
+    { value: "none" as const, label: t("settings.appearance.levelNone") },
+    { value: "subtle" as const, label: t("settings.appearance.levelSubtle") },
+    { value: "medium" as const, label: t("settings.appearance.levelMedium") },
+    { value: "dark" as const, label: t("settings.appearance.darknessDark") },
+  ];
+  const blurOptions = [
+    { value: "none" as const, label: t("settings.appearance.levelNone") },
+    { value: "subtle" as const, label: t("settings.appearance.levelSubtle") },
+    { value: "medium" as const, label: t("settings.appearance.levelMedium") },
+    { value: "strong" as const, label: t("settings.appearance.blurStrong") },
+  ];
+
+  return (
+    <div>
+      <AppearancePicker appearance={appearance} onChange={setAppearance} />
+      <Section title={t("settings.appearance.backdropTitle")}>
+        <p className="text-xs text-muted">
+          {t("settings.appearance.backdropIntro")}
+        </p>
+        <div className="flex flex-col gap-1">
+          <span className="text-sm text-fg-bright">
+            {t("settings.appearance.darknessLabel")}
+          </span>
+          <SegmentedControl<BackdropDarkness>
+            value={draft.modalBackdropDarkness}
+            options={darknessOptions}
+            onChange={(next) => update("modalBackdropDarkness", next)}
+            fullWidth
+            ariaLabel={t("settings.appearance.darknessLabel")}
+          />
+          <p className="text-xs text-muted">
+            {t("settings.appearance.darknessHint")}
+          </p>
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-sm text-fg-bright">
+            {t("settings.appearance.blurLabel")}
+          </span>
+          <SegmentedControl<BackdropBlur>
+            value={draft.modalBackdropBlur}
+            options={blurOptions}
+            onChange={(next) => update("modalBackdropBlur", next)}
+            fullWidth
+            ariaLabel={t("settings.appearance.blurLabel")}
+          />
+          <p className="text-xs text-muted">
+            {t("settings.appearance.blurHint")}
+          </p>
+        </div>
+      </Section>
+    </div>
+  );
+}
 
 // --- General ---------------------------------------------------------------
 
