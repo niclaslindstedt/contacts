@@ -8,6 +8,7 @@ import {
   SegmentedControl,
   Section,
   SelectPicker,
+  SpinnerIcon,
   ToggleRow,
   UnlockGate,
 } from "@niclaslindstedt/oss-framework/components";
@@ -571,6 +572,15 @@ export function StorageTab({
   // Connect affordance until the OAuth flow (cloud) or directory pick (folder)
   // lands.
   const [picked, setPicked] = useState(sync.backend);
+  // While a connect flow is in flight (an OAuth redirect/consent popup, or the
+  // directory picker + permission prompt) the button shows a spinner and locks
+  // so the tap reads as "working" instead of dead. Only one connect affordance
+  // is visible at a time, so a single flag covers all of them.
+  const [connecting, setConnecting] = useState(false);
+  const runConnect = (fn: () => Promise<void>) => {
+    setConnecting(true);
+    void fn().finally(() => setConnecting(false));
+  };
   const pickedFolder = picked === "folder";
   const pickedCloud =
     picked === "dropbox" || picked === "gdrive" ? picked : null;
@@ -708,18 +718,30 @@ export function StorageTab({
                 </span>
                 <Button
                   variant="primary"
-                  onClick={() => void sync.reconnectFolder()}
+                  disabled={connecting}
+                  onClick={() => runConnect(() => sync.reconnectFolder())}
                 >
-                  {t("settings.storage.folderReconnect")}
+                  <span className="flex items-center gap-1.5">
+                    {connecting && (
+                      <SpinnerIcon className="h-4 w-4 animate-spin" />
+                    )}
+                    {t("settings.storage.folderReconnect")}
+                  </span>
                 </Button>
               </div>
             ) : (
               <Button
                 variant="primary"
                 className="self-start"
-                onClick={() => void sync.connectFolder()}
+                disabled={connecting}
+                onClick={() => runConnect(() => sync.connectFolder())}
               >
-                {t("settings.storage.folderChoose")}
+                <span className="flex items-center gap-1.5">
+                  {connecting && (
+                    <SpinnerIcon className="h-4 w-4 animate-spin" />
+                  )}
+                  {t("settings.storage.folderChoose")}
+                </span>
               </Button>
             )}
           </div>
@@ -753,15 +775,23 @@ export function StorageTab({
             ) : (
               <Button
                 variant="primary"
+                disabled={connecting}
                 onClick={() =>
-                  void (pickedCloud === "dropbox"
-                    ? sync.connectDropbox()
-                    : sync.connectGdrive())
+                  runConnect(() =>
+                    pickedCloud === "dropbox"
+                      ? sync.connectDropbox()
+                      : sync.connectGdrive(),
+                  )
                 }
               >
-                {t("settings.storage.connect", {
-                  name: PROVIDER_NAMES[pickedCloud],
-                })}
+                <span className="flex items-center gap-1.5">
+                  {connecting && (
+                    <SpinnerIcon className="h-4 w-4 animate-spin" />
+                  )}
+                  {t("settings.storage.connect", {
+                    name: PROVIDER_NAMES[pickedCloud],
+                  })}
+                </span>
               </Button>
             )}
           </div>

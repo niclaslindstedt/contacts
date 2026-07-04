@@ -214,7 +214,7 @@ export function BackupsModal({
             >
               <span className="flex items-center gap-1.5">
                 {busy === "create" ? (
-                  <SpinnerIcon className="h-4 w-4" />
+                  <SpinnerIcon className="h-4 w-4 animate-spin" />
                 ) : (
                   <CloudUploadIcon className="h-4 w-4" />
                 )}
@@ -231,7 +231,7 @@ export function BackupsModal({
 
           {backups === null ? (
             <div className="flex items-center gap-2 py-6 text-sm text-muted">
-              <SpinnerIcon className="h-4 w-4" />
+              <SpinnerIcon className="h-4 w-4 animate-spin" />
               {t("settings.backups.loading")}
             </div>
           ) : backups.length === 0 ? (
@@ -267,7 +267,7 @@ export function BackupsModal({
                         onClick={() => void download(info)}
                       >
                         {rowBusy === info.path && busy === null ? (
-                          <SpinnerIcon className="h-4 w-4" />
+                          <SpinnerIcon className="h-4 w-4 animate-spin" />
                         ) : (
                           <ArrowDownIcon className="h-4 w-4" />
                         )}

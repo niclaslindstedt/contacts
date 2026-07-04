@@ -11,6 +11,7 @@ import {
   usePersistentMenuPosition,
   useSidebarInset,
 } from "@niclaslindstedt/oss-framework/sidebar";
+import { SpinnerIcon } from "@niclaslindstedt/oss-framework/components";
 import { UpdateToast, usePwaUpdate } from "@niclaslindstedt/oss-framework/pwa";
 import { SyncDetailsModal } from "@niclaslindstedt/oss-framework/sync";
 import { ChangelogModal } from "@niclaslindstedt/oss-framework/changelog";
@@ -108,6 +109,10 @@ export function App() {
   const passwordRef = useRef<string | null>(null);
   const sync = useSyncEngine(store, ns.activeSlug, passwordRef, devSeed.active);
   const [syncDetailsOpen, setSyncDetailsOpen] = useState(false);
+  // Applying an update (skip-waiting → the new service worker takes control →
+  // the page reloads) has a visible gap. Flip a flag on the tap so the toast
+  // shows a spinner instead of a dead button until the reload lands.
+  const [reloading, setReloading] = useState(false);
 
   // Wide screens (≥ the smallest iPad) dock the sidebar permanently; phones
   // collapse it to a draggable drawer.
@@ -377,13 +382,30 @@ export function App() {
       />
 
       {/* The framework's PWA "a new version is ready" prompt, fed from the
-          real `usePwaUpdate()` state above. */}
-      <UpdateToast
-        needRefresh={pwa.needRefresh}
-        incomingVersion={pwa.incomingVersion}
-        onReload={() => pwa.reload()}
-        onDismiss={() => pwa.dismiss()}
-      />
+          real `usePwaUpdate()` state above. Once "Update" is tapped we swap the
+          toast for a spinner banner so the wait for the reload reads as
+          progress rather than a stuck button. */}
+      {pwa.needRefresh && reloading ? (
+        <div
+          role="status"
+          aria-live="polite"
+          data-toast-stack
+          className="fixed right-[calc(0.75rem+var(--app-content-right,0px))] bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-[calc(0.75rem+var(--app-content-left,0px))] z-[60] mx-auto flex max-w-md items-center gap-3 rounded-sm border border-line bg-surface px-3 py-2.5 text-fg shadow-md"
+        >
+          <SpinnerIcon className="h-5 w-5 animate-spin text-accent" />
+          <span className="text-sm font-medium">{t("menu.updating")}</span>
+        </div>
+      ) : (
+        <UpdateToast
+          needRefresh={pwa.needRefresh}
+          incomingVersion={pwa.incomingVersion}
+          onReload={() => {
+            setReloading(true);
+            pwa.reload();
+          }}
+          onDismiss={() => pwa.dismiss()}
+        />
+      )}
 
       {/* The sync command centre — opened by the card header's `SyncStatus`
           glyph. Purely presentational: the app's engine (`useSyncEngine`)

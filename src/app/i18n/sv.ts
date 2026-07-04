@@ -60,6 +60,7 @@ export const sv: Catalog = {
     upToDate: "Du är uppdaterad",
     updateAvailable: "Uppdatering tillgänglig",
     updatesUnavailable: "Uppdateringar otillgängliga",
+    updating: "Uppdaterar…",
     settings: "Inställningar",
   },
   changelog: {
