@@ -30,3 +30,4 @@ export const MIME_VCARD = "text/vcard;charset=utf-8";
 export const MIME_CSV = "text/csv;charset=utf-8";
 export const MIME_JSON = "application/json;charset=utf-8";
 export const MIME_ICS = "text/calendar;charset=utf-8";
+export const MIME_ZIP = "application/zip";

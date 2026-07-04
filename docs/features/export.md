@@ -57,3 +57,41 @@ undo step. A file that yields nothing is a no-op with a short "no contacts
 found" note. The readers are pure and node-tested (`tests/import_test.ts`); the
 file-reading glue lives in `importFiles.ts` and the drop UI in
 `ImportDropZone.tsx`.
+
+## Backups
+
+Import/export moves individual cards between address books; **backups** capture
+the _whole_ document — every contact, folder, photo, and attachment — as a
+single dated snapshot. A backup is a compressed `.zip` holding one
+`contacts.json` (the full JSON backup above, with photos and attachments
+inline), so it is self-contained regardless of which backend externalises those
+files day to day. Deflate compression claws back most of the base64 bloat the
+inline images add. The archive reader/writer is dependency-free — it uses the
+platform's `CompressionStream`, falling back to a stored (uncompressed) entry
+where that codec is missing (`zip.ts`); the backup surface itself is `backup.ts`.
+
+From **Settings → Storage → Backups** you can:
+
+- **Download backup (.zip)** — save a snapshot straight to disk, without writing
+  it anywhere else. The download name is `contacts-<timestamp>.zip`.
+- **Restore from file…** — pick a downloaded `.zip` and replace the current
+  document with it. This is destructive, so it asks first; when a backend is
+  connected it files a safety-net backup of the current data before overwriting.
+
+When a **file-backed backend is connected** (a picked local folder, Dropbox, or
+Google Drive) and the copy isn't encrypted, **Browse backups** opens a manager
+over a `backups/` folder on that backend, mirroring what other snapshot UIs
+offer:
+
+- **Back up now** writes a fresh snapshot into `backups/`, named
+  `contacts-<namespace>-<timestamp>-c<contacts>-f<folders>.zip` — the timestamp
+  and counts ride in the file name so the list renders from a directory listing
+  alone, without downloading every archive.
+- Each row can be **downloaded**, **deleted**, or **restored**. Restoring first
+  files the current document as its own safety-net snapshot, then adopts the
+  chosen one — which the sync engine pushes back up as the live copy.
+
+Backups are plaintext archives, so the off-device manager is hidden while
+**encryption at rest** is on (a plaintext snapshot must not land beside an
+AES-GCM envelope). Download and restore-from-file still work from disk. Backups
+are per-namespace: the browse list only shows the current namespace's snapshots.

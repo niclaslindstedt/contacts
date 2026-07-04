@@ -3,6 +3,8 @@ import { useRef, useState, type ReactNode } from "react";
 
 import {
   Button,
+  ConfirmDialog,
+  DatabaseIcon,
   SegmentedControl,
   Section,
   SelectPicker,
@@ -19,7 +21,21 @@ import { useT } from "../i18n/index.ts";
 import { contactsToCsv, contactsToVCards } from "../export.ts";
 import { IMPORT_ACCEPT, readImportedContacts } from "../importFiles.ts";
 import { serializeDoc } from "../migrations.ts";
-import { downloadText, MIME_CSV, MIME_JSON, MIME_VCARD } from "../download.ts";
+import {
+  backupFileName,
+  backupPath,
+  createBackupZip,
+  readBackupDoc,
+} from "../backup.ts";
+import { BackupsModal } from "../BackupsModal.tsx";
+import {
+  downloadBlob,
+  downloadText,
+  MIME_CSV,
+  MIME_JSON,
+  MIME_VCARD,
+  MIME_ZIP,
+} from "../download.ts";
 import { DATE_FORMATS, formatDate, type DateFormat } from "../format.ts";
 import {
   COUNTRIES,
@@ -410,6 +426,12 @@ export function StorageTab({
   // drag-and-drop overlay uses (see `ImportDropZone` / `import.ts`).
   const fileInput = useRef<HTMLInputElement>(null);
   const [importMsg, setImportMsg] = useState<string | null>(null);
+  // The whole-document backup surface: the browse-backups modal, the local
+  // `.zip` export/import controls, and the destructive-import confirm.
+  const backupInput = useRef<HTMLInputElement>(null);
+  const [backupsOpen, setBackupsOpen] = useState(false);
+  const [backupMsg, setBackupMsg] = useState<string | null>(null);
+  const [pendingRestore, setPendingRestore] = useState<string | null>(null);
 
   // A cloud backend only appears in the picker when its OAuth identifier is
   // baked into the build — an unconfigured backend can't be connected, so we
@@ -487,6 +509,61 @@ export function StorageTab({
       n === 1 ? t("import.doneOne") : t("import.done", { n: String(n) }),
     );
     log.info(`import: filed ${n} contact(s) from picked file(s)`);
+  };
+
+  // Export the whole document as a dated `.zip` straight to disk — a backup
+  // without touching any backend (the "download without persisting" path).
+  const exportBackup = async () => {
+    const zip = await createBackupZip(store.data);
+    downloadBlob(
+      backupFileName(),
+      new Blob([zip as BlobPart], { type: MIME_ZIP }),
+    );
+    unlockTrophy("exporter");
+    log.info("backup: exported a snapshot to disk");
+  };
+
+  // Read a picked backup `.zip` and, once confirmed, replace the whole document
+  // with it. Unpacking here (before the confirm) surfaces a bad file up front.
+  const runImportBackup = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      setPendingRestore(await readBackupDoc(bytes));
+    } catch (err) {
+      setBackupMsg(t("settings.backups.importBad"));
+      log.warn(
+        `backup: import failed — ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  };
+
+  const confirmImportBackup = async () => {
+    const text = pendingRestore;
+    setPendingRestore(null);
+    if (!text) return;
+    // Safety net: if a backend can hold one, file the current document before it
+    // is overwritten, so an imported restore is as undoable as an in-app one.
+    if (sync.backupTarget) {
+      try {
+        const now = new Date();
+        const zip = await createBackupZip(store.data, now);
+        await sync.backupTarget.store.write(
+          backupPath(store.slug, store.data, now),
+          zip,
+          MIME_ZIP,
+        );
+      } catch (err) {
+        log.warn(
+          `backup: safety-net before import failed — ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+    store.adoptRemote(text);
+    unlockTrophy("importer");
+    setBackupMsg(t("settings.backups.imported"));
+    log.info("backup: restored the document from an imported file");
   };
 
   return (
@@ -703,6 +780,73 @@ export function StorageTab({
           </div>
         )}
       </Section>
+
+      <Section title={t("settings.storage.backupsTitle")}>
+        <p className="text-xs text-muted">
+          {t("settings.storage.backupsIntro")}
+        </p>
+        {sync.backupTarget ? (
+          <Button
+            variant="secondary"
+            className="self-start"
+            onClick={() => setBackupsOpen(true)}
+          >
+            <span className="flex items-center gap-1.5">
+              <DatabaseIcon className="h-4 w-4" />
+              {t("settings.backups.browse")}
+            </span>
+          </Button>
+        ) : (
+          <p className="text-xs text-muted">
+            {t("settings.storage.backupsOffline")}
+          </p>
+        )}
+        <input
+          ref={backupInput}
+          type="file"
+          accept=".zip,application/zip"
+          className="hidden"
+          onChange={(e) => {
+            void runImportBackup(e.target.files);
+            // Reset so re-picking the same file fires `change` again.
+            e.target.value = "";
+          }}
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" onClick={() => void exportBackup()}>
+            {t("settings.storage.backupExport")}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => backupInput.current?.click()}
+          >
+            {t("settings.storage.backupImport")}
+          </Button>
+          {backupMsg && (
+            <span className="text-sm text-success">{backupMsg}</span>
+          )}
+        </div>
+      </Section>
+
+      {sync.backupTarget && (
+        <BackupsModal
+          open={backupsOpen}
+          onClose={() => setBackupsOpen(false)}
+          store={store}
+          target={sync.backupTarget}
+          slug={store.slug}
+        />
+      )}
+
+      <ConfirmDialog
+        open={pendingRestore !== null}
+        title={t("settings.backups.importConfirmTitle")}
+        description={t("settings.backups.importConfirmBody")}
+        confirmLabel={t("settings.backups.importConfirm")}
+        onConfirm={() => void confirmImportBackup()}
+        onCancel={() => setPendingRestore(null)}
+        labels={{ close: t("common.close"), cancel: t("common.cancel") }}
+      />
 
       {/* The framework's full-screen lock screen — the cloud copy is an
           envelope and the session passphrase is gone after a reload. A wrong

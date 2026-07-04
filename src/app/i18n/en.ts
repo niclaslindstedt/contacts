@@ -472,6 +472,40 @@ export const en = {
       exportCsv: "Export CSV",
       exportJson: "Export JSON backup",
       exportEmpty: "Nothing to export yet — add a contact first.",
+      backupsTitle: "Backups",
+      backupsIntro:
+        "Dated snapshots of your whole address book — every contact, folder, photo, and attachment — packed into a compressed .zip. Connect a local folder or cloud drive to keep them off-device, or download and restore one straight from disk.",
+      backupsOffline:
+        "Connect a local folder or a cloud drive (and turn encryption off) to keep dated backups off-device. You can still download and restore a backup from disk below.",
+      backupExport: "Download backup (.zip)",
+      backupImport: "Restore from file…",
+    },
+    backups: {
+      title: "Backups",
+      intro:
+        "Timestamped snapshots written into your {provider} backups folder. Restoring one saves your current contacts as a safety net first.",
+      backUpNow: "Back up now",
+      browse: "Browse backups",
+      loading: "Loading backups…",
+      empty: "No backups yet — take one with “Back up now”.",
+      counts: "{contacts} contacts · {folders} folders",
+      download: "Download",
+      delete: "Delete",
+      restore: "Restore",
+      restoreConfirmTitle: "Restore this backup?",
+      restoreConfirmBody:
+        "Your current contacts will be replaced by this snapshot. A safety-net backup of the current data is filed first, so you can roll this back.",
+      deleteConfirmTitle: "Delete this backup?",
+      deleteConfirmBody:
+        "{name} will be permanently removed from the backups folder. This can't be undone.",
+      importConfirmTitle: "Restore from this file?",
+      importConfirmBody:
+        "Your current contacts will be replaced by the backup you picked. If a backend is connected, a safety-net backup is filed first.",
+      importConfirm: "Restore",
+      imported: "Backup restored.",
+      importBad: "That file isn't a contacts backup.",
+      gone: "This backup is no longer on the backend.",
+      error: "Backup failed: {message}",
     },
     developer: {
       intro: "Diagnostic tools. These stay on this device.",

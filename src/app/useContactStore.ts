@@ -594,6 +594,9 @@ export function useContactStore(
 
   return {
     data,
+    /** The namespace slug the live document belongs to — so backup file names
+     *  and cross-namespace features can key off it. */
+    slug: state.slug,
     activeContact,
     canUndo: past.current.length > 0,
     canRedo: future.current.length > 0,
