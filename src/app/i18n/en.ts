@@ -66,6 +66,7 @@ export const en = {
     upToDate: "You’re up to date",
     updateAvailable: "Update available",
     updatesUnavailable: "Updates unavailable",
+    updating: "Updating…",
     settings: "Settings",
   },
   changelog: {
