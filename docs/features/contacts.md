@@ -23,7 +23,9 @@ marked as a **company** rather than a person.
   contacts, or **Spacious** for a larger, easier-to-see photo — and chooses which
   number to prefer (**Private**, **Work**, or **Both**); a contact with no number
   of the chosen type shows whatever it has, so open the card if the wrong one
-  appears. When a row shows more than one number, each is tagged with its type.
+  appears. When a row shows more than one number, each leads with a small type
+  glyph — a person for Private, a briefcase for Work — the same marks the edit
+  form's type toggle uses.
   Each row also carries a **heart** at its trailing edge — tap it to star (or
   unstar) that contact as a favorite without opening the card. Tap a row to open
   that contact's card — its header carries a **back button** to return to the

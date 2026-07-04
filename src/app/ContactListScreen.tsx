@@ -21,10 +21,12 @@ import { unlock } from "@niclaslindstedt/oss-framework/achievements";
 
 import { Avatar } from "./Avatar.tsx";
 import {
+  BuildingIcon,
   CheckSquareIcon,
   DownloadIcon,
   FavoriteIcon,
   ListIcon,
+  PersonIcon,
 } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { formatPhoneValue } from "./countries/index.ts";
@@ -39,7 +41,7 @@ import {
   reorderIds,
 } from "./contactList.ts";
 import type { ContactStore } from "./useContactStore.ts";
-import type { Contact } from "./types.ts";
+import type { Contact, Phone } from "./types.ts";
 import { displayName, methodKind } from "./types.ts";
 
 // The overview list — a top-level view, reached from the side menu's List
@@ -636,15 +638,16 @@ function ContactRow({
         <span className="flex min-w-0 flex-1 flex-col">
           {nameNode}
           <ContactMethodsText
-            phones={phones.map((p) => {
-              const value = formatPhoneValue(
+            phones={phones.map((p) => ({
+              ...p,
+              value: formatPhoneValue(
                 p.value,
                 settings.country,
                 phoneOptions(settings),
-              );
-              return showPhoneKind ? `${kindText(p.label, t)} ${value}` : value;
-            })}
+              ),
+            }))}
             emails={emails.map((e) => e.value)}
+            showPhoneKind={showPhoneKind}
           />
         </span>
       </button>
@@ -687,11 +690,7 @@ function ContactRow({
                 href={`tel:${phone.value.replace(/\s+/g, "")}`}
                 className="w-fit max-w-full truncate text-xs text-accent hover:underline sm:text-right"
               >
-                {showPhoneKind && (
-                  <span className="text-muted">
-                    {kindText(phone.label, t)}{" "}
-                  </span>
-                )}
+                {showPhoneKind && <PhoneKindGlyph label={phone.label} />}
                 {formatPhoneValue(
                   phone.value,
                   settings.country,
@@ -763,30 +762,56 @@ function FavoriteToggle({
   );
 }
 
-// The Private / Work label for a phone number, shown as a prefix when a row
-// carries more than one so it's clear which is which.
-function kindText(
-  label: string | undefined,
-  t: ReturnType<typeof useT>,
-): string {
-  return methodKind(label) === "work"
-    ? t("contact.kindWork")
-    : t("contact.kindPrivate");
+// The Private / Work marker for a phone number, shown as a leading glyph when a
+// row carries more than one so it's clear which is which — the same two marks
+// the edit form's type toggle uses (a person for Private, a briefcase for Work),
+// so the list reads in the app's established visual language rather than
+// spelling the type out. Muted and inline, with the type name kept for screen
+// readers and as a hover tooltip.
+function PhoneKindGlyph({ label }: { label: string | undefined }) {
+  const t = useT();
+  const work = methodKind(label) === "work";
+  const Icon = work ? BuildingIcon : PersonIcon;
+  const text = work ? t("contact.kindWork") : t("contact.kindPrivate");
+  return (
+    <span className="text-muted" title={text}>
+      <Icon className="mr-0.5 inline-block h-3 w-3 align-[-0.125em]" />
+      <span className="sr-only">{text}</span>
+    </span>
+  );
 }
 
 // The plain-text echo of a contact's methods shown under the name while
-// selecting (no links — the row is busy being a checkbox).
+// selecting (no links — the row is busy being a checkbox). Phones still lead
+// with their Private / Work glyph when there's more than one, matching the
+// tappable rows; the methods themselves read as text, dot-separated.
 function ContactMethodsText({
   phones,
   emails,
+  showPhoneKind,
 }: {
-  phones: string[];
+  phones: Phone[];
   emails: string[];
+  showPhoneKind: boolean;
 }) {
   if (phones.length === 0 && emails.length === 0) return null;
+  const items: ReactNode[] = [
+    ...phones.map((phone) => (
+      <span key={`phone-${phone.id}`}>
+        {showPhoneKind && <PhoneKindGlyph label={phone.label} />}
+        {phone.value}
+      </span>
+    )),
+    ...emails.map((email, i) => <span key={`email-${i}`}>{email}</span>),
+  ];
   return (
     <span className="truncate text-xs text-muted">
-      {[...phones, ...emails].join(" · ")}
+      {items.map((item, i) => (
+        <span key={i}>
+          {i > 0 && " · "}
+          {item}
+        </span>
+      ))}
     </span>
   );
 }
