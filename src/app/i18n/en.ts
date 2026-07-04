@@ -415,14 +415,22 @@ export const en = {
     },
     storage: {
       intro:
-        "Where your contacts live. They are always saved on this device; connect a cloud drive to keep an off-device copy in sync.",
+        "Where your contacts live. They are always saved on this device; connect a local folder or a cloud drive to keep an off-device copy in sync.",
       backendTitle: "Where your data lives",
       backendThisDevice: "This device",
+      backendFolder: "Local folder",
       backendDropbox: "Dropbox",
       backendGdrive: "Google Drive",
       connect: "Connect {name}",
       connectedAs: "Connected — syncing to {name}.",
       disconnect: "Disconnect",
+      folderHint:
+        "Sync to a folder on this computer. Your contacts are written as a JSON document, with photos and attachments filed beside it as real image and document files — a browsable, git-trackable tree you can back up or edit with other tools.",
+      folderChoose: "Choose a folder…",
+      folderConnected: "Connected — syncing to a local folder.",
+      folderReconnect: "Reconnect folder",
+      folderReconnectNeeded:
+        "This folder is no longer accessible — its permission was reset (a common browser behaviour between sessions). Reconnect to resume syncing.",
       missingKeyDropbox:
         "Dropbox sync needs a Dropbox app key baked into the build (VITE_DROPBOX_APP_KEY).",
       missingKeyGdrive:

@@ -37,6 +37,7 @@ import {
   gdrivePhotoFileStore,
   type PhotoFileStore,
 } from "./photoFileStore.ts";
+import { folderFileStore } from "./folderFileStore.ts";
 import type { Contact } from "./types.ts";
 
 const log = logStore.createLogger("attachments");
@@ -73,6 +74,15 @@ export function dropboxAttachmentStore(
 /** The Google Drive attachment store, in the app folder's `attachments/` tree. */
 export function gdriveAttachmentStore(token: string): AttachmentStore {
   return scopeToAttachments(gdrivePhotoFileStore(token));
+}
+
+/** The local-folder attachment store, filing binary files to `attachments/…`
+ *  inside the picked directory. `onPermissionLost` fires on a revoked grant. */
+export function folderAttachmentStore(
+  root: FileSystemDirectoryHandle,
+  onPermissionLost?: () => void,
+): AttachmentStore {
+  return scopeToAttachments(folderFileStore(root, onPermissionLost));
 }
 
 // -- the document shape this layer touches (a loose view of `AppData`) --------

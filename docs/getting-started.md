@@ -52,10 +52,11 @@ the raw value for editing.
 
 ## Keep it synced (optional)
 
-Settings → Storage → _Where your data lives_: pick Dropbox or Google Drive and
-hit Connect. See [features/sync.md](features/sync.md) and
-[configuration.md](configuration.md) for the OAuth setup a self-hosted build
-needs.
+Settings → Storage → _Where your data lives_: pick a **local folder** (a
+directory on this computer — no account, Chromium-based browsers only), or
+**Dropbox** / **Google Drive**, and hit Connect. See
+[features/sync.md](features/sync.md) and [configuration.md](configuration.md)
+for the OAuth setup a self-hosted build needs (the local folder needs none).
 
 ## Take it with you
 

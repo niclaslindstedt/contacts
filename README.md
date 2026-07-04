@@ -2,9 +2,9 @@
 
 A local-first contacts PWA built on
 [`@niclaslindstedt/oss-framework`](https://github.com/niclaslindstedt/oss-framework)
-— your address book lives on your device as JSON, optionally syncs to Dropbox
-or Google Drive (with encryption at rest), and exports as vCard/CSV for
-Outlook, iOS, and Android.
+— your address book lives on your device as JSON, optionally syncs to a local
+folder, Dropbox, or Google Drive (with encryption at rest), and exports as
+vCard/CSV for Outlook, iOS, and Android.
 
 [![CI](https://github.com/niclaslindstedt/contacts/actions/workflows/ci.yml/badge.svg)](https://github.com/niclaslindstedt/contacts/actions/workflows/ci.yml)
 [![Pages](https://github.com/niclaslindstedt/contacts/actions/workflows/pages.yml/badge.svg)](https://github.com/niclaslindstedt/contacts/actions/workflows/pages.yml)
@@ -15,9 +15,10 @@ Outlook, iOS, and Android.
 
 - **Your contacts are yours.** Everything lives on your device first — no
   account, no server, works fully offline as an installable PWA.
-- **Cloud when you want it.** Connect Dropbox or Google Drive and the app keeps
-  an off-device copy in sync — optionally wrapped in an AES-GCM envelope keyed
-  by a passphrase that never leaves memory.
+- **Sync when you want it.** Point it at a local folder on your computer (a
+  browsable, git-trackable tree — no account, no network) or connect Dropbox or
+  Google Drive, and the app keeps an off-device copy in sync — optionally
+  wrapped in an AES-GCM envelope keyed by a passphrase that never leaves memory.
 - **Never locked in.** One tap exports vCard 3.0 (imports straight into
   Outlook, iOS, and Android/Google Contacts), Outlook-compatible CSV, or a
   versioned JSON backup.
@@ -104,10 +105,10 @@ Enter — and start filling in the card.
 - **Import** — drag a `.vcf` (or CSV / JSON backup) straight onto the contact
   screen — handy for dropping a card shared out of the iOS Contacts app — or
   pick a file from Settings → Storage. See [`docs/features/export.md`](docs/features/export.md).
-- **Sync** — Settings → Storage: connect Dropbox or Google Drive; the cloud
-  glyph in the card header shows the save state and opens the sync command
-  centre. Connecting a drive that already holds contacts asks whether to keep
-  the cloud copy or replace it with this device.
+- **Sync** — Settings → Storage: pick a local folder or connect Dropbox or
+  Google Drive; the sync glyph in the card header shows the save state and opens
+  the sync command centre. Connecting a backend that already holds contacts asks
+  whether to keep the synced copy or replace it with this device.
 
 ### Install as an app
 
