@@ -85,10 +85,12 @@ export function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   // The top-level view the main area shows: the active contact, the overview
   // List page, the Favorites page, or the Archive page (all reached from the
-  // side menu's action grid).
+  // side menu's action grid). The app opens on the **List** page — the overview
+  // of every contact — so a fresh launch always lands on the full address book
+  // rather than a single card.
   const [view, setView] = useState<
     "contact" | "archive" | "list" | "favorites"
-  >("contact");
+  >("list");
   // Which browse page the current card was opened from, so its header offers a
   // back button to that exact page. `null` for any other way into a card (a
   // sidebar pick, a search hit, a fresh contact).
