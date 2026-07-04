@@ -48,6 +48,11 @@ marked as a **company** rather than a person.
   contact, so they ride along in the JSON backup and sync across your devices; a
   newly starred contact joins the bottom of the list until you drag it into
   place.
+- **Folders in the side menu.** Group contacts into **folders** — tap a folder
+  row to collapse or expand just that one. The **Contacts** header carries a
+  folder glyph that folds **every** folder shut in one tap (handy when a long
+  list of folders has pushed your ungrouped contacts out of reach); once they're
+  all collapsed the same glyph expands them all again.
 - **Website & company.** A card can carry a **Website** — add a homepage in edit
   mode and it shows as a tap-to-open link in read mode (and exports as the vCard
   `URL`). A **This is a company** switch — at the bottom of the edit view, beside

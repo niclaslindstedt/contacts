@@ -269,6 +269,12 @@ export function SideMenuContent({
     });
   }
 
+  // Collapse every folder in one go (or, once they're all collapsed, expand
+  // them all again). Driven by the glyph on the "Contacts" header row.
+  function setAllFoldersCollapsed(collapsed: boolean, ids: string[]) {
+    setCollapsedFolders(collapsed ? new Set(ids) : new Set());
+  }
+
   function pick(id: string) {
     setActive(id);
     onNavigate();
@@ -370,6 +376,10 @@ export function SideMenuContent({
     folderSort,
   );
   folderOrderRef.current = folders.map((f) => f.id);
+  // Drives the "Contacts" header glyph: once every folder is collapsed the
+  // button flips to "expand all", otherwise it collapses them all.
+  const allFoldersCollapsed =
+    folders.length > 0 && folders.every((f) => collapsedFolders.has(f.id));
   const standalone = data.contacts
     .filter((c) => c.folderId === null && !c.archived)
     .sort(compareContacts);
@@ -406,7 +416,28 @@ export function SideMenuContent({
         }}
       />
 
-      <SectionHeader label={t("menu.contacts")} border />
+      <SectionHeader
+        label={t("menu.contacts")}
+        border
+        action={
+          folders.length > 0 ? (
+            <CollapseAllButton
+              collapsed={allFoldersCollapsed}
+              label={
+                allFoldersCollapsed
+                  ? t("menu.expandAllFolders")
+                  : t("menu.collapseAllFolders")
+              }
+              onClick={() =>
+                setAllFoldersCollapsed(
+                  !allFoldersCollapsed,
+                  folders.map((f) => f.id),
+                )
+              }
+            />
+          ) : undefined
+        }
+      />
 
       {/* Scrolling list region — also the "root" drop target: dropping a card
           dragged out of a folder here un-groups it. */}
@@ -753,7 +784,15 @@ export function SideMenuContent({
 
 // --- rows ------------------------------------------------------------------
 
-function SectionHeader({ label, border }: { label: string; border?: boolean }) {
+function SectionHeader({
+  label,
+  border,
+  action,
+}: {
+  label: string;
+  border?: boolean;
+  action?: ReactNode;
+}) {
   return (
     <div
       className={`flex items-center justify-between gap-2 px-5 pt-3 pb-1 ${
@@ -763,7 +802,38 @@ function SectionHeader({ label, border }: { label: string; border?: boolean }) {
       <span className="text-xs font-semibold tracking-wide text-muted uppercase">
         {label}
       </span>
+      {action}
     </div>
+  );
+}
+
+// The glyph seated at the right of the "Contacts" header row: one click folds
+// every folder shut, the next unfolds them all. Its icon mirrors the folder
+// rows' own convention — an open folder means "there's something to collapse",
+// a closed one means "expand".
+function CollapseAllButton({
+  collapsed,
+  label,
+  onClick,
+}: {
+  collapsed: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-muted hover:bg-surface-2 hover:text-fg-bright"
+    >
+      {collapsed ? (
+        <FolderIcon className="h-4 w-4" />
+      ) : (
+        <FolderOpenIcon className="h-4 w-4" />
+      )}
+    </button>
   );
 }
 
