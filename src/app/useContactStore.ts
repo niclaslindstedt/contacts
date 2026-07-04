@@ -9,6 +9,7 @@ import { parseDoc, serializeDoc } from "./migrations.ts";
 import { starterDoc } from "./seed.ts";
 import type { AppData, Contact, Folder } from "./types.ts";
 import { splitFullName } from "./types.ts";
+import * as output from "../output.ts";
 
 // The app's data store. Holds one namespace's document in state, persists it
 // to a per-namespace localStorage key, and exposes the edit actions the
@@ -54,26 +55,100 @@ export type DocBackend = {
   save(slug: string, doc: AppData): void;
 };
 
+/** Strip the heavy inline media (photo / attachment bytes) from a document,
+ *  keeping every contact, field, and cloud-path reference. The last-resort
+ *  fallback when the full document won't fit in localStorage: a quota failure
+ *  then costs only the locally cached image / file bytes (which a cloud backend
+ *  re-hydrates from the externalised copies) — never the contacts themselves. */
+function stripInlineMedia(doc: AppData): AppData {
+  return {
+    ...doc,
+    contacts: doc.contacts.map((c) => {
+      const next: Contact = { ...c };
+      if (next.photos) {
+        next.photos = next.photos.map((p) => ({
+          ...p,
+          photo: undefined,
+          photoSource: undefined,
+        }));
+      }
+      if (next.attachments) {
+        next.attachments = next.attachments.map((a) => ({
+          ...a,
+          data: undefined,
+        }));
+      }
+      return next;
+    }),
+  };
+}
+
 /** The real backend: one JSON document per namespace in localStorage, run
- *  through the migration pipeline on the way in and out. */
+ *  through the migration pipeline on the way in and out.
+ *
+ *  Both directions are *non-destructive*. A document that exists but this build
+ *  can't read — most often one a NEWER build already upgraded, then read by a
+ *  stale (service-worker-cached) build after an app update — is left on disk
+ *  untouched rather than silently replaced with a blank starter, so it comes
+ *  back on its own once the update finishes. That "read failed → return an
+ *  empty starter → persist it over the only copy" path is how updating the app
+ *  used to wipe every contact locally until a cloud re-pull. */
 export const localDocBackend: DocBackend = {
   id: "local",
   load(slug) {
+    let raw: string | null;
     try {
-      const raw = localStorage.getItem(docKey(slug));
+      raw = localStorage.getItem(docKey(slug));
+    } catch {
+      // Storage unavailable — nothing to read; boot a fresh document.
+      return starterDoc();
+    }
+    // No stored document yet: a genuine fresh start.
+    if (!raw) return starterDoc();
+    try {
       // Run the persisted bytes forward to the latest version before the app
       // sees them (see `migrations.ts`).
-      if (raw) return parseDoc(raw);
-    } catch {
-      // Corrupt or unavailable storage — fall back to the starter document.
+      return parseDoc(raw);
+    } catch (err) {
+      // Bytes exist but can't be parsed / migrated (corrupt, or written by a
+      // newer build). Keep the original on disk — the caller must NOT persist
+      // the starter we return here over it (see the store's persist guard) —
+      // and quarantine a copy so it's recoverable even if a later edit does
+      // overwrite the live key. Surface the failure rather than losing data
+      // silently.
+      output.error(
+        `Couldn't read the contacts saved on this device — ${
+          err instanceof Error ? err.message : String(err)
+        }. The stored copy is left untouched and should reappear once the app finishes updating.`,
+      );
+      try {
+        localStorage.setItem(`${docKey(slug)}:unreadable`, raw);
+      } catch {
+        // No room to quarantine — the live key is still left intact below.
+      }
+      return starterDoc();
     }
-    return starterDoc();
   },
   save(slug, doc) {
+    const key = docKey(slug);
     try {
-      localStorage.setItem(docKey(slug), serializeDoc(doc));
+      localStorage.setItem(key, serializeDoc(doc));
+      return;
     } catch {
-      // Storage full / unavailable — the in-memory state still works.
+      // Full document didn't fit (quota) or storage is unavailable. Never let
+      // that silently drop the user's contacts: retry with a slimmed copy that
+      // keeps every contact but sheds the heavy inline photo / attachment bytes.
+      try {
+        localStorage.setItem(key, serializeDoc(stripInlineMedia(doc)));
+        output.warn(
+          "This device's storage was full — saved your contacts without cached photo/attachment data (still safe in any connected cloud copy).",
+        );
+        return;
+      } catch {
+        output.error(
+          "Couldn't save contacts to this device's storage (it may be full). Your contacts stay in memory and in any connected cloud copy.",
+        );
+      }
     }
   },
 };
@@ -111,6 +186,17 @@ export function useContactStore(
   const future = useRef<AppData[]>([]);
   const [version, setVersion] = useState(0); // re-render on history change
 
+  // Guards the write-through below: only a real change (an edit, an adopt) may
+  // persist. State produced by *loading* a document — the initial mount, a
+  // namespace / backend switch, a reload — must NOT be written back, so a blank
+  // starter that `load` returned because the stored bytes were momentarily
+  // unreadable can never overwrite the real (still-on-disk) copy. That overwrite
+  // was the local "an update wiped my contacts" data loss.
+  const persistPending = useRef(false);
+  const markPersist = useCallback(() => {
+    persistPending.current = true;
+  }, []);
+
   // Namespace switch — or a backend takeover (fake data on/off) — adopts the
   // matching document and resets history. Adjusting state during render (rather
   // than in an effect) is React's blessed way to respond to a changed input
@@ -127,42 +213,54 @@ export function useContactStore(
   useEffect(() => {
     // Write-through to whichever backend is active. The local backend persists
     // to localStorage; the fake-data backend keeps the bytes in memory, so a
-    // dev session never touches the real address book on disk.
+    // dev session never touches the real address book on disk. Only a real
+    // change persists — a load (mount / namespace switch / reload) leaves the
+    // stored bytes as they are (see `persistPending`).
+    if (!persistPending.current) return;
+    persistPending.current = false;
     state.backend.save(state.slug, state.data);
   }, [state]);
 
-  const commit = useCallback((next: AppData) => {
-    setState((prev) => {
-      past.current.push(prev.data);
-      future.current = [];
-      return { ...prev, data: next };
-    });
-    setVersion((v) => v + 1);
-  }, []);
+  const commit = useCallback(
+    (next: AppData) => {
+      markPersist();
+      setState((prev) => {
+        past.current.push(prev.data);
+        future.current = [];
+        return { ...prev, data: next };
+      });
+      setVersion((v) => v + 1);
+    },
+    [markPersist],
+  );
 
   const undo = useCallback(() => {
     const prev = past.current.pop();
     if (!prev) return;
+    markPersist();
     setState((cur) => {
       future.current.push(cur.data);
       return { ...cur, data: prev };
     });
     setVersion((v) => v + 1);
-  }, []);
+  }, [markPersist]);
 
   const redo = useCallback(() => {
     const next = future.current.pop();
     if (!next) return;
+    markPersist();
     setState((cur) => {
       past.current.push(cur.data);
       return { ...cur, data: next };
     });
     setVersion((v) => v + 1);
-  }, []);
+  }, [markPersist]);
 
   // Re-read the persisted document from localStorage, picking up edits made in
   // another tab. Drives the pull-to-refresh gesture. Replaces the present
-  // without touching the undo history (a refresh isn't an edit you'd undo).
+  // without touching the undo history (a refresh isn't an edit you'd undo). A
+  // reload adopts what's already on disk, so it never marks the state to persist
+  // — writing it straight back would defeat the non-destructive load guard.
   const reload = useCallback(() => {
     setState((cur) => ({ ...cur, data: cur.backend.load(cur.slug) }));
     setVersion((v) => v + 1);
@@ -172,27 +270,35 @@ export function useContactStore(
   // active namespace's key and make it the present. History is cleared — the
   // remote copy is a new baseline, not an edit. Bumps the version counter by
   // exactly one (the sync engine relies on that to re-baseline `dirty`).
-  const adoptRemote = useCallback((text: string) => {
-    setState((cur) => {
+  const adoptRemote = useCallback(
+    (text: string) => {
+      let doc: AppData;
       try {
-        const doc = parseDoc(text);
+        doc = parseDoc(text);
+      } catch {
+        return; // Unparseable remote bytes — keep the local document.
+      }
+      markPersist();
+      setState((cur) => {
         past.current = [];
         future.current = [];
         return { ...cur, data: doc };
-      } catch {
-        return cur; // Unparseable remote bytes — keep the local document.
-      }
-    });
-    setVersion((v) => v + 1);
-  }, []);
+      });
+      setVersion((v) => v + 1);
+    },
+    [markPersist],
+  );
 
-  const setActive = useCallback((id: string) => {
-    setState((prev) =>
-      prev.data.activeContactId === id
-        ? prev
-        : { ...prev, data: { ...prev.data, activeContactId: id } },
-    );
-  }, []);
+  const setActive = useCallback(
+    (id: string) => {
+      setState((prev) => {
+        if (prev.data.activeContactId === id) return prev;
+        markPersist();
+        return { ...prev, data: { ...prev.data, activeContactId: id } };
+      });
+    },
+    [markPersist],
+  );
 
   // Create a contact under a user-typed full name and open it, returning its
   // id. The name is collected inline before this fires — an empty draft never
