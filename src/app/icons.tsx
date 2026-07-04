@@ -99,7 +99,9 @@ export function CheckSquareIcon({ className }: IconProps) {
 
 /** A heart — the favorite affordance. Outline when a card isn't starred, a
  *  solid fill when it is, so the toggle reads its state at a glance. The
- *  Favorites page and the List / card toggles all draw this one mark. */
+ *  Favorites page and the List / card toggles all draw this one mark, and the
+ *  side-menu Donate link wears the filled variant — so every heart in the app
+ *  is this one true, symmetric shape rather than the framework's skewed glyph. */
 export function FavoriteIcon({
   className,
   filled,
