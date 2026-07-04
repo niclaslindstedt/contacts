@@ -245,6 +245,7 @@ export function useContactStore(
         ...(d.photo
           ? { photos: [{ id: freshId("photo"), photo: d.photo }] }
           : {}),
+        ...(d.ice ? { ice: true } : {}),
         folderId: null,
       }));
       commit({
@@ -297,6 +298,20 @@ export function useContactStore(
         activeContactId: nextActiveId(contacts, data.activeContactId),
       });
     },
+    [commit, data],
+  );
+
+  // Flip a contact's in-case-of-emergency flag — the "mark as emergency
+  // contact" outcome. A flagged card pins to the top of the side menu; toggling
+  // it off drops it back to its ordinary spot. Undoable.
+  const toggleContactIce = useCallback(
+    (id: string) =>
+      commit({
+        ...data,
+        contacts: data.contacts.map((c) =>
+          c.id === id ? { ...c, ice: !c.ice } : c,
+        ),
+      }),
     [commit, data],
   );
 
@@ -540,6 +555,7 @@ export function useContactStore(
     deleteContact,
     archiveContact,
     unarchiveContact,
+    toggleContactIce,
     sweepAutoArchive,
     addFolder,
     renameFolder,

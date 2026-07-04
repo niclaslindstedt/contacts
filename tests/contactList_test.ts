@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  emergencyContacts,
   groupContactsByFolder,
   listedContacts,
   prioritizePhones,
@@ -121,6 +122,45 @@ describe("prioritizePhones", () => {
     expect(prioritizePhones(workOnly, "private").map((p) => p.id)).toEqual([
       "w",
     ]);
+  });
+});
+
+describe("emergencyContacts", () => {
+  it("returns only the ICE-flagged contacts, in display order", () => {
+    const data = doc({
+      contacts: [
+        card({ id: "b", firstName: "Bob", ice: true }),
+        card({ id: "plain", firstName: "Cara" }),
+        card({ id: "a", firstName: "Ada", ice: true }),
+      ],
+    });
+    expect(emergencyContacts(data).map((c) => c.id)).toEqual(["a", "b"]);
+  });
+
+  it("pins ICE contacts regardless of the folder they're filed in", () => {
+    const data = doc({
+      folders: [folder({ id: "f1" })],
+      contacts: [
+        card({ id: "a", firstName: "Ada", folderId: "f1", ice: true }),
+        card({ id: "b", firstName: "Bob", folderId: null, ice: true }),
+      ],
+    });
+    expect(emergencyContacts(data).map((c) => c.id)).toEqual(["a", "b"]);
+  });
+
+  it("leaves out archived ICE contacts", () => {
+    const data = doc({
+      contacts: [
+        card({ id: "a", firstName: "Ada", ice: true }),
+        card({ id: "z", firstName: "Zed", ice: true, archived: true }),
+      ],
+    });
+    expect(emergencyContacts(data).map((c) => c.id)).toEqual(["a"]);
+  });
+
+  it("is empty when nothing is flagged", () => {
+    const data = doc({ contacts: [card({ id: "a", firstName: "Ada" })] });
+    expect(emergencyContacts(data)).toEqual([]);
   });
 });
 

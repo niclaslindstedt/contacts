@@ -74,6 +74,7 @@ describe("buildFakeData", () => {
       ),
     ).toBe(true);
     expect(contacts.some((c) => c.archived)).toBe(true);
+    expect(contacts.some((c) => c.ice)).toBe(true);
     expect(contacts.some((c) => c.birthday === "2000-02-29")).toBe(true);
 
     // A card with many phones/emails, and one carrying photos — including a

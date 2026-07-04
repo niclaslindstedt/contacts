@@ -70,6 +70,9 @@ Enter — and start filling in the card.
 - **Organise** — drag a contact into a folder, onto another namespace, or onto
   Archive. Swipe right on a row to archive, left to delete. Everything is one
   Undo away (Ctrl/Cmd-Z).
+- **In case of emergency** — flag a contact with the siren button in its header
+  (or from a row's menu) to pin it to an **In case of emergency** section at the
+  top of the sidebar, in reach no matter which folder it lives in.
 - **Read & edit** — a contact opens in read mode, laid out to scan; the pencil
   in the toolbar flips it into edit mode (and the check flips it back). Tappable
   phone and email rows — each typed Private or Work — call and compose straight

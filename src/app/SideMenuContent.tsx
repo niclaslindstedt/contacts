@@ -37,7 +37,8 @@ import {
 } from "@niclaslindstedt/oss-framework/sidebar";
 
 import { Avatar } from "./Avatar.tsx";
-import { ListIcon, PersonIcon } from "./icons.tsx";
+import { emergencyContacts } from "./contactList.ts";
+import { IceIcon, ListIcon, PersonIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { Contact } from "./types.ts";
@@ -143,6 +144,7 @@ export function SideMenuContent({
     archiveFolder,
     deleteContact,
     archiveContact,
+    toggleContactIce,
     moveContactToFolder,
     moveContactToNamespace,
     moveFolderToNamespace,
@@ -261,7 +263,13 @@ export function SideMenuContent({
       danger: true,
       onSelect: () => deleteContact(contact.id),
     };
+    const iceAction = {
+      label: contact.ice ? t("menu.unmarkIce") : t("menu.markIce"),
+      icon: <IceIcon className="h-5 w-5" />,
+      onSelect: () => toggleContactIce(contact.id),
+    };
     const menuActions = [
+      iceAction,
       {
         label: t("menu.archive"),
         icon: <ArchiveIcon className="h-5 w-5" />,
@@ -303,6 +311,12 @@ export function SideMenuContent({
                   <span className="text-muted">{t("contact.unnamed")}</span>
                 )}
               </span>
+              {contact.ice && (
+                <IceIcon
+                  className="h-4 w-4 shrink-0 text-danger"
+                  aria-label={t("menu.iceContact")}
+                />
+              )}
             </NavRow>
           </SwipeableRow>
         </RowActionMenu>
@@ -316,6 +330,9 @@ export function SideMenuContent({
   const standalone = data.contacts
     .filter((c) => c.folderId === null && !c.archived)
     .sort(compareContacts);
+  // Emergency contacts are pinned to the very top of the list, mirrored out of
+  // wherever they're filed so they're always the first thing in reach.
+  const emergency = emergencyContacts(data);
   const archivedCount =
     data.folders.filter((f) => f.archived).length +
     data.contacts.filter((c) => c.archived).length;
@@ -355,6 +372,19 @@ export function SideMenuContent({
           ref={rootZone.ref}
           className="flex min-h-0 flex-1 flex-col overflow-y-auto"
         >
+          {/* Pinned "in case of emergency" section — flagged contacts float to
+              the top, mirrored from their folder so they're always in reach. */}
+          {emergency.length > 0 && (
+            <div className="border-b border-line pb-1">
+              <div className="flex items-center gap-2 px-5 pt-3 pb-1">
+                <IceIcon className="h-4 w-4 text-danger" />
+                <span className="text-xs font-semibold tracking-wide text-danger uppercase">
+                  {t("menu.emergency")}
+                </span>
+              </div>
+              {emergency.map((contact) => renderContact(contact, false))}
+            </div>
+          )}
           {creatingFolder && (
             <FolderEditRow
               placeholder={t("menu.folderName")}

@@ -239,6 +239,9 @@ function curatedContacts(): Contact[] {
       glyph: "star",
       color: "#fcd34d",
       folderId: FLD_FAMILY,
+      // Flagged in case of emergency — pins to the top of the side menu, even
+      // though the card itself is filed under Family.
+      ice: true,
     },
     // Company-only: no first/last name at all — `displayName` must fall back to
     // the company, and the monogram to its first letter.

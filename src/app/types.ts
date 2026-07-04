@@ -136,6 +136,13 @@ export type Contact = {
   // contacts stay in the document — they drop out of the menu but the Archive
   // counter tallies them and an Undo brings them back.
   archived?: boolean;
+  /** Marks the card as an **in-case-of-emergency** contact. Flagged cards are
+   *  pinned to a dedicated section at the very top of the side menu (regardless
+   *  of which folder they're filed in) and wear a badge, so a next-of-kin or
+   *  first responder is reachable at a glance. Absent / `false` means an
+   *  ordinary contact. Kept app-local — it isn't written to a vCard or CSV, but
+   *  it does round-trip through the JSON backup. */
+  ice?: boolean;
   /** When set, the card files itself away without being touched: on or after
    *  this day the app's sweep either archives it or deletes it (see
    *  {@link autoArchiveAction}). A full ISO `YYYY-MM-DD`. Handy for a contact

@@ -28,6 +28,31 @@ export function PersonIcon({ className }: IconProps) {
   );
 }
 
+/** A siren — the in-case-of-emergency (ICE) mark. Flags a contact as an
+ *  emergency contact: it heads the pinned "In case of emergency" section at the
+ *  top of the side menu, badges the flagged row, and toggles the state from the
+ *  card header. The single most legible "emergency" glyph, and used nowhere
+ *  else. */
+export function IceIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable={false}
+      className={className}
+    >
+      <path d="M7 18v-6a5 5 0 0 1 10 0v6" />
+      <path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1z" />
+      <path d="M21 12h1M18.5 4.5 18 5M2 12h1M12 2v1M4.9 4.9l.7.7M12 12v6" />
+    </svg>
+  );
+}
+
 /** A row of lines with leading dots — the contact list / overview surface (the
  *  side-menu button that opens the full-page list and its Settings tab). */
 export function ListIcon({ className }: IconProps) {
