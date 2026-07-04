@@ -48,6 +48,17 @@ export function listedContacts(groups: readonly ContactGroup[]): Contact[] {
   return groups.flatMap((g) => g.contacts);
 }
 
+/** Every non-archived contact flagged **in case of emergency**, in display
+ *  order — the pinned list the side menu floats to the very top so an
+ *  emergency contact is reachable at a glance, no matter which folder it's
+ *  filed in. An ICE card inside an archived folder inherits that folder's
+ *  archived flag, so it drops out here the same way it drops out of the menu. */
+export function emergencyContacts(data: AppData): Contact[] {
+  return data.contacts
+    .filter((c) => c.ice && !c.archived)
+    .sort(compareContacts);
+}
+
 /** The phone numbers the List view shows for a contact under the chosen
  *  priority. `both` keeps every number; `private` / `work` keep just that kind
  *  — but when the contact has none of the preferred kind the whole set is

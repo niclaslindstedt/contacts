@@ -223,6 +223,20 @@ describe("parseJson", () => {
     expect(cards).toHaveLength(1);
     expect(cards[0]!.firstName).toBe("Ada");
   });
+
+  it("round-trips the in-case-of-emergency flag", () => {
+    const doc: AppData = {
+      folders: [],
+      contacts: [
+        card({ id: "a", firstName: "Ada", ice: true }),
+        card({ id: "b", firstName: "Bob" }),
+      ],
+      activeContactId: "a",
+    };
+    const cards = parseJson(serializeDoc(doc));
+    expect(cards.find((c) => c.firstName === "Ada")?.ice).toBe(true);
+    expect(cards.find((c) => c.firstName === "Bob")?.ice).toBeUndefined();
+  });
 });
 
 describe("parseCsv", () => {

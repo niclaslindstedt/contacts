@@ -16,7 +16,7 @@ import { ContactEditView } from "./ContactEditView.tsx";
 import { ContactIdentity } from "./ContactIdentity.tsx";
 import { ContactPhotoDropZone } from "./ContactPhotoDropZone.tsx";
 import { ContactReadView } from "./ContactReadView.tsx";
-import { DownloadIcon } from "./icons.tsx";
+import { DownloadIcon, IceIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { contactToVCard, exportFileStem } from "./export.ts";
 import { downloadText, MIME_VCARD } from "./download.ts";
@@ -162,6 +162,25 @@ function ContactCard({
           ) : (
             <PencilIcon className="h-4 w-4" />
           )}
+        </button>
+
+        {/* Mark this card as an in-case-of-emergency contact — pins it to the
+            top of the side menu. Filled red when on. */}
+        <button
+          type="button"
+          onClick={() => updateContact(contact.id, { ice: !contact.ice })}
+          title={contact.ice ? t("contact.unmarkIce") : t("contact.markIce")}
+          aria-label={
+            contact.ice ? t("contact.unmarkIce") : t("contact.markIce")
+          }
+          aria-pressed={contact.ice ?? false}
+          className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border ${
+            contact.ice
+              ? "border-danger bg-danger/15 text-danger"
+              : "border-line text-muted hover:bg-surface-2 hover:text-fg"
+          }`}
+        >
+          <IceIcon className="h-4 w-4" />
         </button>
 
         <div className="min-w-0 flex-1" />

@@ -74,6 +74,15 @@ notes, and one or more photos.
   downloaded or copied vCard. On a connected cloud drive each photo is filed at a
   tidy `photos/<name>-<id>-<photoId>.jpg` path so it's easy to find — see
   [Cloud sync](feature:sync).
+- **In case of emergency.** Flag a contact as an **emergency contact** and it's
+  pinned to a dedicated **In case of emergency** section at the very top of the
+  side menu — regardless of which folder it's filed in — so a next-of-kin or
+  first responder is one tap away. Toggle it from the **siren** button in the
+  card's header, or from a contact row's right-click / long-press menu (**Mark
+  as emergency contact** / **Remove emergency contact**); a flagged row wears a
+  small red siren badge wherever it appears. The flag stays in the app — it
+  isn't written to a vCard or CSV — but it's kept in the JSON backup, so a
+  restore brings your emergency contacts back pinned.
 - **Archive, don't lose.** Swipe a contact right in the side menu (or drag it
   onto Archive) to shelve it. The Archive page restores or deletes for good.
 - **Auto-archive.** In edit mode, the **Auto-archive** section lets a card file

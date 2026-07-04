@@ -18,8 +18,9 @@ selection to a vCard / CSV file:
   Home Address.
 - **JSON backup** — the app's own on-disk document, versioned so a future build
   can always read it back. This is the only format that keeps everything at full
-  fidelity — every titled address, and day-and-month-only important dates that
-  vCard 3.0 can't express.
+  fidelity — every titled address, day-and-month-only important dates that
+  vCard 3.0 can't express, and the **in-case-of-emergency** flag (which has no
+  vCard or CSV field, so it survives only in a JSON backup).
 
 ## Import
 

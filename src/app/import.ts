@@ -31,6 +31,10 @@ export type ImportedContact = {
   importantDates: { label?: string; date: string }[];
   notes?: string;
   photo?: string | null;
+  /** The in-case-of-emergency flag. Only the app's own JSON backup carries it —
+   *  vCard / CSV have no field for it — so a restored backup keeps its ICE
+   *  contacts pinned. */
+  ice?: boolean;
 };
 
 /** An empty draft with every list present — the reducers below fill it in. */
@@ -405,6 +409,7 @@ function fromContact(c: Contact): ImportedContact {
     // A single-photo interchange draft carries the card's current face; the
     // importer re-seats it as the sole gallery entry (see `importContacts`).
     photo: activePhoto(c)?.photo ?? undefined,
+    ...(c.ice ? { ice: true } : {}),
   };
 }
 
