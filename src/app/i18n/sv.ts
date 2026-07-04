@@ -137,10 +137,22 @@ export const sv: Catalog = {
     exportVCard: "Ladda ner vCard",
     appearance: "Kontaktfoto och utseende",
     photo: "Foto",
+    photos: "Foton",
     uploadPhoto: "Ladda upp foto",
+    addPhoto: "Lägg till foto",
     adjustPhoto: "Justera foto",
     removePhoto: "Ta bort foto",
     viewPhoto: "Visa foto",
+    // Korta verb för de kompakta knapparna — de fullständiga "…foto"-strängarna
+    // ovan används som tillgänglighetsetiketter.
+    adjust: "Justera",
+    remove: "Ta bort",
+    // Fotogalleriet — flera bilder per kontakt, en visas i taget.
+    usePhoto: "Använd det här fotot",
+    currentPhoto: "Aktuellt foto",
+    // Positionsvisning i bläddringsvyn / miniatyrantal: "2 av 3".
+    photoPosition: "{n} av {m}",
+    showPhotoNumber: "Visa foto {n}",
     // Överlägget som visas när en bild dras till den öppna kontakten.
     dropPhotoTitle: "Släpp för att ange foto",
     dropPhotoHint: "Släpp för att ange kontaktens foto",

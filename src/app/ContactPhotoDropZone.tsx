@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { useCallback, useRef, useState, type ReactNode } from "react";
 
+import { withPhotoAdded } from "./contactPhotos.ts";
 import { ImageUpIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { PhotoCropper } from "./PhotoCropper.tsx";
@@ -8,15 +9,16 @@ import { DEFAULT_TRANSFORM, fileToPhotoSource } from "./photo.ts";
 import { dragCarriesImage, firstImageFile } from "./photoDrop.ts";
 import { filesFromDataTransfer } from "./importFiles.ts";
 import { log } from "./log.ts";
-import type { Contact, PhotoTransform } from "./types.ts";
+import { freshId } from "./useContactStore.ts";
+import type { Contact } from "./types.ts";
 import { displayName } from "./types.ts";
 
-// Drop a photo straight onto the open contact to set its picture — no need to
-// enter edit mode or open the appearance popover first. Whenever an *image*
-// drag enters the contact card, a dashed "drop zone" overlay invites the drop;
-// releasing reads the image and opens the circle cropper (`PhotoCropper`, the
-// same "photo modal" the popover uses) so the crop can be framed before it
-// lands on the contact.
+// Drop a photo straight onto the open contact to add it to the card's gallery
+// and make it the face — no need to enter edit mode or open the appearance
+// popover first. Whenever an *image* drag enters the contact card, a dashed
+// "drop zone" overlay invites the drop; releasing reads the image and opens the
+// circle cropper (`PhotoCropper`, the same "photo modal" the popover uses) so
+// the crop can be framed before it joins the gallery.
 //
 // This zone lives *inside* the address-book `ImportDropZone`, which claims any
 // file drag to import contacts. To keep the two from fighting, this zone only
@@ -28,12 +30,6 @@ import { displayName } from "./types.ts";
 // boolean would flicker; counting holds the overlay up until the drag truly
 // leaves.
 
-type PhotoPatch = {
-  photo: string;
-  photoSource: string;
-  photoTransform: PhotoTransform;
-};
-
 export function ContactPhotoDropZone({
   contact,
   updateContact,
@@ -41,7 +37,7 @@ export function ContactPhotoDropZone({
   children,
 }: {
   contact: Contact;
-  updateContact: (id: string, patch: PhotoPatch) => void;
+  updateContact: (id: string, patch: Partial<Contact>) => void;
   className?: string;
   children: ReactNode;
 }) {
@@ -137,11 +133,17 @@ export function ContactPhotoDropZone({
           initial={DEFAULT_TRANSFORM}
           onCancel={() => setCropping(null)}
           onSave={({ photo, transform }) => {
-            updateContact(contact.id, {
-              photo,
-              photoSource: cropping,
-              photoTransform: transform,
-            });
+            // A dropped photo joins the gallery and becomes the face — it never
+            // replaces an existing picture.
+            updateContact(
+              contact.id,
+              withPhotoAdded(contact, {
+                id: freshId("photo"),
+                photo,
+                photoSource: cropping,
+                photoTransform: transform,
+              }),
+            );
             setCropping(null);
           }}
         />

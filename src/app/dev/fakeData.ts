@@ -52,6 +52,20 @@ export const LARGE_SEED_COUNT = 250;
 const PIXEL_PHOTO =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
+// A few solid-colour 1×1 PNGs so a seeded gallery shows visibly distinct
+// thumbnails — enough to shake out the photo switcher and the swipeable viewer.
+const PIXEL_PHOTOS = [
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGOwbvoGAAKvAbS3T615AAAAAElFTkSuQmCC",
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGN44zETAAPxAc6PITiGAAAAAElFTkSuQmCC",
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNQOhoHAAJSAUZ6RtevAAAAAElFTkSuQmCC",
+];
+
+// One gallery entry per data URI, ids stable across reloads so the seed's
+// active-photo pointer stays valid. The first is the face.
+function photoGallery(prefix: string, srcs: readonly string[]) {
+  return srcs.map((photo, i) => ({ id: `${prefix}-photo-${i}`, photo }));
+}
+
 // Glyph names the app can actually draw (a subset of `CONTACT_GLYPH_NAMES`),
 // and a set of accent colours — cycled through the generated cards so the menu
 // shows a spread of styled avatars.
@@ -220,7 +234,8 @@ function curatedContacts(): Contact[] {
         date({ label: "Name day", date: "12-01" }),
       ],
       notes: "First programmer. Prefers letters to phone calls.",
-      photo: PIXEL_PHOTO,
+      // A multi-photo card — exercises the gallery switcher and swipeable viewer.
+      photos: photoGallery("seed-ada", PIXEL_PHOTOS),
       glyph: "star",
       color: "#fcd34d",
       folderId: FLD_FAMILY,
@@ -452,7 +467,7 @@ function curatedContacts(): Contact[] {
       emails: [email("photo@example.com", "private")],
       addresses: [],
       importantDates: [],
-      photo: PIXEL_PHOTO,
+      photos: [{ id: "seed-c-photo-photo", photo: PIXEL_PHOTO }],
       folderId: FLD_FAMILY,
     },
     // A wholly blank card — the empty-draft shape the starter document ships,

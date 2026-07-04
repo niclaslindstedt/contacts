@@ -123,6 +123,56 @@ describe("serializeDoc / parseDoc", () => {
     expect(upgraded.contacts[1]!.importantDates).toEqual([]);
   });
 
+  it("folds a legacy single photo into the photos gallery (v3→v4)", () => {
+    const v3 = JSON.stringify({
+      version: 3,
+      folders: [],
+      contacts: [
+        {
+          id: "c1",
+          firstName: "Ada",
+          lastName: "Lovelace",
+          phones: [],
+          emails: [],
+          addresses: [],
+          importantDates: [],
+          folderId: null,
+          photo: "data:image/jpeg;base64,QUJD",
+          photoSource: "data:image/jpeg;base64,REVG",
+          photoTransform: { scale: 1.5, x: 0.1, y: -0.2 },
+          photoPath: "photos/ada-lovelace-c1.jpg",
+        },
+        // A photo-less card gets no photos key at all (no bloat).
+        {
+          id: "c2",
+          firstName: "Bo",
+          lastName: "Ek",
+          phones: [],
+          emails: [],
+          addresses: [],
+          importantDates: [],
+          folderId: null,
+        },
+      ],
+      activeContactId: "c1",
+    });
+    const upgraded = parseDoc(v3);
+    const ada = upgraded.contacts[0]!;
+    expect(ada.photos).toEqual([
+      {
+        id: "c1-photo",
+        photo: "data:image/jpeg;base64,QUJD",
+        photoSource: "data:image/jpeg;base64,REVG",
+        photoTransform: { scale: 1.5, x: 0.1, y: -0.2 },
+        photoPath: "photos/ada-lovelace-c1.jpg",
+      },
+    ]);
+    // The retired flat keys are gone.
+    expect("photo" in ada).toBe(false);
+    expect("photoSource" in ada).toBe(false);
+    expect(upgraded.contacts[1]!.photos).toBeUndefined();
+  });
+
   it("normalises a wiped or malformed file into an empty document", () => {
     expect(parseDoc("null")).toEqual({
       folders: [],

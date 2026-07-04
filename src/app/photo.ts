@@ -127,20 +127,24 @@ type PhotoNamed = {
   company?: string;
 };
 
-/** The file path a contact's *display* crop is externalised to on a cloud
- *  backend: `photos/<name-slug>-<id>.jpg`. Built from the display name (reusing
- *  the export filename slug) and the stable id, so it is deterministic, unique
- *  across name collisions, and — as a real binary JPEG — easy to preview in the
- *  drive. */
-export function photoPathFor(contact: PhotoNamed): string {
-  return `photos/${photoStem(contact)}.jpg`;
+/** The file path a gallery photo's *display* crop is externalised to on a cloud
+ *  backend: `photos/<name-slug>-<contactId>-<photoId>.jpg`. Built from the
+ *  display name (reusing the export filename slug), the stable contact id, and
+ *  the photo's own id, so it is deterministic, unique across name collisions and
+ *  across the several photos one card can carry, and — as a real binary JPEG —
+ *  easy to preview in the drive. */
+export function photoPathFor(contact: PhotoNamed, photoId: string): string {
+  return `photos/${photoStem(contact)}-${photoId}.jpg`;
 }
 
-/** The file path a contact's larger *source* original is externalised to:
- *  `photos/<name-slug>-<id>-source.jpg`. Sits beside the display crop so a
- *  fresh device can re-open the cropper on the original. */
-export function photoSourcePathFor(contact: PhotoNamed): string {
-  return `photos/${photoStem(contact)}-source.jpg`;
+/** The file path a gallery photo's larger *source* original is externalised to:
+ *  `photos/<name-slug>-<contactId>-<photoId>-source.jpg`. Sits beside the
+ *  display crop so a fresh device can re-open the cropper on the original. */
+export function photoSourcePathFor(
+  contact: PhotoNamed,
+  photoId: string,
+): string {
+  return `photos/${photoStem(contact)}-${photoId}-source.jpg`;
 }
 
 function photoStem(contact: PhotoNamed): string {

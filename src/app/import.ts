@@ -12,6 +12,7 @@
 // `tests/import_test.ts`).
 
 import { hasAddress } from "./address.ts";
+import { activePhoto } from "./contactPhotos.ts";
 import { parseDoc } from "./migrations.ts";
 import type { Contact } from "./types.ts";
 import { splitFullName } from "./types.ts";
@@ -401,7 +402,9 @@ function fromContact(c: Contact): ImportedContact {
       date: d.date,
     })),
     notes: c.notes ?? undefined,
-    photo: c.photo ?? undefined,
+    // A single-photo interchange draft carries the card's current face; the
+    // importer re-seats it as the sole gallery entry (see `importContacts`).
+    photo: activePhoto(c)?.photo ?? undefined,
   };
 }
 

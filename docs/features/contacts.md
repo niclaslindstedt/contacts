@@ -3,7 +3,7 @@
 Every contact is a card: a name, any number of phone numbers and email
 addresses (each typed **Private** or **Work**), a company, any number of postal
 addresses (each with a free-text title), a birthday, other important dates,
-notes, and a photo.
+notes, and one or more photos.
 
 - **Read mode by default.** Opening a contact shows it laid out to be read —
   the avatar and name lead the card, phone numbers and emails become tap-to-call
@@ -54,19 +54,25 @@ notes, and a photo.
   mode; the check flips it back. In edit mode, tap the name to rename and fill in
   the field form. Every field commits when you leave it, and each committed edit
   is one undo step. A brand-new contact opens straight in edit mode.
-- **Photos.** In edit mode, tap the avatar to open the appearance popover. Its
-  **Photo** section — above the colour and icon pickers — carries three glyph
-  buttons: **upload**, **adjust**, and **remove**. Uploading a picture opens a
-  circle cropper: drag to move and pinch or scroll (or drag the slider) to zoom,
-  choosing exactly which part of the photo the circle shows — the rest is
-  trimmed away. **Adjust** reopens the cropper at the same framing so you can
-  re-position later. Quicker still: **drag an image straight onto the open
-  contact** — a dashed drop zone appears over the card, and releasing opens the
-  same cropper — no need to be in edit mode first. In read mode, tapping the
-  photo opens it full-screen; swipe
-  down (or press Escape) to dismiss. No photo? Pick an icon and accent colour
-  instead. On a connected cloud drive the original is filed at a tidy
-  `photos/<name>-<id>.jpg` path so it's easy to find — see
+- **Photos.** A contact can hold **several photos** and swap between them
+  whenever you like — no need to delete and re-upload to go back to an earlier
+  one. In edit mode, tap the avatar to open the appearance popover. Its
+  **Photos** section — above the colour and icon pickers — shows a thumbnail for
+  each photo (the current face ringed with a check), a **＋ tile** to add
+  another, and **Adjust** / **Remove** buttons for the current one. Tap any
+  thumbnail to make it the face. Adding a picture opens a circle cropper: drag to
+  move and pinch or scroll (or drag the slider) to zoom, choosing exactly which
+  part of the photo the circle shows — the rest is trimmed away. **Adjust**
+  reopens the cropper at the same framing so you can re-position later. Quicker
+  still: **drag an image straight onto the open contact** — a dashed drop zone
+  appears over the card, and releasing opens the same cropper, adding the photo
+  and making it the face — no need to be in edit mode first. In read mode,
+  tapping the photo opens it full-screen; when there are several, **swipe left
+  and right** (or use the arrow keys) to page through them, with a count readout
+  and a dot per photo. Swipe down (or press Escape) to dismiss. No photo? Pick an
+  icon and accent colour instead. Only the **current face** is written to a
+  downloaded or copied vCard. On a connected cloud drive each photo is filed at a
+  tidy `photos/<name>-<id>-<photoId>.jpg` path so it's easy to find — see
   [Cloud sync](feature:sync).
 - **Archive, don't lose.** Swipe a contact right in the side menu (or drag it
   onto Archive) to shelve it. The Archive page restores or deletes for good.

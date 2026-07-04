@@ -139,10 +139,22 @@ export const en = {
     exportVCard: "Download vCard",
     appearance: "Contact photo and appearance",
     photo: "Photo",
+    photos: "Photos",
     uploadPhoto: "Upload photo",
+    addPhoto: "Add another photo",
     adjustPhoto: "Adjust photo",
     removePhoto: "Remove photo",
     viewPhoto: "View photo",
+    // Short verbs for the compact action buttons — the full "…photo" strings
+    // above stay as the accessible labels.
+    adjust: "Adjust",
+    remove: "Remove",
+    // The photo gallery — several pictures per contact, one shown at a time.
+    usePhoto: "Use this photo",
+    currentPhoto: "Current photo",
+    // The swipeable viewer's position readout / thumbnail count: "2 of 3".
+    photoPosition: "{n} of {m}",
+    showPhotoNumber: "Show photo {n}",
     // The overlay shown when an image is dragged onto the open contact.
     dropPhotoTitle: "Drop to set photo",
     dropPhotoHint: "Release to set this contact's photo",

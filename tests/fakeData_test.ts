@@ -76,9 +76,11 @@ describe("buildFakeData", () => {
     expect(contacts.some((c) => c.archived)).toBe(true);
     expect(contacts.some((c) => c.birthday === "2000-02-29")).toBe(true);
 
-    // A card with many phones/emails, and one carrying a photo.
+    // A card with many phones/emails, and one carrying photos — including a
+    // multi-photo gallery that exercises the switcher and the swipeable viewer.
     expect(contacts.some((c) => c.phones.length >= 5)).toBe(true);
-    expect(contacts.some((c) => Boolean(c.photo))).toBe(true);
+    expect(contacts.some((c) => (c.photos?.length ?? 0) > 0)).toBe(true);
+    expect(contacts.some((c) => (c.photos?.length ?? 0) > 1)).toBe(true);
 
     // Folders include an empty one and an archived one.
     expect(folders.some((f) => f.archived)).toBe(true);

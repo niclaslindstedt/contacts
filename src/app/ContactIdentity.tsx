@@ -5,6 +5,7 @@ import { InlineEditField } from "@niclaslindstedt/oss-framework/components";
 
 import { Avatar } from "./Avatar.tsx";
 import { ContactAppearancePopover } from "./ContactAppearancePopover.tsx";
+import { activePhotoIndex, hasPhoto, photoList } from "./contactPhotos.ts";
 import { PhotoViewer } from "./PhotoViewer.tsx";
 import { useT } from "./i18n/index.ts";
 import type { Contact } from "./types.ts";
@@ -38,10 +39,15 @@ export function ContactIdentity({
     const input = nameEditRef.current?.querySelector("input");
     input?.setAttribute("autocapitalize", "words");
   }, [editingName]);
-  // Read mode: tapping the photo opens it full-screen. Holds the shown source
-  // (the original when kept, else the baked crop), or null when closed.
-  const [viewing, setViewing] = useState<string | null>(null);
+  // Read mode: tapping the photo opens the gallery full-screen. Holds whether
+  // the viewer is open; it pages the whole gallery from the active photo.
+  const [viewing, setViewing] = useState(false);
   const name = displayName(contact);
+  // Each photo shows its original when kept (crisper full-screen), else the
+  // baked crop — the srcs the viewer pages through.
+  const viewerSrcs = photoList(contact)
+    .map((p) => p.photoSource || p.photo)
+    .filter((src): src is string => Boolean(src));
   // The company doubles as the display name when a card has no first/last name,
   // so only show it as a subtitle when it is genuinely a second line.
   const showCompany = !!contact.company?.trim() && contact.company !== name;
@@ -54,12 +60,10 @@ export function ContactIdentity({
           size="hero"
           onChange={(patch) => updateContact(contact.id, patch)}
         />
-      ) : contact.photo ? (
+      ) : hasPhoto(contact) ? (
         <button
           type="button"
-          onClick={() =>
-            setViewing(contact.photoSource || contact.photo || null)
-          }
+          onClick={() => setViewing(true)}
           aria-label={t("contact.viewPhoto")}
           title={t("contact.viewPhoto")}
           className="shrink-0 cursor-zoom-in rounded-full hover:opacity-90"
@@ -70,8 +74,12 @@ export function ContactIdentity({
         <Avatar contact={contact} size="hero" />
       )}
 
-      {viewing && (
-        <PhotoViewer src={viewing} onClose={() => setViewing(null)} />
+      {viewing && viewerSrcs.length > 0 && (
+        <PhotoViewer
+          photos={viewerSrcs}
+          startIndex={activePhotoIndex(contact)}
+          onClose={() => setViewing(false)}
+        />
       )}
 
       {editing ? (

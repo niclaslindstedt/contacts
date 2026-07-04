@@ -10,6 +10,7 @@ import {
 } from "@niclaslindstedt/oss-framework/components";
 import type { Achievement } from "@niclaslindstedt/oss-framework/achievements";
 
+import { hasPhoto as contactHasPhoto } from "./contactPhotos.ts";
 import type { AppData, Contact } from "./types.ts";
 import { displayName } from "./types.ts";
 
@@ -29,7 +30,7 @@ const named = (c: Contact) => displayName(c).length > 0;
 const hasContact = (d: AchState) => d.contacts.some(named);
 const manyContacts = (d: AchState) => d.contacts.filter(named).length >= 5;
 const hasFolder = (d: AchState) => d.folders.length > 0;
-const hasPhoto = (d: AchState) => d.contacts.some((c) => Boolean(c.photo));
+const hasPhoto = (d: AchState) => d.contacts.some(contactHasPhoto);
 const hasStyled = (d: AchState) =>
   d.contacts.some((c) => Boolean(c.glyph) || Boolean(c.color));
 const wellConnected = (d: AchState) =>

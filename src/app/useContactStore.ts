@@ -242,7 +242,9 @@ export function useContactStore(
           id: freshId("date"),
         })),
         ...(d.notes ? { notes: d.notes } : {}),
-        ...(d.photo ? { photo: d.photo } : {}),
+        ...(d.photo
+          ? { photos: [{ id: freshId("photo"), photo: d.photo }] }
+          : {}),
         folderId: null,
       }));
       commit({

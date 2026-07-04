@@ -14,6 +14,7 @@
 // (Blob + anchor click) lives in `download.ts`.
 
 import { formatAddress, hasAddress } from "./address.ts";
+import { activePhoto } from "./contactPhotos.ts";
 import { parseFlexDate } from "./importantDates.ts";
 import type { Contact } from "./types.ts";
 import { displayName, methodKind } from "./types.ts";
@@ -102,7 +103,8 @@ export function contactToVCard(c: Contact): string {
     lines.push(`${g}.X-ABLABEL:${vEscape(d.label?.trim() || "Date")}`);
   }
   if (c.notes?.trim()) lines.push(`NOTE:${vEscape(c.notes)}`);
-  const photo = photoPayload(c.photo);
+  // The card's current face is the one photo a single-photo format can carry.
+  const photo = photoPayload(activePhoto(c)?.photo);
   if (photo) lines.push(`PHOTO;ENCODING=b;TYPE=${photo.type}:${photo.base64}`);
   lines.push("END:VCARD");
   return lines.map(fold).join("\r\n");

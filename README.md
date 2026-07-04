@@ -77,10 +77,12 @@ Enter — and start filling in the card.
   beyond the birthday, any number of important dates (name day, anniversary) that
   can be a full date or day-and-month-only; tapping one drops a yearly calendar
   reminder titled with the occasion and the contact's name.
-- **Photos & appearance** — in edit mode, tap the avatar to upload a photo and
-  frame it in a circle cropper (zoom + pan), adjust it later, or pick a glyph +
-  accent colour instead. Tap a photo in read mode to view it full-screen; on a
-  cloud drive each original is filed at `photos/<name>-<id>.jpg`.
+- **Photos & appearance** — in edit mode, tap the avatar to add one or more
+  photos, each framed in a circle cropper (zoom + pan); tap a thumbnail to swap
+  which one is the face, adjust or remove it, or pick a glyph + accent colour
+  instead. Tap a photo in read mode to view it full-screen and swipe between the
+  gallery; only the current face exports to a vCard. On a cloud drive each photo
+  is filed at `photos/<name>-<id>-<photoId>.jpg`.
 - **Search** — the magnifier in the action grid; matches names, numbers,
   emails, addresses, and notes (`*`/`?` wildcards, `/regex/`).
 - **Export** — the download button in the card header (single vCard) or
