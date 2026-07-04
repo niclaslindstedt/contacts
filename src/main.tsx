@@ -13,6 +13,8 @@ import "@fontsource/jetbrains-mono/latin-ext-700.css";
 
 import "./styles.css";
 import { App } from "./App.tsx";
+import { PrivacyPage } from "./app/PrivacyPage.tsx";
+import { ShowcasePage } from "./app/ShowcasePage.tsx";
 import { LanguageRoot } from "./app/i18n/index.ts";
 
 // In dev no worker registers (`usePwaUpdate` runs disabled), but a worker
@@ -29,10 +31,20 @@ if (import.meta.env.DEV && "serviceWorker" in navigator) {
 const root = document.getElementById("root");
 if (!root) throw new Error("missing #root element");
 
+// Trivial path-based switch. The build emits `dist/privacy/index.html` and
+// `dist/home/index.html` (see the `emitPrivacyAlias` / `emitShowcaseAlias`
+// plugins in `vite.config.ts`) so GitHub Pages serves the same SPA at
+// `/privacy/` and `/home/`, and these checks decide which view to mount.
+// Deploy slots nest the page one segment deeper (`/preview/privacy/`,
+// `/preview/home/`); the suffix checks match both.
+const path = window.location.pathname.replace(/\/$/, "");
+const isPrivacy = path.endsWith("/privacy");
+const isHome = path.endsWith("/home");
+
 createRoot(root).render(
   <StrictMode>
     <LanguageRoot>
-      <App />
+      {isHome ? <ShowcasePage /> : isPrivacy ? <PrivacyPage /> : <App />}
     </LanguageRoot>
   </StrictMode>,
 );

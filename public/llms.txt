@@ -6,6 +6,8 @@
 > Outlook / iOS / Android, Outlook-compatible CSV, or a JSON backup.
 
 - App: https://contacts.niclaslindstedt.se/
+- About / what it does: https://contacts.niclaslindstedt.se/home/
+- Privacy policy: https://contacts.niclaslindstedt.se/privacy/
 - Source: https://github.com/niclaslindstedt/contacts
 - Framework: https://github.com/niclaslindstedt/oss-framework
 
