@@ -14,6 +14,7 @@ import {
 import { useDesktopPointer } from "@niclaslindstedt/oss-framework/hooks";
 
 import { Avatar } from "./Avatar.tsx";
+import { subtreeFolderIds } from "./contactList.ts";
 import { useT } from "./i18n/index.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { Contact } from "./types.ts";
@@ -55,11 +56,19 @@ export function ArchiveScreen({ store }: { store: ContactStore }) {
 
   const archivedFolders = data.folders.filter((f) => f.archived);
   const archivedFolderIds = new Set(archivedFolders.map((f) => f.id));
+  // A folder is archived as a whole subtree, so its archived subfolders show
+  // under it rather than as their own rows: list only the **top** archived
+  // folder of each branch — one whose parent isn't itself archived.
+  const topArchivedFolders = archivedFolders.filter(
+    (f) => !(f.parentId != null && archivedFolderIds.has(f.parentId)),
+  );
   // Contacts shelved on their own — archived, but not swept up by an archived
   // folder (those are restored / deleted at the folder level instead).
   const archivedContacts = data.contacts
     .filter((c) => c.archived && !archivedFolderIds.has(c.folderId ?? ""))
     .sort(compareContacts);
+  // The header tally mirrors the side menu's Archive badge — every archived
+  // folder (nested ones included) plus every archived contact.
   const count =
     archivedFolders.length + data.contacts.filter((c) => c.archived).length;
 
@@ -82,13 +91,20 @@ export function ArchiveScreen({ store }: { store: ContactStore }) {
           </p>
         ) : (
           <>
-            {archivedFolders.length > 0 && (
+            {topArchivedFolders.length > 0 && (
               <section className="mb-2">
                 <SectionLabel>{t("archive.folders")}</SectionLabel>
                 <ul className="m-0 list-none p-0">
-                  {archivedFolders.map((folder) => {
+                  {topArchivedFolders.map((folder) => {
+                    // A restore / delete acts on the whole branch, so the row
+                    // shows every contact across the archived subtree, not just
+                    // the folder's own.
+                    const folderIds = subtreeFolderIds(
+                      archivedFolders,
+                      folder.id,
+                    );
                     const members = data.contacts.filter(
-                      (c) => c.folderId === folder.id,
+                      (c) => c.folderId !== null && folderIds.has(c.folderId),
                     );
                     const isCollapsed = collapsed.has(folder.id);
                     return (

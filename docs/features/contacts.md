@@ -55,6 +55,17 @@ marked as a **company** rather than a person.
   folder glyph that folds **every** folder shut in one tap (handy when a long
   list of folders has pushed your ungrouped contacts out of reach); once they're
   all collapsed the same glyph expands them all again.
+- **Subfolders.** Folders **nest** to any depth — Family ▸ Spouse ▸ Cousins.
+  Make one with a folder's **New subfolder** action (its right-click menu, or by
+  swiping the folder left on touch); the subfolder shows indented under its
+  parent, and collapsing a folder folds its whole subtree away with it. **Drag**
+  a folder onto another to nest it inside, or onto empty space to lift it back to
+  the top level (in manual folder-sort, dropping near a sibling's top or bottom
+  edge still reorders them). Archiving, deleting, or moving a folder to another
+  namespace carries the whole subtree along — **archiving** or **deleting** a
+  folder shelves or removes every folder and contact beneath it, though a deleted
+  folder's own contacts and subfolders are promoted up to its parent rather than
+  lost. The List page mirrors the same indented nesting.
 - **Website & company.** A card can carry a **Website** — add a homepage in edit
   mode and it shows as a tap-to-open link in read mode (and exports as the vCard
   `URL`). A **This is a company** switch — at the bottom of the edit view, beside

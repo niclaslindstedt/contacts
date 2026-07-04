@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_NAMESPACE_SLUG } from "@niclaslindstedt/oss-framework/namespaces";
 
 import { dueContacts, isoDate } from "./autoArchive.ts";
+import { canNestFolder, subtreeFolderIds } from "./contactList.ts";
 import type { ImportedContact } from "./import.ts";
 import { parseDoc, serializeDoc } from "./migrations.ts";
 import { starterDoc } from "./seed.ts";
@@ -497,13 +498,36 @@ export function useContactStore(
   );
 
   // Create a folder under a user-picked name and return its id. The name is
-  // collected inline before this fires.
+  // collected inline before this fires. A `parentId` nests the new folder as a
+  // subfolder of that folder; the default (`null`) makes a root folder.
   const addFolder = useCallback(
-    (name: string): string => {
+    (name: string, parentId: string | null = null): string => {
       const id = freshId("folder");
-      const folder: Folder = { id, name };
+      const folder: Folder =
+        parentId !== null ? { id, name, parentId } : { id, name };
       commit({ ...data, folders: [...data.folders, folder] });
       return id;
+    },
+    [commit, data],
+  );
+
+  // Reparent a folder — the drag-a-folder-onto-another (nest) or onto-the-root
+  // (promote) outcome. Guards keep the tree acyclic: a folder can't nest into
+  // itself or into its own subtree, and dropping it back onto its current
+  // parent is a harmless no-op (no empty undo step). Moving to `null` lifts it
+  // to the top level.
+  const moveFolderToFolder = useCallback(
+    (folderId: string, parentId: string | null) => {
+      const folder = data.folders.find((f) => f.id === folderId);
+      if (!folder) return;
+      if ((folder.parentId ?? null) === parentId) return;
+      if (!canNestFolder(data.folders, folderId, parentId)) return;
+      commit({
+        ...data,
+        folders: data.folders.map((f) =>
+          f.id === folderId ? { ...f, parentId } : f,
+        ),
+      });
     },
     [commit, data],
   );
@@ -539,31 +563,42 @@ export function useContactStore(
     [commit, data],
   );
 
-  // Delete a folder — its contacts aren't lost: they're reparented to the root
-  // so deleting a folder never silently takes its cards with it. Undoable.
+  // Delete a folder — nothing under it is lost: its direct contacts and its
+  // direct subfolders are promoted up to the folder's own parent (the root for
+  // a top-level folder), so deleting a folder never silently takes its cards or
+  // its nested folders with it. Undoable.
   const deleteFolder = useCallback(
-    (id: string) =>
+    (id: string) => {
+      const folder = data.folders.find((f) => f.id === id);
+      const parentId = folder?.parentId ?? null;
       commit({
         ...data,
-        folders: data.folders.filter((f) => f.id !== id),
+        folders: data.folders
+          .filter((f) => f.id !== id)
+          .map((f) => (f.parentId === id ? { ...f, parentId } : f)),
         contacts: data.contacts.map((c) =>
-          c.folderId === id ? { ...c, folderId: null } : c,
+          c.folderId === id ? { ...c, folderId: parentId } : c,
         ),
-      }),
+      });
+    },
     [commit, data],
   );
 
-  // Archive a folder — tucks the folder and its contacts out of the menu (the
-  // Archive counter tallies them); a held flag, not a delete.
+  // Archive a folder — tucks the folder, its subfolders, and every contact in
+  // the whole subtree out of the menu (the Archive counter tallies them); a
+  // held flag, not a delete. A subfolder inherits its parent's fate.
   const archiveFolder = useCallback(
     (id: string) => {
+      const folderIds = subtreeFolderIds(data.folders, id);
       const contacts = data.contacts.map((c) =>
-        c.folderId === id ? { ...c, archived: true } : c,
+        c.folderId !== null && folderIds.has(c.folderId)
+          ? { ...c, archived: true }
+          : c,
       );
       commit({
         ...data,
         folders: data.folders.map((f) =>
-          f.id === id ? { ...f, archived: true } : f,
+          folderIds.has(f.id) ? { ...f, archived: true } : f,
         ),
         contacts,
         activeContactId: nextActiveId(contacts, data.activeContactId),
@@ -572,31 +607,41 @@ export function useContactStore(
     [commit, data],
   );
 
-  // Restore an archived folder — lifts the flag off the folder and every
-  // contact it holds, so the whole group reappears just as it left.
+  // Restore an archived folder — lifts the flag off the folder, its subfolders,
+  // and every contact the subtree holds, so the whole branch reappears just as
+  // it left.
   const unarchiveFolder = useCallback(
-    (id: string) =>
+    (id: string) => {
+      const folderIds = subtreeFolderIds(data.folders, id);
       commit({
         ...data,
         folders: data.folders.map((f) =>
-          f.id === id ? { ...f, archived: false } : f,
+          folderIds.has(f.id) ? { ...f, archived: false } : f,
         ),
         contacts: data.contacts.map((c) =>
-          c.folderId === id ? { ...c, archived: false } : c,
+          c.folderId !== null && folderIds.has(c.folderId)
+            ? { ...c, archived: false }
+            : c,
         ),
-      }),
+      });
+    },
     [commit, data],
   );
 
-  // Permanently delete an archived folder and every contact under it — the
-  // archive is the one place a card leaves the document for good. Undoable.
+  // Permanently delete an archived folder, its subfolders, and every contact
+  // under the subtree — the archive is the one place a card leaves the document
+  // for good. Undoable.
   const deleteArchivedFolder = useCallback(
-    (id: string) =>
+    (id: string) => {
+      const folderIds = subtreeFolderIds(data.folders, id);
       commit({
         ...data,
-        folders: data.folders.filter((f) => f.id !== id),
-        contacts: data.contacts.filter((c) => c.folderId !== id),
-      }),
+        folders: data.folders.filter((f) => !folderIds.has(f.id)),
+        contacts: data.contacts.filter(
+          (c) => c.folderId === null || !folderIds.has(c.folderId),
+        ),
+      });
+    },
     [commit, data],
   );
 
@@ -653,37 +698,58 @@ export function useContactStore(
     [commit, data, state.slug, state.backend],
   );
 
-  // Move a folder — and every contact it holds — into another namespace.
+  // Move a folder — its whole subtree of subfolders, and every contact any of
+  // them holds — into another namespace. Every folder and card gets a fresh id;
+  // the subtree's internal parent links are rewired onto the new ids so the
+  // nesting survives the move, and the dragged folder lands at the target's
+  // root (its old parent doesn't exist there).
   const moveFolderToNamespace = useCallback(
     (folderId: string, targetSlug: string) => {
       if (targetSlug === state.slug) return;
       const folder = data.folders.find((f) => f.id === folderId);
       if (!folder) return;
-      const folderContacts = data.contacts.filter(
-        (c) => c.folderId === folderId,
+      const folderIds = subtreeFolderIds(data.folders, folderId);
+      const movingFolders = data.folders.filter((f) => folderIds.has(f.id));
+      const movingContacts = data.contacts.filter(
+        (c) => c.folderId !== null && folderIds.has(c.folderId),
+      );
+      // Old id → fresh id, so a subfolder's `parentId` can be rewired onto the
+      // moved copies rather than dangling at an id the target doesn't have.
+      const idMap = new Map(
+        movingFolders.map((f) => [f.id, freshId("folder")]),
       );
       try {
         const target = state.backend.load(targetSlug);
-        const newFolderId = freshId("folder");
-        const movedFolder: Folder = { ...folder, id: newFolderId };
-        const movedContacts: Contact[] = folderContacts.map((c) => ({
+        const movedFolders: Folder[] = movingFolders.map((f) => {
+          const parentId = f.parentId ?? null;
+          // The dragged folder's parent isn't part of the move — it roots at the
+          // target; an inner folder keeps its (remapped) parent.
+          const nextParent =
+            parentId !== null && idMap.has(parentId)
+              ? idMap.get(parentId)!
+              : null;
+          return nextParent !== null
+            ? { ...f, id: idMap.get(f.id)!, parentId: nextParent }
+            : { ...f, id: idMap.get(f.id)!, parentId: undefined };
+        });
+        const movedContacts: Contact[] = movingContacts.map((c) => ({
           ...c,
           id: freshId("contact"),
-          folderId: newFolderId,
+          folderId: idMap.get(c.folderId!)!,
         }));
         state.backend.save(targetSlug, {
           ...target,
-          folders: [...target.folders, movedFolder],
+          folders: [...target.folders, ...movedFolders],
           contacts: [...target.contacts, ...movedContacts],
         });
       } catch {
         return; // Storage unavailable — abort rather than drop the folder.
       }
-      const movedIds = new Set(folderContacts.map((c) => c.id));
-      const contacts = data.contacts.filter((c) => !movedIds.has(c.id));
+      const movedContactIds = new Set(movingContacts.map((c) => c.id));
+      const contacts = data.contacts.filter((c) => !movedContactIds.has(c.id));
       commit({
         ...data,
-        folders: data.folders.filter((f) => f.id !== folderId),
+        folders: data.folders.filter((f) => !folderIds.has(f.id)),
         contacts,
         activeContactId: nextActiveId(contacts, data.activeContactId),
       });
@@ -718,6 +784,7 @@ export function useContactStore(
     reorderFavorites,
     sweepAutoArchive,
     addFolder,
+    moveFolderToFolder,
     reorderFolders,
     renameFolder,
     deleteFolder,

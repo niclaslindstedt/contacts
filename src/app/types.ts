@@ -210,12 +210,20 @@ export type Contact = {
   autoArchiveAction?: AutoArchiveAction;
 };
 
-/** A folder groups contacts in the side menu under one collapsible row. */
+/** A folder groups contacts in the side menu under one collapsible row.
+ *  Folders nest: a folder with a {@link parentId} is a **subfolder** of that
+ *  folder (Family ▸ Spouse ▸ Cousins), to any depth. */
 export type Folder = {
   id: string;
   name: string;
+  /** The folder this one nests inside, or `null`/absent for a **root** folder
+   *  shown at the top level of the menu. A subfolder inherits its parent's fate
+   *  — archiving, deleting, or moving a folder to another namespace carries the
+   *  whole subtree with it. An id that points at no present folder (a parent
+   *  that was pruned) is treated as a root, so a folder is never orphaned. */
+  parentId?: string | null;
   // Set when the folder is archived; archiving a folder archives its contacts
-  // with it. A held flag, not a delete.
+  // and its subfolders with it. A held flag, not a delete.
   archived?: boolean;
 };
 

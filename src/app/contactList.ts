@@ -24,12 +24,122 @@ export function sortFolders(
   );
 }
 
+/** The parent a folder nests under, normalised against the folders actually
+ *  present: a `null`/absent `parentId`, or one pointing at a folder that isn't
+ *  in `present`, both read as `null` (a root). This keeps a subfolder whose
+ *  parent was pruned (deleted, archived out of the slice) from vanishing —
+ *  it surfaces at the root rather than being orphaned. */
+function normalisedParent(
+  folder: Folder,
+  present: ReadonlySet<string>,
+): string | null {
+  const p = folder.parentId ?? null;
+  return p !== null && present.has(p) ? p : null;
+}
+
+/** Group folders by their (normalised) parent id, each sibling list ordered per
+ *  `sort`. The `null` key holds the root folders. Only the folders handed in are
+ *  considered "present", so passing a filtered slice (e.g. the non-archived
+ *  folders) reparents any subfolder whose parent fell outside the slice up to
+ *  the root. */
+export function childrenByParent(
+  folders: readonly Folder[],
+  sort: FolderSort,
+): Map<string | null, Folder[]> {
+  const present = new Set(folders.map((f) => f.id));
+  const byParent = new Map<string | null, Folder[]>();
+  for (const folder of folders) {
+    const key = normalisedParent(folder, present);
+    (byParent.get(key) ?? byParent.set(key, []).get(key)!).push(folder);
+  }
+  if (sort === "alphabetical") {
+    for (const siblings of byParent.values())
+      siblings.sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      );
+  }
+  return byParent;
+}
+
+/** A folder paired with its nesting depth — 0 for a root folder, 1 for its
+ *  child, and so on. The shape the menu and the List walk to indent each row. */
+export type FolderNode = { folder: Folder; depth: number };
+
+/** Flatten the folders into depth-first (pre-order) reading order — each folder
+ *  immediately followed by its subtree — annotating every one with its
+ *  {@link FolderNode.depth}. `sort` orders siblings at each level. Cycle-safe:
+ *  a folder reached twice (a corrupt parent loop) is emitted once. */
+export function orderedFolderTree(
+  folders: readonly Folder[],
+  sort: FolderSort,
+): FolderNode[] {
+  const byParent = childrenByParent(folders, sort);
+  const out: FolderNode[] = [];
+  const seen = new Set<string>();
+  const walk = (parent: string | null, depth: number) => {
+    for (const folder of byParent.get(parent) ?? []) {
+      if (seen.has(folder.id)) continue;
+      seen.add(folder.id);
+      out.push({ folder, depth });
+      walk(folder.id, depth + 1);
+    }
+  };
+  walk(null, 0);
+  return out;
+}
+
+/** Every folder id strictly below `rootId` (its children, their children, …),
+ *  not including `rootId` itself. Cycle-safe. */
+export function descendantFolderIds(
+  folders: readonly Folder[],
+  rootId: string,
+): Set<string> {
+  const byParent = childrenByParent(folders, "manual");
+  const out = new Set<string>();
+  const walk = (parent: string) => {
+    for (const child of byParent.get(parent) ?? []) {
+      if (out.has(child.id)) continue;
+      out.add(child.id);
+      walk(child.id);
+    }
+  };
+  walk(rootId);
+  return out;
+}
+
+/** `rootId` together with every folder id below it — the whole subtree, the set
+ *  an archive / delete / cross-namespace move sweeps as one. */
+export function subtreeFolderIds(
+  folders: readonly Folder[],
+  rootId: string,
+): Set<string> {
+  const ids = descendantFolderIds(folders, rootId);
+  ids.add(rootId);
+  return ids;
+}
+
+/** Whether reparenting `folderId` under `parentId` is legal: not itself, and not
+ *  into its own subtree (which would sever the branch into a cycle). A `null`
+ *  target (the root) is always legal. */
+export function canNestFolder(
+  folders: readonly Folder[],
+  folderId: string,
+  parentId: string | null,
+): boolean {
+  if (parentId === null) return true;
+  if (parentId === folderId) return false;
+  return !descendantFolderIds(folders, folderId).has(parentId);
+}
+
 /** One folder's worth of the list view: the folder heading (or `null` for the
  *  ungrouped contacts shown at the root), and the active contacts it holds,
  *  already in display order. */
 export type ContactGroup = {
   /** The folder this group heads, or `null` for the ungrouped root group. */
   folder: Folder | null;
+  /** Nesting depth of the heading — 0 for a root folder and the ungrouped
+   *  group, 1 for a subfolder, and so on. Drives the section's indentation. */
+  depth: number;
   contacts: Contact[];
 };
 
@@ -45,37 +155,58 @@ export type GroupOptions = {
 };
 
 /** Group a document's active contacts by folder for the overview screen.
- *  Non-archived folders come first — ordered per `opts.folderSort` (document
- *  order by default, alphabetically when asked) — then the ungrouped contacts
- *  as a trailing `null` group — each group shown only when it holds
- *  at least one active contact, so empty folders drop out of the list.
- *  Archived folders and archived contacts are left out; contacts within each
- *  group are sorted by display name (nameless last), the same order the side
- *  menu uses. With `favoritesOnly`, only starred contacts are kept — so a
- *  folder with no favorites drops out just as an empty one does, and the
- *  Favorites page reuses this whole shape. */
+ *  Non-archived folders come first — walked depth-first so each subfolder
+ *  follows its parent (Family, then Family ▸ Spouse, …), ordered per
+ *  `opts.folderSort` (document order by default, alphabetically when asked) —
+ *  then the ungrouped contacts as a trailing `null` group. A folder shows when
+ *  its **subtree** holds at least one active contact: a folder with no direct
+ *  contacts of its own still heads a section when a descendant has some (so the
+ *  child stays reachable), while a wholly empty branch drops out. Archived
+ *  folders and archived contacts are left out; contacts within each group are
+ *  sorted by display name (nameless last), the same order the side menu uses.
+ *  With `favoritesOnly`, only starred contacts are kept — so a branch with no
+ *  favorites drops out just as an empty one does, and the Favorites page reuses
+ *  this whole shape. Each group carries its {@link ContactGroup.depth}. */
 export function groupContactsByFolder(
   data: AppData,
   opts: GroupOptions = {},
 ): ContactGroup[] {
   const keep = (c: Contact) =>
     !c.archived && (!opts.favoritesOnly || !!c.favorite);
-  const groups: ContactGroup[] = [];
-  const folders = sortFolders(
-    data.folders.filter((f) => !f.archived),
-    opts.folderSort ?? "manual",
-  );
-  for (const folder of folders) {
-    const contacts = data.contacts
-      .filter((c) => c.folderId === folder.id && keep(c))
+  const folders = data.folders.filter((f) => !f.archived);
+  const byParent = childrenByParent(folders, opts.folderSort ?? "manual");
+  const directContacts = (folderId: string | null) =>
+    data.contacts
+      .filter((c) => (c.folderId ?? null) === folderId && keep(c))
       .sort(compareContacts);
-    if (contacts.length > 0) groups.push({ folder, contacts });
-  }
-  const standalone = data.contacts
-    .filter((c) => c.folderId === null && keep(c))
-    .sort(compareContacts);
+
+  // Memoised, cycle-safe "does this folder's subtree hold a kept contact?".
+  // A branch with no direct contacts anywhere in it drops out of the list.
+  const hasContactsCache = new Map<string, boolean>();
+  const subtreeHasContacts = (folder: Folder, stack: Set<string>): boolean => {
+    const cached = hasContactsCache.get(folder.id);
+    if (cached !== undefined) return cached;
+    if (stack.has(folder.id)) return false; // cycle — treat as empty
+    stack.add(folder.id);
+    const has =
+      directContacts(folder.id).length > 0 ||
+      (byParent.get(folder.id) ?? []).some((c) => subtreeHasContacts(c, stack));
+    stack.delete(folder.id);
+    hasContactsCache.set(folder.id, has);
+    return has;
+  };
+
+  const groups: ContactGroup[] = [];
+  const emit = (folder: Folder, depth: number) => {
+    if (!subtreeHasContacts(folder, new Set())) return;
+    groups.push({ folder, depth, contacts: directContacts(folder.id) });
+    for (const child of byParent.get(folder.id) ?? []) emit(child, depth + 1);
+  };
+  for (const root of byParent.get(null) ?? []) emit(root, 0);
+
+  const standalone = directContacts(null);
   if (standalone.length > 0)
-    groups.push({ folder: null, contacts: standalone });
+    groups.push({ folder: null, depth: 0, contacts: standalone });
   return groups;
 }
 

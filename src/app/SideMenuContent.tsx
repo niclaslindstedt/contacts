@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useRef, useState, type ReactNode, type RefObject } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -10,9 +10,7 @@ import {
   ExternalLinkIcon,
   FloatingPanel,
   FolderIcon,
-  FolderOpenIcon,
   HelpCircleIcon,
-  InlineEditRow,
   PencilIcon,
   PlusIcon,
   RedoIcon,
@@ -38,13 +36,29 @@ import {
 } from "@niclaslindstedt/oss-framework/sidebar";
 
 import { Avatar } from "./Avatar.tsx";
-import { emergencyContacts, reorderIds, sortFolders } from "./contactList.ts";
-import { FavoriteIcon, IceIcon, ListIcon, PersonIcon } from "./icons.tsx";
+import {
+  canNestFolder,
+  childrenByParent,
+  emergencyContacts,
+  reorderIds,
+} from "./contactList.ts";
+import { FavoriteIcon, IceIcon, ListIcon } from "./icons.tsx";
+import {
+  BarButton,
+  CollapseAllButton,
+  ContactEditRow,
+  FolderEditRow,
+  FolderRow,
+  FooterLink,
+  FooterRow,
+  NavRow,
+  SectionHeader,
+} from "./SideMenuRows.tsx";
 import { useT } from "./i18n/index.ts";
 import { useLocalStorageState } from "./useLocalStorageState.ts";
 import type { FolderSort } from "./useAppSettings.ts";
 import type { ContactStore } from "./useContactStore.ts";
-import type { Contact } from "./types.ts";
+import type { Contact, Folder } from "./types.ts";
 import { compareContacts, displayName } from "./types.ts";
 
 // What a side-menu drag carries (a contact or a whole folder) and where it
@@ -153,6 +167,7 @@ export function SideMenuContent({
     data,
     addContact,
     addFolder,
+    moveFolderToFolder,
     reorderFolders,
     renameFolder,
     deleteFolder,
@@ -170,6 +185,18 @@ export function SideMenuContent({
   } = store;
   const manualFolders = folderSort === "manual";
 
+  // The folder tree. Archived folders drop out of the menu (the Archive counter
+  // tallies them); what's left is walked into a depth-first, depth-annotated
+  // reading order — each subfolder immediately under its parent — plus a
+  // parent-of lookup the collapse / reorder / nest logic reads.
+  const visibleFolders = data.folders.filter((f) => !f.archived);
+  const byParent = childrenByParent(visibleFolders, folderSort);
+  const parentOf = new Map<string, string | null>();
+  for (const [parent, kids] of byParent)
+    for (const kid of kids) parentOf.set(kid.id, parent);
+  const siblingIdsOf = (folderId: string): string[] =>
+    (byParent.get(parentOf.get(folderId) ?? null) ?? []).map((f) => f.id);
+
   // Drag-and-drop wiring. The framework hook tracks the gesture and hit-tests
   // the drop zones; the app says which drops are legal (`canDrop`) and what
   // each one means (`onDrop`) — reparent into a folder or back to the root,
@@ -179,21 +206,21 @@ export function SideMenuContent({
     canDrop: (drag, target) => {
       switch (target.kind) {
         case "folder":
-          // A folder dropped onto another folder reorders the list — but only
-          // in manual sort (alphabetical order isn't hand-arrangeable), and
-          // never onto itself. A contact dropped onto any folder files into it,
-          // its current one included (a harmless no-op, so a card can always be
-          // returned home).
+          // A folder dropped onto another folder either **nests** into it or
+          // **reorders** beside it — legal as long as it isn't dropped on itself
+          // or into its own subtree (which would sever a cycle). A contact
+          // dropped onto any folder files into it, its current one included (a
+          // harmless no-op, so a card can always be returned home).
           if (drag.kind === "folder") {
-            return manualFolders && drag.id !== target.id;
+            return canNestFolder(visibleFolders, drag.id, target.id);
           }
           return data.contacts.some((c) => c.id === drag.id);
         case "root":
-          // The root un-groups a dragged contact; a folder can't drop here.
-          return (
-            drag.kind === "contact" &&
-            data.contacts.some((c) => c.id === drag.id)
-          );
+          // The root un-groups a dragged contact or lifts a subfolder back to
+          // the top level.
+          return drag.kind === "folder"
+            ? visibleFolders.some((f) => f.id === drag.id)
+            : data.contacts.some((c) => c.id === drag.id);
         case "namespace":
           return true;
         case "archive":
@@ -204,24 +231,26 @@ export function SideMenuContent({
       switch (target.kind) {
         case "folder":
           if (drag.kind === "folder") {
-            // Reorder: slot the dragged folder where it was released, using the
-            // pointer's half of the target row (captured in `folderDropRef`) to
-            // decide which side of the target it lands on.
+            // The pointer's third of the target row (captured in `folderDropRef`)
+            // decides between nesting into the folder and reordering beside it:
+            // the middle nests, the edges slot before / after among siblings.
             const pending = folderDropRef.current;
-            reorderFolders(
-              reorderIds(
-                folderOrderRef.current,
-                drag.id,
-                target.id,
-                pending?.targetId === target.id ? pending.place : undefined,
-              ),
-            );
+            const place =
+              pending?.targetId === target.id ? pending.place : "into";
+            if (place === "into") {
+              moveFolderToFolder(drag.id, target.id);
+            } else {
+              reorderFolders(
+                reorderIds(pending!.siblingIds, drag.id, target.id, place),
+              );
+            }
           } else {
             moveContactToFolder(drag.id, target.id);
           }
           break;
         case "root":
-          moveContactToFolder(drag.id, null);
+          if (drag.kind === "folder") moveFolderToFolder(drag.id, null);
+          else moveContactToFolder(drag.id, null);
           break;
         case "namespace":
           if (drag.kind === "contact")
@@ -235,15 +264,16 @@ export function SideMenuContent({
       }
     },
   });
-  // Folder-reorder bookkeeping: the live folder id order (read at drop time),
-  // the folder header elements (to measure which half of a row the pointer sits
-  // over), and the pending drop side. Refs so the hook's `onDrop` reads current
-  // values rather than a stale render's.
-  const folderOrderRef = useRef<string[]>([]);
+  // Folder drag bookkeeping: the folder header elements (to measure which third
+  // of a row the pointer sits over) and the pending drop — its target, whether
+  // the pointer is nesting `into` the folder or slotting `before` / `after` it,
+  // and the sibling id order a reorder rearranges. Refs so the hook's `onDrop`
+  // reads current values rather than a stale render's.
   const folderRowEls = useRef(new Map<string, HTMLElement>());
   const folderDropRef = useRef<{
     targetId: string;
-    place: "before" | "after";
+    place: "before" | "into" | "after";
+    siblingIds: string[];
   } | null>(null);
   const archiveZone = dnd.dropZone("archive", { kind: "archive" });
   const rootZone = dnd.dropZone("root", { kind: "root" });
@@ -251,8 +281,13 @@ export function SideMenuContent({
     () => new Set(),
   );
   // A new folder isn't created until it's named: the "New folder" action drops
-  // an inline editor into the list, and only a non-empty name commits it.
-  const [creatingFolder, setCreatingFolder] = useState(false);
+  // an inline editor into the list, and only a non-empty name commits it. The
+  // value is the parent the folder will nest under — `null` for a root folder
+  // (the "New folder" bar button), a folder id for a subfolder (a folder's "New
+  // subfolder" action), or `false` when nothing is being created.
+  const [creatingFolderIn, setCreatingFolderIn] = useState<
+    string | null | false
+  >(false);
   // A new contact follows the same pattern: the "New" button (root) or a
   // folder's "+" drops an inline editor in the spot the card will land, and
   // only a non-empty name commits it. `null` when none is being created.
@@ -295,18 +330,29 @@ export function SideMenuContent({
     onNavigate();
   }
 
+  // Expand a folder if it's collapsed — so an inline editor dropped inside it
+  // (a new contact or a new subfolder) is actually visible.
+  function ensureExpanded(folderId: string) {
+    setCollapsedFolders((prev) => {
+      if (!prev.has(folderId)) return prev;
+      const next = new Set(prev);
+      next.delete(folderId);
+      return next;
+    });
+  }
+
   // Open the inline "name your new contact" editor. A card created inside a
   // folder needs that folder expanded so the editor is visible.
   function beginCreateContact(folderId: string | null) {
-    if (folderId !== null) {
-      setCollapsedFolders((prev) => {
-        if (!prev.has(folderId)) return prev;
-        const next = new Set(prev);
-        next.delete(folderId);
-        return next;
-      });
-    }
+    if (folderId !== null) ensureExpanded(folderId);
     setCreatingContactIn(folderId);
+  }
+
+  // Open the inline "name your new folder" editor. A subfolder needs its parent
+  // expanded so the editor shows.
+  function beginCreateFolder(parentId: string | null) {
+    if (parentId !== null) ensureExpanded(parentId);
+    setCreatingFolderIn(parentId);
   }
 
   function commitCreateContact(folderId: string | null, fullName: string) {
@@ -315,10 +361,11 @@ export function SideMenuContent({
     onNavigate();
   }
 
-  // One contact row, in a folder (`indent`) or at the root. A swipeable nav
-  // row — swipe left for the trash strip (delete), swipe right to archive. A
-  // desktop pointer reaches the same actions through the right-click menu.
-  function renderContact(contact: Contact, indent: boolean) {
+  // One contact row at nesting `indentLevel` (0 at the root, folder-depth + 1
+  // inside a folder). A swipeable nav row — swipe left for the trash strip
+  // (delete), swipe right to archive. A desktop pointer reaches the same actions
+  // through the right-click menu.
+  function renderContact(contact: Contact, indentLevel: number) {
     const deleteAction = {
       label: t("menu.deleteContact"),
       icon: <TrashIcon className="h-5 w-5" />,
@@ -360,7 +407,7 @@ export function SideMenuContent({
             }}
           >
             <NavRow
-              indent={indent}
+              indentLevel={indentLevel}
               active={active}
               icon={<Avatar contact={contact} size="row" />}
               onClick={() => pick(contact.id)}
@@ -383,18 +430,198 @@ export function SideMenuContent({
     );
   }
 
-  // Archived folders / contacts drop out of the menu but stay in the document
-  // — the Archive button's badge counts them. The visible folders show in the
-  // chosen order (alphabetical, or the hand-dragged document order).
-  const folders = sortFolders(
-    data.folders.filter((f) => !f.archived),
-    folderSort,
-  );
-  folderOrderRef.current = folders.map((f) => f.id);
+  // One folder row and, when it's expanded, its subtree: its subfolders first
+  // (each rendered the same way, one level deeper), then the folder's own
+  // contacts — so a nested folder sits right under its parent's header rather
+  // than below a long list of the parent's cards. A collapsed folder renders
+  // just its row, folding the whole subtree away with it.
+  function renderFolderNode(folder: Folder, depth: number): ReactNode {
+    const contacts = data.contacts
+      .filter((c) => c.folderId === folder.id && !c.archived)
+      .sort(compareContacts);
+    const children = byParent.get(folder.id) ?? [];
+    const expanded = !collapsedFolders.has(folder.id);
+    if (renamingFolderId === folder.id) {
+      return (
+        <FolderEditRow
+          key={folder.id}
+          initial={folder.name}
+          indentLevel={depth}
+          placeholder={t("menu.folderName")}
+          onCommit={(name) => {
+            renameFolder(folder.id, name);
+            setRenamingFolderId(null);
+          }}
+          onCancel={() => setRenamingFolderId(null)}
+        />
+      );
+    }
+    const renameFolderAction = {
+      label: t("menu.renameFolder"),
+      icon: <PencilIcon className="h-5 w-5" />,
+      onSelect: () => setRenamingFolderId(folder.id),
+    };
+    const newSubfolderAction = {
+      label: t("menu.newSubfolder"),
+      icon: <FolderIcon className="h-5 w-5" />,
+      onSelect: () => beginCreateFolder(folder.id),
+    };
+    const deleteFolderAction = {
+      label: t("menu.deleteFolder"),
+      icon: <TrashIcon className="h-5 w-5" />,
+      danger: true,
+      onSelect: () => deleteFolder(folder.id),
+    };
+    const folderActions = [
+      renameFolderAction,
+      newSubfolderAction,
+      deleteFolderAction,
+    ];
+    const folderMenuActions = [
+      renameFolderAction,
+      newSubfolderAction,
+      {
+        label: t("menu.archive"),
+        icon: <ArchiveIcon className="h-5 w-5" />,
+        onSelect: () => archiveFolder(folder.id),
+      },
+      deleteFolderAction,
+    ];
+    const folderZone = dnd.dropZone(`folder:${folder.id}`, {
+      kind: "folder",
+      id: folder.id,
+    });
+    // What a folder dragged over this one does, picked from the pointer's third
+    // of the row: the middle **nests** into the folder (a "file into"
+    // highlight), the top / bottom edges **reorder** it before / after among its
+    // siblings (a thin insertion line). Reordering only applies in manual sort
+    // and only between siblings — otherwise the whole row nests. The pointer's
+    // position is mirrored into the drop ref that `onDrop` reads.
+    const draggingFolderId =
+      dnd.dragging?.kind === "folder" ? dnd.dragging.id : null;
+    let showFolderLine = false;
+    let folderLineBelow = false;
+    let nestHighlight = false;
+    if (
+      draggingFolderId !== null &&
+      draggingFolderId !== folder.id &&
+      folderZone.isOver &&
+      dnd.pointer
+    ) {
+      const rect = folderRowEls.current.get(folder.id)?.getBoundingClientRect();
+      if (rect) {
+        const sameParent =
+          (parentOf.get(draggingFolderId) ?? null) ===
+          (parentOf.get(folder.id) ?? null);
+        const canReorder = manualFolders && sameParent;
+        const frac = (dnd.pointer.y - rect.top) / rect.height;
+        let place: "before" | "into" | "after" = "into";
+        if (canReorder && frac < 0.25) place = "before";
+        else if (canReorder && frac > 0.75) place = "after";
+        if (place === "into") {
+          nestHighlight = canNestFolder(
+            visibleFolders,
+            draggingFolderId,
+            folder.id,
+          );
+        } else {
+          showFolderLine = true;
+          folderLineBelow = place === "after";
+        }
+        folderDropRef.current = {
+          targetId: folder.id,
+          place,
+          siblingIds: siblingIdsOf(folder.id),
+        };
+      }
+    }
+    return (
+      <div key={folder.id} ref={folderZone.ref} className="relative">
+        {showFolderLine && (
+          <div
+            aria-hidden
+            className={`pointer-events-none absolute inset-x-0 z-10 h-0.5 rounded-full bg-accent ${
+              folderLineBelow ? "bottom-0" : "top-0"
+            }`}
+          />
+        )}
+        <DraggableRow
+          handle={dnd.dragHandle({ kind: "folder", id: folder.id })}
+          containerRef={(el) => {
+            if (el) folderRowEls.current.set(folder.id, el);
+            else folderRowEls.current.delete(folder.id);
+          }}
+        >
+          <RowActionMenu
+            ariaLabel={t("menu.folderActions")}
+            actions={folderMenuActions}
+            touchLongPress={false}
+          >
+            <SwipeableRow
+              actions={folderActions}
+              leading={{
+                kind: "commit",
+                onCommit: () => archiveFolder(folder.id),
+                label: t("menu.archive"),
+                icon: <ArchiveIcon className="h-5 w-5" />,
+              }}
+              // Filing a contact into this folder, or nesting a folder into it,
+              // lights the row up; a folder-reorder drag shows the insertion
+              // line instead.
+              highlighted={
+                folderZone.isOver &&
+                (dnd.dragging?.kind === "contact" || nestHighlight)
+              }
+            >
+              <FolderRow
+                name={folder.name}
+                addLabel={t("menu.newContactIn", { name: folder.name })}
+                count={contacts.length}
+                expanded={expanded}
+                indentLevel={depth}
+                onToggle={() => toggleFolder(folder.id)}
+                onAdd={() => beginCreateContact(folder.id)}
+              />
+            </SwipeableRow>
+          </RowActionMenu>
+        </DraggableRow>
+        {expanded && (
+          <>
+            {creatingFolderIn === folder.id && (
+              <FolderEditRow
+                indentLevel={depth + 1}
+                placeholder={t("menu.subfolderName")}
+                onCommit={(name) => {
+                  addFolder(name, folder.id);
+                  setCreatingFolderIn(false);
+                }}
+                onCancel={() => setCreatingFolderIn(false)}
+              />
+            )}
+            {children.map((child) => renderFolderNode(child, depth + 1))}
+            {contacts.map((contact) => renderContact(contact, depth + 1))}
+            {creatingContactIn === folder.id && (
+              <ContactEditRow
+                indentLevel={depth + 1}
+                placeholder={t("contact.fullNamePlaceholder")}
+                onCommit={(name) => commitCreateContact(folder.id, name)}
+                onCancel={() => setCreatingContactIn(false)}
+              />
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // The root-level folders — the top of the tree `renderFolderNode` descends.
+  const rootFolders = byParent.get(null) ?? [];
+
   // Drives the "Contacts" header glyph: once every folder is collapsed the
   // button flips to "expand all", otherwise it collapses them all.
   const allFoldersCollapsed =
-    folders.length > 0 && folders.every((f) => collapsedFolders.has(f.id));
+    visibleFolders.length > 0 &&
+    visibleFolders.every((f) => collapsedFolders.has(f.id));
   const standalone = data.contacts
     .filter((c) => c.folderId === null && !c.archived)
     .sort(compareContacts);
@@ -435,7 +662,7 @@ export function SideMenuContent({
         label={t("menu.contacts")}
         border
         action={
-          folders.length > 0 ? (
+          visibleFolders.length > 0 ? (
             <CollapseAllButton
               collapsed={allFoldersCollapsed}
               label={
@@ -446,7 +673,7 @@ export function SideMenuContent({
               onClick={() =>
                 setAllFoldersCollapsed(
                   !allFoldersCollapsed,
-                  folders.map((f) => f.id),
+                  visibleFolders.map((f) => f.id),
                 )
               }
             />
@@ -471,162 +698,25 @@ export function SideMenuContent({
                   {t("menu.emergency")}
                 </span>
               </div>
-              {emergency.map((contact) => renderContact(contact, false))}
+              {emergency.map((contact) => renderContact(contact, 0))}
             </div>
           )}
-          {creatingFolder && (
+          {creatingFolderIn === null && (
             <FolderEditRow
               placeholder={t("menu.folderName")}
               onCommit={(name) => {
                 addFolder(name);
-                setCreatingFolder(false);
+                setCreatingFolderIn(false);
               }}
-              onCancel={() => setCreatingFolder(false)}
+              onCancel={() => setCreatingFolderIn(false)}
             />
           )}
-          {folders.map((folder) => {
-            const contacts = data.contacts
-              .filter((c) => c.folderId === folder.id && !c.archived)
-              .sort(compareContacts);
-            const expanded = !collapsedFolders.has(folder.id);
-            if (renamingFolderId === folder.id) {
-              return (
-                <FolderEditRow
-                  key={folder.id}
-                  initial={folder.name}
-                  placeholder={t("menu.folderName")}
-                  onCommit={(name) => {
-                    renameFolder(folder.id, name);
-                    setRenamingFolderId(null);
-                  }}
-                  onCancel={() => setRenamingFolderId(null)}
-                />
-              );
-            }
-            const renameFolderAction = {
-              label: t("menu.renameFolder"),
-              icon: <PencilIcon className="h-5 w-5" />,
-              onSelect: () => setRenamingFolderId(folder.id),
-            };
-            const deleteFolderAction = {
-              label: t("menu.deleteFolder"),
-              icon: <TrashIcon className="h-5 w-5" />,
-              danger: true,
-              onSelect: () => deleteFolder(folder.id),
-            };
-            const folderActions = [renameFolderAction, deleteFolderAction];
-            const folderMenuActions = [
-              renameFolderAction,
-              {
-                label: t("menu.archive"),
-                icon: <ArchiveIcon className="h-5 w-5" />,
-                onSelect: () => archiveFolder(folder.id),
-              },
-              deleteFolderAction,
-            ];
-            const folderZone = dnd.dropZone(`folder:${folder.id}`, {
-              kind: "folder",
-              id: folder.id,
-            });
-            // A folder being dragged over this one (manual sort only) draws a
-            // thin insertion line rather than the "file into folder" highlight —
-            // top edge when the pointer sits over the header's upper half,
-            // bottom edge (below any expanded contacts) over the lower half. The
-            // pointer's own position picks the slot, mirrored into the drop ref.
-            const folderDrag = dnd.dragging?.kind === "folder";
-            let showFolderLine = false;
-            let folderLineBelow = false;
-            if (
-              manualFolders &&
-              folderDrag &&
-              folderZone.isOver &&
-              dnd.pointer &&
-              dnd.dragging?.id !== folder.id
-            ) {
-              const rect = folderRowEls.current
-                .get(folder.id)
-                ?.getBoundingClientRect();
-              if (rect) {
-                folderLineBelow = dnd.pointer.y > rect.top + rect.height / 2;
-                showFolderLine = true;
-                folderDropRef.current = {
-                  targetId: folder.id,
-                  place: folderLineBelow ? "after" : "before",
-                };
-              }
-            }
-            return (
-              <div key={folder.id} ref={folderZone.ref} className="relative">
-                {showFolderLine && (
-                  <div
-                    aria-hidden
-                    className={`pointer-events-none absolute inset-x-0 z-10 h-0.5 rounded-full bg-accent ${
-                      folderLineBelow ? "bottom-0" : "top-0"
-                    }`}
-                  />
-                )}
-                <DraggableRow
-                  handle={dnd.dragHandle({ kind: "folder", id: folder.id })}
-                  containerRef={(el) => {
-                    if (el) folderRowEls.current.set(folder.id, el);
-                    else folderRowEls.current.delete(folder.id);
-                  }}
-                >
-                  <RowActionMenu
-                    ariaLabel={t("menu.folderActions")}
-                    actions={folderMenuActions}
-                    touchLongPress={false}
-                  >
-                    <SwipeableRow
-                      actions={folderActions}
-                      leading={{
-                        kind: "commit",
-                        onCommit: () => archiveFolder(folder.id),
-                        label: t("menu.archive"),
-                        icon: <ArchiveIcon className="h-5 w-5" />,
-                      }}
-                      // Only the "file a contact into this folder" drag lights
-                      // the row up; a folder-reorder drag shows the line instead.
-                      highlighted={
-                        folderZone.isOver && dnd.dragging?.kind === "contact"
-                      }
-                    >
-                      <FolderRow
-                        name={folder.name}
-                        addLabel={t("menu.newContactIn", {
-                          name: folder.name,
-                        })}
-                        count={contacts.length}
-                        expanded={expanded}
-                        onToggle={() => toggleFolder(folder.id)}
-                        onAdd={() => beginCreateContact(folder.id)}
-                      />
-                    </SwipeableRow>
-                  </RowActionMenu>
-                </DraggableRow>
-                {expanded && (
-                  <>
-                    {contacts.map((contact) => renderContact(contact, true))}
-                    {creatingContactIn === folder.id && (
-                      <ContactEditRow
-                        indent
-                        placeholder={t("contact.fullNamePlaceholder")}
-                        onCommit={(name) =>
-                          commitCreateContact(folder.id, name)
-                        }
-                        onCancel={() => setCreatingContactIn(false)}
-                      />
-                    )}
-                  </>
-                )}
-              </div>
-            );
-          })}
+          {rootFolders.map((folder) => renderFolderNode(folder, 0))}
 
-          {standalone.map((contact) => renderContact(contact, false))}
+          {standalone.map((contact) => renderContact(contact, 0))}
           {creatingContactIn === null && (
             <ContactEditRow
-              indent={false}
+              indentLevel={0}
               placeholder={t("contact.fullNamePlaceholder")}
               onCommit={(name) => commitCreateContact(null, name)}
               onCancel={() => setCreatingContactIn(false)}
@@ -656,7 +746,7 @@ export function SideMenuContent({
             </BarButton>
             <BarButton
               label={t("menu.newFolder")}
-              onClick={() => setCreatingFolder(true)}
+              onClick={() => beginCreateFolder(null)}
             >
               <FolderIcon className="h-5 w-5" />
             </BarButton>
@@ -814,256 +904,10 @@ export function SideMenuContent({
 }
 
 // --- rows ------------------------------------------------------------------
-
-function SectionHeader({
-  label,
-  border,
-  action,
-}: {
-  label: string;
-  border?: boolean;
-  action?: ReactNode;
-}) {
-  return (
-    <div
-      className={`flex items-center justify-between gap-2 px-5 pt-3 pb-1 ${
-        border ? "border-t border-line" : ""
-      }`}
-    >
-      <span className="text-xs font-semibold tracking-wide text-muted uppercase">
-        {label}
-      </span>
-      {action}
-    </div>
-  );
-}
-
-// The glyph seated at the right of the "Contacts" header row: one click folds
-// every folder shut, the next unfolds them all. Its icon mirrors the folder
-// rows' own convention — an open folder means "there's something to collapse",
-// a closed one means "expand".
-function CollapseAllButton({
-  collapsed,
-  label,
-  onClick,
-}: {
-  collapsed: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-muted hover:bg-surface-2 hover:text-fg-bright"
-    >
-      {collapsed ? (
-        <FolderIcon className="h-4 w-4" />
-      ) : (
-        <FolderOpenIcon className="h-4 w-4" />
-      )}
-    </button>
-  );
-}
-
-function NavRow({
-  children,
-  icon,
-  active,
-  indent,
-  onClick,
-}: {
-  children: ReactNode;
-  icon: ReactNode;
-  active?: boolean;
-  indent?: boolean;
-  onClick?: () => void;
-}) {
-  const state = active
-    ? "bg-accent/20 font-semibold text-fg-bright shadow-[inset_3px_0_0_var(--color-accent)]"
-    : "text-fg hover:bg-surface-2 hover:text-fg-bright";
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex w-full cursor-pointer items-center gap-3 py-[var(--density-row-py)] text-left text-sm ${
-        indent ? "pr-5 pl-9" : "pr-5 pl-5"
-      } ${state}`}
-    >
-      <span className={`shrink-0 ${active ? "text-accent" : "text-muted"}`}>
-        {icon}
-      </span>
-      {children}
-    </button>
-  );
-}
-
-function FolderRow({
-  name,
-  addLabel,
-  count,
-  expanded,
-  onToggle,
-  onAdd,
-}: {
-  name: string;
-  addLabel: string;
-  count: number;
-  expanded: boolean;
-  onToggle: () => void;
-  onAdd: () => void;
-}) {
-  return (
-    <div className="flex w-full min-w-0 items-center">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={expanded}
-        className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-[var(--density-row-py)] pr-1 pl-5 text-left text-sm text-fg hover:text-fg-bright"
-      >
-        <span className={expanded ? "text-accent" : "text-muted"}>
-          {expanded ? (
-            <FolderOpenIcon className="h-5 w-5" />
-          ) : (
-            <FolderIcon className="h-5 w-5" />
-          )}
-        </span>
-        <span className="flex-1 truncate">{name}</span>
-        <RowBadge value={count} />
-      </button>
-      <button
-        type="button"
-        onClick={onAdd}
-        aria-label={addLabel}
-        className="mr-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded text-muted hover:bg-surface-2 hover:text-fg-bright"
-      >
-        <PlusIcon className="h-4 w-4" />
-      </button>
-    </div>
-  );
-}
-
-// The inline folder name editor, used both for creating a folder (empty) and
-// renaming one (seeded with its name). The framework's `InlineEditRow` owns
-// the focus-on-mount and Enter/blur-commits-Escape-cancels semantics.
-function FolderEditRow({
-  initial = "",
-  placeholder,
-  onCommit,
-  onCancel,
-}: {
-  initial?: string;
-  placeholder: string;
-  onCommit: (name: string) => void;
-  onCancel: () => void;
-}) {
-  return (
-    <InlineEditRow
-      initial={initial}
-      placeholder={placeholder}
-      onCommit={onCommit}
-      onCancel={onCancel}
-      className="gap-3 pr-2 pl-5"
-      icon={<FolderIcon className="h-5 w-5" />}
-      iconClassName="text-muted"
-    />
-  );
-}
-
-// The inline "name your new contact" editor — dropped in the spot the card
-// will land, wearing the neutral person mark.
-function ContactEditRow({
-  indent,
-  placeholder,
-  onCommit,
-  onCancel,
-}: {
-  indent: boolean;
-  placeholder: string;
-  onCommit: (name: string) => void;
-  onCancel: () => void;
-}) {
-  return (
-    <InlineEditRow
-      initial=""
-      placeholder={placeholder}
-      onCommit={onCommit}
-      onCancel={onCancel}
-      className={`gap-3 ${indent ? "pr-5 pl-9" : "pr-5 pl-5"}`}
-      icon={<PersonIcon className="h-4 w-4" />}
-      iconClassName="text-muted"
-    />
-  );
-}
-
-function RowBadge({ value }: { value: number }) {
-  if (value <= 0) return null;
-  return (
-    <span className="shrink-0 rounded-full bg-surface-3 px-2 py-0.5 text-xs text-muted tabular-nums">
-      {value}
-    </span>
-  );
-}
-
-function BarButton({
-  children,
-  label,
-  badge,
-  disabled,
-  onClick,
-  current,
-  dropRef,
-  over,
-  active,
-  buttonRef,
-}: {
-  children: ReactNode;
-  label: string;
-  badge?: string;
-  disabled?: boolean;
-  onClick?: () => void;
-  current?: boolean;
-  dropRef?: (el: HTMLElement | null) => void;
-  over?: boolean;
-  active?: boolean;
-  buttonRef?: RefObject<HTMLButtonElement | null>;
-}) {
-  // A live drag's drop-zone feedback wins over the resting "current view"
-  // tint so the user can see where a dropped item will land.
-  const dropState = over
-    ? "bg-accent/30 text-fg-bright"
-    : active
-      ? "text-accent ring-1 ring-accent/40 ring-inset"
-      : current
-        ? "bg-accent/20 text-fg-bright"
-        : "";
-  return (
-    <button
-      ref={buttonRef ?? dropRef}
-      type="button"
-      aria-label={label}
-      aria-pressed={current}
-      disabled={disabled}
-      onClick={onClick}
-      className={`relative flex flex-1 items-center justify-center py-2.5 transition-colors ${
-        disabled
-          ? "cursor-not-allowed text-muted opacity-40"
-          : "cursor-pointer text-fg hover:bg-surface-2 hover:text-fg-bright"
-      } ${dropState}`}
-    >
-      <span className={over || current ? "text-fg-bright" : "text-muted"}>
-        {children}
-      </span>
-      {badge !== undefined && (
-        <span className="absolute top-0.5 right-0.5 rounded-full bg-surface-3 px-1 py-0.5 text-[10px] leading-none text-muted tabular-nums">
-          {badge}
-        </span>
-      )}
-    </button>
-  );
-}
+//
+// The presentational leaf rows live in `SideMenuRows.tsx`; this file keeps
+// only the two drag-coupled ones (`DraggableRow` wraps the framework drag
+// source, `DragPreview` reads the app's `DragItem`).
 
 // A draggable row: the whole row is the framework drag source. The framework
 // hook splits the gesture by pointer (a mouse press-and-drags, a finger
@@ -1160,60 +1004,4 @@ function FooterCollapseRail({
   );
 }
 
-function FooterRow({
-  children,
-  icon,
-  onClick,
-}: {
-  children: ReactNode;
-  icon: ReactNode;
-  onClick?: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full cursor-pointer items-center gap-3 px-5 py-[var(--density-row-py)] text-left text-sm text-fg hover:bg-surface-2 hover:text-fg-bright"
-    >
-      <span className="text-muted">{icon}</span>
-      <span className="flex-1">{children}</span>
-    </button>
-  );
-}
-
-// The link sibling of `FooterRow` — an anchor instead of a button, with an
-// optional subtitle (the Source row's build label) and an external-link
-// affordance (a new tab + the trailing glyph).
-function FooterLink({
-  children,
-  icon,
-  href,
-  sublabel,
-  external,
-  onClick,
-}: {
-  children: ReactNode;
-  icon: ReactNode;
-  href: string;
-  sublabel?: string;
-  external?: boolean;
-  onClick?: () => void;
-}) {
-  return (
-    <a
-      href={href}
-      onClick={onClick}
-      {...(external ? { target: "_blank", rel: "noreferrer noopener" } : {})}
-      className="flex w-full cursor-pointer items-center gap-3 px-5 py-[var(--density-row-py)] text-left text-sm text-fg hover:bg-surface-2 hover:text-fg-bright"
-    >
-      <span className="text-muted">{icon}</span>
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate">{children}</span>
-        {sublabel && (
-          <span className="truncate text-xs text-muted">{sublabel}</span>
-        )}
-      </span>
-      {external && <ExternalLinkIcon className="h-4 w-4 shrink-0 text-muted" />}
-    </a>
-  );
-}
+// The footer's leaf rows (`FooterRow`, `FooterLink`) live in `SideMenuRows.tsx`.

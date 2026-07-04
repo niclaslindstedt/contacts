@@ -30,11 +30,14 @@ export const en = {
     contacts: "Contacts",
     newContact: "New contact",
     newFolder: "New folder",
+    newSubfolder: "New subfolder",
+    subfolderName: "Subfolder name",
     folderName: "Folder name",
     renameFolder: "Rename folder",
     deleteFolder: "Delete folder",
     folderActions: "Folder actions",
     newContactIn: "New contact in {name}",
+    newSubfolderIn: "New subfolder in {name}",
     collapseAllFolders: "Collapse all folders",
     expandAllFolders: "Expand all folders",
     collapseFooter: "Collapse footer",
@@ -394,7 +397,7 @@ export const en = {
       folderSortAlphabetical: "Alphabetically",
       folderSortManual: "Manually",
       folderSortHint:
-        "Order the folders in the sidebar and the List either by name, or in your own order — drag one folder onto another to rearrange them. Folders always sit above the ungrouped contacts.",
+        "Order the folders in the sidebar and the List either by name, or in your own order — in manual mode, drop a folder near another's top or bottom edge to reorder them. Drop it onto a folder to nest it inside as a subfolder. Folders always sit above the ungrouped contacts.",
       developerTitle: "Developer",
       developerMode: "Developer mode",
       developerModeHint:

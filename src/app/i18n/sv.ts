@@ -26,11 +26,14 @@ export const sv: Catalog = {
     contacts: "Kontakter",
     newContact: "Ny kontakt",
     newFolder: "Ny mapp",
+    newSubfolder: "Ny undermapp",
+    subfolderName: "Undermappens namn",
     folderName: "Mappnamn",
     renameFolder: "Byt namn på mapp",
     deleteFolder: "Ta bort mapp",
     folderActions: "Mappåtgärder",
     newContactIn: "Ny kontakt i {name}",
+    newSubfolderIn: "Ny undermapp i {name}",
     collapseAllFolders: "Fäll ihop alla mappar",
     expandAllFolders: "Fäll ut alla mappar",
     collapseFooter: "Fäll ihop sidfot",
@@ -384,7 +387,7 @@ export const sv: Catalog = {
       folderSortAlphabetical: "Alfabetiskt",
       folderSortManual: "Manuellt",
       folderSortHint:
-        "Ordna mapparna i sidofältet och listan antingen efter namn, eller i din egen ordning — dra en mapp till en annan för att flytta om dem. Mappar ligger alltid ovanför de ogrupperade kontakterna.",
+        "Ordna mapparna i sidofältet och listan antingen efter namn, eller i din egen ordning — i manuellt läge släpper du en mapp nära en annans över- eller underkant för att flytta om dem. Släpp den på en mapp för att lägga den som undermapp. Mappar ligger alltid ovanför de ogrupperade kontakterna.",
       developerTitle: "Utvecklare",
       developerMode: "Utvecklarläge",
       developerModeHint:
