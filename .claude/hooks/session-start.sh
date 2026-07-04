@@ -51,3 +51,16 @@ fi
 # node_modules, so a re-run after the container cache warms is cheap, and it
 # never wipes a partially-populated tree.
 npm install --no-audit --no-fund
+
+# The `design` maintenance skill drives a headless Chromium through Playwright
+# to screenshot the app while iterating on UI. Playwright is deliberately NOT a
+# project dependency — no build/test/lint step uses it, so human contributors
+# and CI stay lean — but a web session already has the Chromium binary
+# preinstalled (under PLAYWRIGHT_BROWSERS_PATH), so the only missing piece is the
+# small, browserless `playwright-core` package. Install it here — `--no-save`, so
+# package.json / the lockfile stay untouched — so an agent can run the skill
+# without a manual `npm i` first. Non-fatal: only the design skill needs it, so a
+# failure must not break session start.
+npm install --no-save --no-audit --no-fund playwright-core@1 \
+  || echo "session-start: playwright-core install failed — the design skill" \
+          "won't run until it's installed; nothing else needs it." >&2
