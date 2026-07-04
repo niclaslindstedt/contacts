@@ -83,6 +83,8 @@ export const en = {
     title: "Favorites",
     empty:
       "No favorites yet. Open a contact and tap the heart to add it to this shortlist.",
+    // The drag handle on a Favorites row — drag to reorder the shortlist.
+    reorder: "Drag to reorder {name}",
   },
   list: {
     title: "List",
@@ -200,6 +202,12 @@ export const en = {
     firstName: "First name",
     lastName: "Last name",
     company: "Company",
+    // The flip switch that turns a person card into a company card.
+    companyToggle: "This is a company",
+    companyToggleHint:
+      "Identify this card by a single company name instead of a first and last name. It shows a building icon and exports as an organisation.",
+    homepage: "Website",
+    homepagePlaceholder: "https://example.com",
     address: "Address",
     addresses: "Addresses",
     addAddress: "Add address",
@@ -234,6 +242,21 @@ export const en = {
     addDateToCalendar: "Add reminder to calendar",
     notes: "Notes",
     notesPlaceholder: "Anything worth remembering…",
+    // Attachments: files clipped to a card (a menu, a contract, a scanned card).
+    attachments: "Attachments",
+    addAttachment: "Add file",
+    attachmentReading: "Reading…",
+    removeAttachment: "Remove file",
+    attachmentDescription: "Description",
+    attachmentDescriptionPlaceholder: "What is this file?",
+    attachmentTooLarge: "Some files were too large to attach: {names}",
+    viewAttachment: "View {name}",
+    openAttachment: "Open in a new tab",
+    downloadAttachment: "Download",
+    // The in-case-of-emergency toggle, now at the bottom of edit mode.
+    iceToggle: "Emergency contact",
+    iceToggleHint:
+      "Pin this contact to the top of the menu so a next-of-kin or first responder can reach them at a glance.",
     // Auto-archive: a self-filing schedule on the card.
     autoArchive: "Auto-archive",
     autoArchiveToggle: "File this contact away automatically",

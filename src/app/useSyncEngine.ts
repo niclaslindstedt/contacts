@@ -23,6 +23,11 @@ import {
   gdrivePhotoStore,
   withExternalPhotos,
 } from "./photoStore.ts";
+import {
+  dropboxAttachmentStore,
+  gdriveAttachmentStore,
+  withExternalAttachments,
+} from "./attachmentStore.ts";
 import type {
   BackendKind,
   ConnectionProbeResult,
@@ -245,17 +250,22 @@ export function useSyncEngine(
         storage: localStorage,
         key: localCacheKey("dropbox", slug),
       });
-      // Encrypted: keep photos inside the AES-GCM envelope. Plaintext: file each
-      // contact's original out to `photos/<name>-<id>.jpg` in the Dropbox app
-      // folder (see `photoStore.ts`).
+      // Encrypted: keep photos and attachments inside the AES-GCM envelope.
+      // Plaintext: file each contact's photo originals out to `photos/…` and its
+      // attachments out to `attachments/…` in the Dropbox app folder (see
+      // `photoStore.ts` / `attachmentStore.ts`). The two externalisers compose —
+      // they touch disjoint document fields.
       return encrypted
         ? withEncryption(cached, passwordRef, {
             logger: logStore.createLogger("encrypt"),
           })
-        : withExternalPhotos(
-            cached,
-            dropboxPhotoStore(dropboxAuth, DROPBOX_APP_KEY || undefined),
-            () => setPhotoSweep(true),
+        : withExternalAttachments(
+            withExternalPhotos(
+              cached,
+              dropboxPhotoStore(dropboxAuth, DROPBOX_APP_KEY || undefined),
+              () => setPhotoSweep(true),
+            ),
+            dropboxAttachmentStore(dropboxAuth, DROPBOX_APP_KEY || undefined),
           );
     }
     if (backend === "gdrive" && gdriveToken) {
@@ -272,8 +282,11 @@ export function useSyncEngine(
         ? withEncryption(cached, passwordRef, {
             logger: logStore.createLogger("encrypt"),
           })
-        : withExternalPhotos(cached, gdrivePhotoStore(gdriveToken), () =>
-            setPhotoSweep(true),
+        : withExternalAttachments(
+            withExternalPhotos(cached, gdrivePhotoStore(gdriveToken), () =>
+              setPhotoSweep(true),
+            ),
+            gdriveAttachmentStore(gdriveToken),
           );
     }
     return null;

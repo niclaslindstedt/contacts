@@ -118,6 +118,28 @@ The app owns the domain and the stores ("store stays in the app"):
 Dependency direction: screens → stores → framework. Nothing imports from the
 framework's internals — only its published subpaths.
 
+### Reach for the framework first
+
+Before building any UI primitive, gesture, or generic mechanic, **check whether
+`@niclaslindstedt/oss-framework` already ships it** — the framework owns the
+UI kit and the reusable mechanics, and the app should consume them rather than
+reinvent them. Its published surface is broad: components (`Button`, `ToggleRow`,
+`SegmentedControl`, `SelectPicker`, `Section`, `Modal`, `ConfirmDialog`,
+`SwipeableRow`, `FloatingPanel`, the icon set including `GripIcon` / `HeartIcon`,
+…), hooks (e.g. `useDragDrop` for touch-friendly drag-and-drop and reordering),
+plus the storage, encryption, glyphs, achievements, and PWA subpaths. Inspect
+what's available under `node_modules/@niclaslindstedt/oss-framework/dist/**` (the
+`.d.ts` files list every export) and prefer an existing primitive over a
+hand-rolled one; only build app-local UI when the framework genuinely has no fit.
+
+### Keep the framework current
+
+**Before starting a task, update the framework to its latest published version.**
+Check the newest release with `npm view @niclaslindstedt/oss-framework version`,
+bump the `package.json` range if a newer one exists, reinstall, and work against
+that — so you're always building on the latest components and fixes rather than a
+stale copy.
+
 ## Where new code goes
 
 | Change type | Goes in                                                               |

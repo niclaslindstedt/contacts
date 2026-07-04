@@ -1,9 +1,10 @@
 # Contact cards
 
 Every contact is a card: a name, any number of phone numbers and email
-addresses (each typed **Private** or **Work**), a company, any number of postal
-addresses (each with a free-text title), a birthday, other important dates,
-notes, and one or more photos.
+addresses (each typed **Private** or **Work**), a company, a website, any number
+of postal addresses (each with a free-text title), a birthday, other important
+dates, notes, one or more photos, and any files you attach. A card can also be
+marked as a **company** rather than a person.
 
 - **Read mode by default.** Opening a contact shows it laid out to be read —
   the avatar and name lead the card, phone numbers and emails become tap-to-call
@@ -34,13 +35,23 @@ notes, and one or more photos.
   [Export & import](feature:export)).
 - **Favorites.** Star the people you reach for most and they gather on their own
   **Favorites** page — the button sits next to List in the sidebar's action
-  grid. It's the same folder-grouped layout as the List overview (with the same
-  Select / Copy / Export tools), filtered to just the starred contacts; a folder
-  with no favorites simply drops out. Toggle a favorite anywhere it shows: the
-  **heart** in a contact card's header, or the heart on any List or Favorites
-  row. A card opened from the Favorites page gets a back button to it, just like
-  the List page. Favorites are a per-contact flag stored in the document, so they
-  ride along in the JSON backup and sync across your devices.
+  grid. Unlike the List overview, Favorites is a single **hand-orderable
+  shortlist**: one flat list (not split by folder) that you arrange yourself.
+  Each row carries a **grip handle** — drag a contact up or down to set the
+  order; on a touch screen, press and hold the grip to pick a row up first. The
+  same Select / Copy / Export tools are here too. Toggle a favorite anywhere it
+  shows: the **heart** in a contact card's header, or the heart on any List or
+  Favorites row. A card opened from the Favorites page gets a back button to it,
+  just like the List page. The favorite flag and its order are stored per
+  contact, so they ride along in the JSON backup and sync across your devices; a
+  newly starred contact joins the bottom of the list until you drag it into
+  place.
+- **Website & company.** A card can carry a **Website** — add a homepage in edit
+  mode and it shows as a tap-to-open link in read mode (and exports as the vCard
+  `URL`). A **This is a company** switch turns the card into a **company**: it's
+  identified by a single company name instead of a first and last name, shows a
+  building icon in place of a monogram, and exports as an organisation so it
+  lands as a company in the address book you send it to.
 - **Private / work types.** Each phone number and email address carries a type —
   Private or Work — chosen from a small dropdown in edit mode. The type is shown
   as the row's label in read mode and maps onto the standard vCard TYPE on
@@ -85,12 +96,24 @@ notes, and one or more photos.
   downloaded or copied vCard. On a connected cloud drive each photo is filed at a
   tidy `photos/<name>-<id>-<photoId>.jpg` path so it's easy to find — see
   [Cloud sync](feature:sync).
+- **Attachments.** Clip **files** to a contact — a restaurant's menu, a signed
+  contract, a scanned business card. In edit mode, the **Attachments** section's
+  **Add file** button picks one or more files, and each can carry an optional
+  **description**. In read mode, image attachments show as **thumbnails** you tap
+  to expand into the same full-screen viewer the profile photos use (swipe
+  between several); other files list as rows — a PDF opens in a new tab, anything
+  else downloads. Attachments stay in the app (not written to a vCard or CSV) but
+  are kept in the JSON backup. On a connected cloud drive they're filed out as
+  real, previewable files under an `attachments/` folder — the same way photos
+  are — so the synced document stays lean (see [Cloud sync](feature:sync)).
+  Individual files are capped at 10 MB.
 - **In case of emergency.** Flag a contact as an **emergency contact** and it's
   pinned to a dedicated **In case of emergency** section at the very top of the
   side menu — regardless of which folder it's filed in — so a next-of-kin or
-  first responder is one tap away. Toggle it from the **siren** button in the
-  card's header, or from a contact row's right-click / long-press menu (**Mark
-  as emergency contact** / **Remove emergency contact**); a flagged row wears a
+  first responder is one tap away. The toggle lives at the **bottom of the card's
+  edit view** as a labelled switch (set it once and it stays out of the way); you
+  can also toggle it from a contact row's right-click / long-press menu (**Mark
+  as emergency contact** / **Remove emergency contact**). A flagged row wears a
   small red siren badge wherever it appears. The flag stays in the app — it
   isn't written to a vCard or CSV — but it's kept in the JSON backup, so a
   restore brings your emergency contacts back pinned.

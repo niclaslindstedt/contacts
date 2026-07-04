@@ -77,6 +77,7 @@ export const sv: Catalog = {
     title: "Favoriter",
     empty:
       "Inga favoriter ännu. Öppna en kontakt och tryck på hjärtat för att lägga till den i den här kortlistan.",
+    reorder: "Dra för att flytta {name}",
   },
   list: {
     title: "Lista",
@@ -195,6 +196,11 @@ export const sv: Catalog = {
     firstName: "Förnamn",
     lastName: "Efternamn",
     company: "Företag",
+    companyToggle: "Det här är ett företag",
+    companyToggleHint:
+      "Identifiera kortet med ett enda företagsnamn i stället för för- och efternamn. Det visar en byggnadsikon och exporteras som en organisation.",
+    homepage: "Webbplats",
+    homepagePlaceholder: "https://exempel.se",
     address: "Adress",
     addresses: "Adresser",
     addAddress: "Lägg till adress",
@@ -229,6 +235,21 @@ export const sv: Catalog = {
     addDateToCalendar: "Lägg till påminnelse i kalendern",
     notes: "Anteckningar",
     notesPlaceholder: "Något värt att minnas…",
+    // Bilagor: filer fästa vid ett kort (en meny, ett avtal, ett skannat kort).
+    attachments: "Bilagor",
+    addAttachment: "Lägg till fil",
+    attachmentReading: "Läser…",
+    removeAttachment: "Ta bort fil",
+    attachmentDescription: "Beskrivning",
+    attachmentDescriptionPlaceholder: "Vad är den här filen?",
+    attachmentTooLarge: "Vissa filer var för stora att bifoga: {names}",
+    viewAttachment: "Visa {name}",
+    openAttachment: "Öppna i en ny flik",
+    downloadAttachment: "Ladda ner",
+    // Nödkontakt-växeln, nu längst ner i redigeringsläget.
+    iceToggle: "Nödkontakt",
+    iceToggleHint:
+      "Fäst den här kontakten högst upp i menyn så att en anhörig eller räddningspersonal snabbt kan nå dem.",
     // Autoarkivering: ett schema som lägger undan kontakten av sig själv.
     autoArchive: "Autoarkivering",
     autoArchiveToggle: "Lägg undan kontakten automatiskt",

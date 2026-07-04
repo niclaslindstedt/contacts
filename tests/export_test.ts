@@ -119,9 +119,33 @@ describe("contactToVCard", () => {
     expect(v).not.toContain("b3RoZXI=");
   });
 
+  it("exports a homepage as a URL line", () => {
+    const v = contactToVCard(card({ homepage: "https://example.com" }));
+    expect(v).toContain("URL:https://example.com");
+  });
+
+  it("marks a company card with X-ABShowAs and omits it for a person", () => {
+    const company = contactToVCard(
+      card({
+        firstName: "",
+        lastName: "",
+        company: "Acme Inc",
+        isCompany: true,
+      }),
+    );
+    expect(company).toContain("ORG:Acme Inc");
+    expect(company).toContain("X-ABShowAs:COMPANY");
+    expect(company).toContain("FN:Acme Inc");
+
+    const person = contactToVCard(card({ company: "Acme Inc" }));
+    expect(person).not.toContain("X-ABShowAs");
+  });
+
   it("skips empty optional fields entirely", () => {
     const v = contactToVCard(card());
     expect(v).not.toContain("ORG:");
+    expect(v).not.toContain("URL:");
+    expect(v).not.toContain("X-ABShowAs");
     expect(v).not.toContain("TEL");
     expect(v).not.toContain("EMAIL");
     expect(v).not.toContain("PHOTO");

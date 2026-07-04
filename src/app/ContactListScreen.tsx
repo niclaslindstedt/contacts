@@ -10,8 +10,13 @@ import {
   FloatingPanel,
   FolderIcon,
   FolderOpenIcon,
+  GripIcon,
   type FloatingPlacement,
 } from "@niclaslindstedt/oss-framework/components";
+import {
+  useDragDrop,
+  type DragHandleProps,
+} from "@niclaslindstedt/oss-framework/sidebar";
 import { unlock } from "@niclaslindstedt/oss-framework/achievements";
 
 import { Avatar } from "./Avatar.tsx";
@@ -27,9 +32,11 @@ import { phoneOptions, type AppSettings } from "./useAppSettings.ts";
 import { contactsToCsv, contactsToVCards } from "./export.ts";
 import { downloadText, MIME_CSV, MIME_VCARD } from "./download.ts";
 import {
+  favoriteContacts,
   groupContactsByFolder,
   listedContacts,
   prioritizePhones,
+  reorderIds,
 } from "./contactList.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { Contact } from "./types.ts";
@@ -78,10 +85,17 @@ export function ContactListScreen({
   variant?: "all" | "favorites";
 }) {
   const t = useT();
-  const { data, updateContact } = store;
+  const { data, updateContact, reorderFavorites } = store;
   const favoritesOnly = variant === "favorites";
+  // The List page groups every active card by folder; the Favorites page is a
+  // single hand-orderable shortlist instead (see `favoriteContacts`), so
+  // reordering can move a card freely rather than only within one folder.
   const groups = useMemo(
-    () => groupContactsByFolder(data, { favoritesOnly }),
+    () => (favoritesOnly ? [] : groupContactsByFolder(data)),
+    [data, favoritesOnly],
+  );
+  const favorites = useMemo(
+    () => (favoritesOnly ? favoriteContacts(data) : []),
     [data, favoritesOnly],
   );
   // Star / unstar a card. Reuses the same field-patch path every other edit
@@ -116,7 +130,10 @@ export function ContactListScreen({
       return next;
     });
 
-  const allContacts = useMemo(() => listedContacts(groups), [groups]);
+  const allContacts = useMemo(
+    () => (favoritesOnly ? favorites : listedContacts(groups)),
+    [favoritesOnly, favorites, groups],
+  );
   const total = allContacts.length;
   const selectedContacts = allContacts.filter((c) => selected.has(c.id));
   const allSelected = total > 0 && selectedContacts.length === total;
@@ -168,10 +185,29 @@ export function ContactListScreen({
       )}
 
       <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-10 [overscroll-behavior:contain]">
-        {total === 0 && groups.length === 0 ? (
+        {total === 0 ? (
           <p className="px-2 py-10 text-center text-sm text-muted">
             {favoritesOnly ? t("favorites.empty") : t("list.empty")}
           </p>
+        ) : favoritesOnly ? (
+          <FavoritesReorderList
+            contacts={favorites}
+            settings={settings}
+            selecting={selecting}
+            selected={selected}
+            onOpenContact={onOpenContact}
+            onToggleSelected={toggleSelected}
+            onToggleFavorite={toggleFavorite}
+            onReorder={(dragId, targetId) =>
+              reorderFavorites(
+                reorderIds(
+                  favorites.map((c) => c.id),
+                  dragId,
+                  targetId,
+                ),
+              )
+            }
+          />
         ) : (
           groups.map((group) => {
             const key = group.folder?.id ?? UNGROUPED;
@@ -213,6 +249,98 @@ export function ContactListScreen({
         )}
       </div>
     </div>
+  );
+}
+
+// The Favorites page's body: one flat, hand-orderable list. Each row wears a
+// grip at its leading edge; the framework's `useDragDrop` owns the gesture
+// (long-press on touch, a small drag on a pointer), and dropping a card onto
+// another reorders the whole shortlist. Select mode suppresses the grips — you
+// can't reorder and multi-select at once — but the rows still tick. Dragging is
+// disabled implicitly there because no handle is rendered.
+function FavoritesReorderList({
+  contacts,
+  settings,
+  selecting,
+  selected,
+  onOpenContact,
+  onToggleSelected,
+  onToggleFavorite,
+  onReorder,
+}: {
+  contacts: Contact[];
+  settings: AppSettings;
+  selecting: boolean;
+  selected: ReadonlySet<string>;
+  onOpenContact: (id: string) => void;
+  onToggleSelected: (id: string) => void;
+  onToggleFavorite: (contact: Contact) => void;
+  onReorder: (dragId: string, targetId: string) => void;
+}) {
+  const t = useT();
+  const dnd = useDragDrop<string, string>({
+    canDrop: (drag, target) => drag !== target,
+    onDrop: (drag, target) => onReorder(drag, target),
+  });
+  return (
+    <ul className="m-0 list-none p-0">
+      {contacts.map((contact) => {
+        const zone = dnd.dropZone(contact.id, contact.id);
+        return (
+          <li
+            key={contact.id}
+            ref={zone.ref}
+            className={
+              zone.isOver ? "rounded-md ring-2 ring-accent ring-inset" : ""
+            }
+          >
+            <ContactRow
+              contact={contact}
+              settings={settings}
+              selecting={selecting}
+              selected={selected.has(contact.id)}
+              onOpen={() => onOpenContact(contact.id)}
+              onToggleSelected={() => onToggleSelected(contact.id)}
+              onToggleFavorite={() => onToggleFavorite(contact)}
+              grip={
+                selecting ? undefined : (
+                  <ReorderGrip
+                    handle={dnd.dragHandle(contact.id)}
+                    label={t("favorites.reorder", {
+                      name: displayName(contact) || t("contact.unnamed"),
+                    })}
+                  />
+                )
+              }
+            />
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+// The drag handle on a Favorites row — a grip the finger / pointer grabs to
+// pick the row up. Spreads the framework hook's pointer handlers (and its
+// `touch-action`, so a vertical scroll still works until the long-press lifts
+// the row).
+function ReorderGrip({
+  handle,
+  label,
+}: {
+  handle: DragHandleProps;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      className="mr-0.5 -ml-1 flex h-9 w-7 shrink-0 cursor-grab items-center justify-center rounded text-muted hover:text-fg active:cursor-grabbing"
+      {...handle}
+    >
+      <GripIcon className="h-5 w-5" />
+    </button>
   );
 }
 
@@ -389,6 +517,7 @@ function ContactRow({
   onOpen,
   onToggleSelected,
   onToggleFavorite,
+  grip,
 }: {
   contact: Contact;
   settings: AppSettings;
@@ -397,6 +526,9 @@ function ContactRow({
   onOpen: () => void;
   onToggleSelected: () => void;
   onToggleFavorite: () => void;
+  // The drag handle shown at the row's leading edge on the reorderable
+  // Favorites page. Absent everywhere else — the row reads exactly as before.
+  grip?: ReactNode;
 }) {
   const t = useT();
   const name = displayName(contact);
@@ -472,6 +604,7 @@ function ContactRow({
     <div
       className={`flex items-center border-b border-line px-1 ${rowSpacing}`}
     >
+      {grip}
       <button
         type="button"
         onClick={onOpen}

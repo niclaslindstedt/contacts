@@ -64,6 +64,10 @@ export function contactToVCard(c: Contact): string {
   lines.push(`N:${vEscape(c.lastName)};${vEscape(c.firstName)};;;`);
   lines.push(`FN:${vEscape(displayName(c) || "Unnamed")}`);
   if (c.company?.trim()) lines.push(`ORG:${vEscape(c.company)}`);
+  // Tell Apple/Outlook-family importers to show this card as a company rather
+  // than a person, so it lands as an organisation and not "Firstname Lastname".
+  if (c.isCompany) lines.push("X-ABShowAs:COMPANY");
+  if (c.homepage?.trim()) lines.push(`URL:${vEscape(c.homepage)}`);
   for (const p of c.phones) {
     if (p.value.trim()) {
       lines.push(`TEL;TYPE=${telType(p.label)}:${vEscape(p.value)}`);

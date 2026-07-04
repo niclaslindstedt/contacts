@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { ContactGlyph } from "./ContactGlyph.tsx";
 import { activePhoto } from "./contactPhotos.ts";
-import { PersonIcon } from "./icons.tsx";
+import { BuildingIcon, PersonIcon } from "./icons.tsx";
 import type { Contact } from "./types.ts";
 import { initials } from "./types.ts";
 
@@ -63,6 +63,10 @@ export function Avatar({
     >
       {contact.glyph ? (
         <ContactGlyph name={contact.glyph} className={iconDim} style={tint} />
+      ) : contact.isCompany ? (
+        // A company with no photo and no picked glyph reads as a building
+        // rather than a monogram — the flip switch's visible tell.
+        <BuildingIcon className={iconDim} />
       ) : mono ? (
         <span aria-hidden>{mono}</span>
       ) : (

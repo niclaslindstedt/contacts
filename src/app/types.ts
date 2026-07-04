@@ -76,6 +76,37 @@ export type PhotoTransform = {
   y: number;
 };
 
+/** One file attached to a contact — a restaurant's menu, a signed contract, a
+ *  scanned business card. A card can carry several. Each entry is
+ *  self-contained: the file's own `name` and `mime` type, an optional free-text
+ *  `description`, the byte `size` (for the read-view badge), and the file's
+ *  bytes as a `data:` URI (`data`, what the thumbnail / viewer / download read).
+ *  On a cloud backend the bytes are externalised to a real binary file at a
+ *  deterministic path (`dataPath`) and stripped from the synced document (see
+ *  `attachmentStore.ts`), mirroring how photos are filed out; `dataPath` is
+ *  absent until the file is externalised. Kept app-local — an attachment isn't
+ *  written to a vCard or CSV, but it does round-trip through the JSON backup. */
+export type Attachment = {
+  id: string;
+  /** The original file name, shown as the attachment's title ("menu.pdf"). */
+  name: string;
+  /** The file's MIME type ("application/pdf", "image/png"); drives the
+   *  image-thumbnail vs. file-row choice and how the bytes are re-wrapped on
+   *  load. */
+  mime: string;
+  /** The file's size in bytes, kept for the read-view size badge. */
+  size?: number;
+  /** An optional note about the file ("Lunch menu, updated 2024"). */
+  description?: string;
+  /** The file's bytes as a base64 `data:` URI. Present on the local working
+   *  copy; on a plaintext cloud backend it's externalised to {@link dataPath}
+   *  and stripped, then re-hydrated on load. */
+  data?: string | null;
+  /** The deterministic cloud file path the bytes are externalised to; absent
+   *  until the file is filed out. */
+  dataPath?: string | null;
+};
+
 /** One photo in a contact's gallery. A card can carry several — a headshot, a
  *  candid, a logo — and swap which one is its face at will (see
  *  {@link Contact.activePhotoId} and `contactPhotos.ts`). Each entry is
@@ -101,6 +132,15 @@ export type Contact = {
   firstName: string;
   lastName: string;
   company?: string;
+  /** Marks the card as a **company** rather than a person. When set, the card
+   *  is identified by its {@link company} name alone (the name area edits the
+   *  company, not a first/last name) and wears a building glyph by default.
+   *  Absent / `false` means an ordinary person. Kept app-local — but it does map
+   *  onto the vCard's `X-ABShowAs:COMPANY` hint on export. */
+  isCompany?: boolean;
+  /** The contact's website — a full URL ("https://example.com"). Shown as a
+   *  tap-to-open link in the read view and mapped onto the vCard `URL`. */
+  homepage?: string;
   phones: Phone[];
   emails: Email[];
   /** Postal addresses, each split into street / postal code / city (see
@@ -126,6 +166,10 @@ export type Contact = {
    *  since-removed entry) the first photo in {@link photos} is used, so a card
    *  imported or migrated with a single photo needs no explicit selection. */
   activePhotoId?: string | null;
+  /** Files attached to the card (see {@link Attachment}) — a menu, a contract,
+   *  a scanned card. Absent or empty means none. Access it through the helpers
+   *  in `attachments.ts` rather than reaching in directly. */
+  attachments?: Attachment[];
   // `null` for a standalone (ungrouped) contact shown at the menu's root.
   folderId: string | null;
   // The card's appearance when it has no photo — a glyph name (from the
@@ -148,6 +192,11 @@ export type Contact = {
   // gather on their own Favorites page — a quick-access shortlist of the people
   // you reach for most. Absent (or false) means not a favorite.
   favorite?: boolean;
+  /** The card's manual position on the Favorites page, low to high. The
+   *  Favorites page is a hand-orderable shortlist (drag to reorder); this is the
+   *  saved order. Absent on a card that has never been placed — those sort after
+   *  ordered cards, by name — so only reordering assigns explicit positions. */
+  favoriteOrder?: number;
   /** When set, the card files itself away without being touched: on or after
    *  this day the app's sweep either archives it or deletes it (see
    *  {@link autoArchiveAction}). A full ISO `YYYY-MM-DD`. Handy for a contact

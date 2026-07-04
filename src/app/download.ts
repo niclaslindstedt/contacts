@@ -8,7 +8,13 @@ export function downloadText(
   text: string,
   mime: string,
 ): void {
-  const blob = new Blob([text], { type: mime });
+  downloadBlob(filename, new Blob([text], { type: mime }));
+}
+
+/** Click a transient anchor at a Blob to save it under `filename`. The binary
+ *  counterpart to {@link downloadText} — used to download an attachment's
+ *  bytes. */
+export function downloadBlob(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

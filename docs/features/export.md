@@ -9,9 +9,11 @@ selection to a vCard / CSV file:
   Imports directly into iOS Contacts, Android/Google Contacts, and Outlook. A
   phone number or email's Private / Work type maps onto the standard `TEL` /
   `EMAIL` TYPE; each address becomes its own `ADR` line (typed from its title);
-  the birthday exports as `BDAY`, and other full-date important dates ride as
-  Apple-style grouped `X-ABDATE` / `X-ABLABEL` items so iOS/macOS Contacts
-  restore them under their occasion.
+  a website exports as `URL`; a card marked as a company carries
+  `X-ABShowAs:COMPANY` so it lands as an organisation; the birthday exports as
+  `BDAY`, and other full-date important dates ride as Apple-style grouped
+  `X-ABDATE` / `X-ABLABEL` items so iOS/macOS Contacts restore them under their
+  occasion.
 - **CSV** — Outlook's classic import columns (First Name, Last Name, Mobile
   Phone, E-mail Address, …), which Google Contacts also maps. Work numbers fill
   the Business column and private ones the Mobile column; the first address fills
@@ -19,8 +21,9 @@ selection to a vCard / CSV file:
 - **JSON backup** — the app's own on-disk document, versioned so a future build
   can always read it back. This is the only format that keeps everything at full
   fidelity — every titled address, day-and-month-only important dates that
-  vCard 3.0 can't express, and the **in-case-of-emergency** flag (which has no
-  vCard or CSV field, so it survives only in a JSON backup).
+  vCard 3.0 can't express, the **in-case-of-emergency** flag, the favorites
+  order, and **attachments** (none of which have a vCard or CSV field, so they
+  survive only in a JSON backup).
 
 ## Import
 
@@ -36,8 +39,9 @@ Bring contacts in from another address book two ways:
 The same three formats round-trip:
 
 - **vCard (`.vcf`)** — one or many cards, from iOS/Android/Outlook or the app's
-  own export. Names (`N`/`FN`), company (`ORG`), phones/emails (typed Private /
-  Work from their `TEL`/`EMAIL` TYPE), addresses (`ADR`), the birthday (`BDAY`,
+  own export. Names (`N`/`FN`), company (`ORG`), the company hint
+  (`X-ABShowAs:COMPANY`), website (`URL`), phones/emails (typed Private / Work
+  from their `TEL`/`EMAIL` TYPE), addresses (`ADR`), the birthday (`BDAY`,
   including a yearless `--MM-DD` kept as an important date), Apple grouped
   `X-ABDATE` important dates, notes, and an embedded base64 `PHOTO` all come
   across. Folded lines and quoted-printable (old vCard 2.1) values are decoded.
