@@ -16,7 +16,7 @@ import {
 import { unlock } from "@niclaslindstedt/oss-framework/achievements";
 
 import { Avatar } from "./Avatar.tsx";
-import { DownloadIcon, ListIcon } from "./icons.tsx";
+import { CheckSquareIcon, DownloadIcon, ListIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { formatPhoneValue } from "./countries/index.ts";
 import { phoneOptions, type AppSettings } from "./useAppSettings.ts";
@@ -122,17 +122,22 @@ export function ContactListScreen({
         />
       ) : (
         <header className="mb-2 flex items-center gap-3 border-b border-line px-1 pb-3">
-          <ListIcon className="h-5 w-5 shrink-0 text-muted" />
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
+            <ListIcon className="h-5 w-5" />
+          </span>
           <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-wide text-fg-bright">
             {t("list.title")}
           </h1>
-          <span className="shrink-0 text-sm text-muted tabular-nums">
-            {total}
-          </span>
           {total > 0 && (
-            <Button variant="secondary" onClick={enterSelect}>
-              {t("list.select")}
-            </Button>
+            <button
+              type="button"
+              onClick={enterSelect}
+              aria-label={t("list.select")}
+              title={t("list.select")}
+              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-line text-muted hover:bg-surface-2 hover:text-fg"
+            >
+              <CheckSquareIcon className="h-5 w-5" />
+            </button>
           )}
         </header>
       )}

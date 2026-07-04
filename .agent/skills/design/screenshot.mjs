@@ -170,6 +170,21 @@ export async function openSidebar(page) {
   }
 }
 
+// Open the overview List page (all active contacts, grouped by folder)
+// from the side menu's "List" bar button. Opens the drawer first on
+// phones. Waits for the list header to render.
+export async function openList(page) {
+  await openSidebar(page);
+  await page
+    .getByRole("button", { name: /^List$/ })
+    .first()
+    .click();
+  await page
+    .getByRole("heading", { name: /^List$/ })
+    .first()
+    .waitFor();
+}
+
 // Create a fresh contact and land on its card. A brand-new contact opens
 // straight in edit mode (see `ContactScreen` `isEmptyContact`), so this
 // is also the entry point for designing the edit form and the appearance
