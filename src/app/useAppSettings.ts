@@ -74,15 +74,15 @@ export const DEFAULT_SETTINGS: AppSettings = {
   disableAchievements: false,
   devMode: false,
   captureLogs: false,
-  // Dates default to ISO; phone/postal formatting defaults *off*, so an
-  // existing document reads exactly as typed until the owner opts in and picks
-  // a country. Once on, the country's convention takes over.
+  // Dates default to ISO; phone/postal formatting defaults *on*, so phones and
+  // postal codes render in the home country's convention out of the box. The
+  // Format tab can switch either back off to show values exactly as typed.
   dateFormat: "iso",
   country: DEFAULT_COUNTRY,
-  phoneFormat: false,
+  phoneFormat: true,
   phoneCountryCode: true,
   phoneLeadingZero: true,
-  postalFormat: false,
+  postalFormat: true,
   postalSpaces: true,
   // The list view shows phone numbers under each name by default (the most
   // useful thing to glance at); email is opt-in so the rows stay compact.
