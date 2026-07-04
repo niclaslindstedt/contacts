@@ -2,6 +2,7 @@
 import { useRef, useState, type ReactNode } from "react";
 
 import {
+  CheckIcon,
   FloatingPanel,
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
@@ -11,35 +12,48 @@ import {
 } from "@niclaslindstedt/oss-framework/glyphs";
 
 import { Avatar } from "./Avatar.tsx";
+import {
+  activePhoto,
+  photoList,
+  withActivePhoto,
+  withPhotoAdded,
+  withPhotoAdjusted,
+  withPhotoRemoved,
+} from "./contactPhotos.ts";
 import { ContactGlyphPicker } from "./ContactGlyph.tsx";
 import { CropIcon, ImageUpIcon, PersonIcon } from "./icons.tsx";
 import { log } from "./log.ts";
 import { PhotoCropper } from "./PhotoCropper.tsx";
 import { DEFAULT_TRANSFORM, fileToPhotoSource } from "./photo.ts";
+import { freshId } from "./useContactStore.ts";
 import { useT } from "./i18n/index.ts";
-import type { Contact, PhotoTransform } from "./types.ts";
+import type { Contact, ContactPhoto, PhotoTransform } from "./types.ts";
 
 // The card's avatar control: a button wearing the contact's photo (or glyph /
-// initials) that opens a popover with a **Photo** section (upload / adjust /
-// remove glyphs), then the framework's colour and glyph pickers. Upload and
-// Adjust open the circle cropper (`PhotoCropper`); the app owns the trigger,
-// the popover chrome, and *where the choice is stored* (the contact store),
-// while the framework owns the catalogue, the renderer, and the two pickers.
-type PhotoPatch = {
-  glyph?: string | null;
-  color?: string | null;
-  photo?: string | null;
-  photoSource?: string | null;
-  photoTransform?: PhotoTransform | null;
-  photoPath?: string | null;
-};
+// initials) that opens a popover with a **Photos** gallery, then the framework's
+// colour and glyph pickers. The gallery is a strip of thumbnails — the current
+// face ringed, tap another to swap to it without re-uploading — plus an add tile
+// that opens the circle cropper (`PhotoCropper`) on a fresh upload, and Adjust /
+// Remove actions on the current photo. The app owns the trigger, the popover
+// chrome, and *where the choice is stored* (the contact store, via the pure
+// `contactPhotos` mutators); the framework owns the catalogue, the renderer, and
+// the two pickers.
 
 type Props = {
   contact: Contact;
-  onChange: (patch: PhotoPatch) => void;
+  onChange: (patch: Partial<Contact>) => void;
   // The avatar size the trigger wears. The card identity block uses `hero`;
   // callers that want the compact trigger omit it.
   size?: "header" | "hero";
+};
+
+// What the cropper, when open, is framing: a brand-new upload to append, or a
+// re-adjust of an existing gallery entry (kept by id so the swap lands back on
+// the same photo).
+type Cropping = {
+  source: string;
+  initial: PhotoTransform | null;
+  target: { mode: "add" } | { mode: "adjust"; id: string };
 };
 
 export function ContactAppearancePopover({
@@ -51,12 +65,10 @@ export function ContactAppearancePopover({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
-  // The image being framed in the cropper (a fresh upload or the existing
-  // source for a re-adjust), or null when the cropper is closed.
-  const [cropping, setCropping] = useState<{
-    source: string;
-    initial: PhotoTransform | null;
-  } | null>(null);
+  const [cropping, setCropping] = useState<Cropping | null>(null);
+
+  const photos = photoList(contact);
+  const active = activePhoto(contact);
 
   async function onPickFile(file: File | undefined) {
     if (!file) return;
@@ -65,7 +77,11 @@ export function ContactAppearancePopover({
       // A fresh upload opens the cropper centred, ready to frame. Close the
       // popover first so its dismiss backdrop doesn't sit over the cropper.
       setOpen(false);
-      setCropping({ source, initial: DEFAULT_TRANSFORM });
+      setCropping({
+        source,
+        initial: DEFAULT_TRANSFORM,
+        target: { mode: "add" },
+      });
     } catch (err) {
       log.warn(
         `photo: could not read the picked file — ${err instanceof Error ? err.message : String(err)}`,
@@ -73,22 +89,44 @@ export function ContactAppearancePopover({
     }
   }
 
-  function adjust() {
+  function adjust(photo: ContactPhoto) {
     // Re-adjust from the kept original; fall back to the baked crop for a photo
     // that predates the source (or whose source hasn't been fetched offline).
-    const source = contact.photoSource || contact.photo;
+    const source = photo.photoSource || photo.photo;
     if (!source) return;
     setOpen(false);
-    setCropping({ source, initial: contact.photoTransform ?? null });
+    setCropping({
+      source,
+      initial: photo.photoTransform ?? null,
+      target: { mode: "adjust", id: photo.id },
+    });
   }
 
-  function removePhoto() {
-    onChange({
-      photo: null,
-      photoSource: null,
-      photoTransform: null,
-      photoPath: null,
-    });
+  function onCropSaved(photo: string, transform: PhotoTransform) {
+    if (!cropping) return;
+    if (cropping.target.mode === "adjust") {
+      onChange(
+        withPhotoAdjusted(contact, cropping.target.id, {
+          photo,
+          photoSource: cropping.source,
+          photoTransform: transform,
+          // A re-crop supersedes the filed copy — clear the cloud paths so the
+          // next sync re-files the new bytes rather than serving the stale file.
+          photoPath: null,
+          photoSourcePath: null,
+        }),
+      );
+    } else {
+      onChange(
+        withPhotoAdded(contact, {
+          id: freshId("photo"),
+          photo,
+          photoSource: cropping.source,
+          photoTransform: transform,
+        }),
+      );
+    }
+    setCropping(null);
   }
 
   return (
@@ -129,30 +167,59 @@ export function ContactAppearancePopover({
         />
 
         <p className="mb-1.5 text-xs font-semibold tracking-wide text-muted uppercase">
-          {t("contact.photo")}
+          {photos.length > 1 ? t("contact.photos") : t("contact.photo")}
         </p>
-        <div className="mb-3 flex items-center gap-2">
-          <PhotoAction
-            icon={<ImageUpIcon className="h-4 w-4" />}
-            label={t("contact.uploadPhoto")}
+
+        {/* The gallery strip: a thumbnail per photo (the face ringed), then an
+            add tile. Tapping a thumbnail makes it the face. */}
+        <div className="mb-2 flex flex-wrap gap-2">
+          {photos.map((photo) => (
+            <PhotoThumb
+              key={photo.id}
+              photo={photo}
+              active={photo.id === active?.id}
+              selectLabel={t("contact.usePhoto")}
+              currentLabel={t("contact.currentPhoto")}
+              onSelect={() => onChange(withActivePhoto(contact, photo.id))}
+            />
+          ))}
+          <button
+            type="button"
             onClick={() => fileRef.current?.click()}
-          />
-          {contact.photo && (
+            aria-label={
+              photos.length > 0
+                ? t("contact.addPhoto")
+                : t("contact.uploadPhoto")
+            }
+            title={
+              photos.length > 0
+                ? t("contact.addPhoto")
+                : t("contact.uploadPhoto")
+            }
+            className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-dashed border-line text-muted hover:border-accent hover:text-accent"
+          >
+            <ImageUpIcon className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Adjust / remove act on the current face. */}
+        {active && (
+          <div className="mb-3 flex items-center gap-2">
             <PhotoAction
               icon={<CropIcon className="h-4 w-4" />}
+              text={t("contact.adjust")}
               label={t("contact.adjustPhoto")}
-              onClick={adjust}
+              onClick={() => adjust(active)}
             />
-          )}
-          {contact.photo && (
             <PhotoAction
               icon={<TrashIcon className="h-4 w-4" />}
+              text={t("contact.remove")}
               label={t("contact.removePhoto")}
-              onClick={removePhoto}
+              onClick={() => onChange(withPhotoRemoved(contact, active.id))}
               danger
             />
-          )}
-        </div>
+          </div>
+        )}
 
         <p className="mb-1.5 text-xs font-semibold tracking-wide text-muted uppercase">
           {t("contact.colour")}
@@ -181,29 +248,73 @@ export function ContactAppearancePopover({
           source={cropping.source}
           initial={cropping.initial}
           onCancel={() => setCropping(null)}
-          onSave={({ photo, transform }) => {
-            onChange({
-              photo,
-              photoSource: cropping.source,
-              photoTransform: transform,
-            });
-            setCropping(null);
-          }}
+          onSave={({ photo, transform }) => onCropSaved(photo, transform)}
         />
       )}
     </>
   );
 }
 
-// One glyph button in the Photo section — a bordered square wearing an icon,
-// with the action's name as its accessible label / tooltip.
+// One gallery thumbnail: the photo in a circle. The current face wears an accent
+// ring and a check badge; the others are tap-to-select. A plain button — the
+// per-photo adjust / remove live in the action row, which keeps each thumb a
+// single, unambiguous "make this the face" target.
+function PhotoThumb({
+  photo,
+  active,
+  selectLabel,
+  currentLabel,
+  onSelect,
+}: {
+  photo: ContactPhoto;
+  active: boolean;
+  selectLabel: string;
+  currentLabel: string;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={active}
+      aria-label={active ? currentLabel : selectLabel}
+      title={active ? currentLabel : selectLabel}
+      className={`relative h-12 w-12 shrink-0 cursor-pointer rounded-full ${
+        active
+          ? "ring-2 ring-accent ring-offset-2 ring-offset-surface-1"
+          : "opacity-80 hover:opacity-100"
+      }`}
+    >
+      <img
+        src={photo.photo ?? ""}
+        alt=""
+        className="h-full w-full rounded-full object-cover"
+      />
+      {active && (
+        <span
+          aria-hidden
+          className="absolute -right-0.5 -bottom-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white ring-2 ring-surface-1"
+        >
+          <CheckIcon className="h-3 w-3" />
+        </span>
+      )}
+    </button>
+  );
+}
+
+// One action button in the Photos section — an icon and a short verb that act
+// on the current face. `text` is the compact visible label ("Adjust"); `label`
+// is the full accessible name ("Adjust photo") for the tooltip and screen
+// readers, so the button reads clearly without spelling out "photo" on screen.
 function PhotoAction({
   icon,
+  text,
   label,
   onClick,
   danger = false,
 }: {
   icon: ReactNode;
+  text: string;
   label: string;
   onClick: () => void;
   danger?: boolean;
@@ -214,11 +325,12 @@ function PhotoAction({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-line text-muted hover:bg-surface-2 ${
+      className={`flex h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-line text-sm text-muted hover:bg-surface-2 ${
         danger ? "hover:border-danger/40 hover:text-danger" : "hover:text-fg"
       }`}
     >
       {icon}
+      <span>{text}</span>
     </button>
   );
 }

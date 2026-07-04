@@ -104,11 +104,19 @@ describe("contactToVCard", () => {
     expect(v).not.toContain("05-20");
   });
 
-  it("embeds a data-URI photo as a base64 PHOTO line", () => {
+  it("embeds the active gallery photo as a base64 PHOTO line", () => {
     const v = contactToVCard(
-      card({ photo: "data:image/jpeg;base64,aGVsbG8=" }),
+      card({
+        photos: [
+          { id: "ph1", photo: "data:image/jpeg;base64,b3RoZXI=" },
+          { id: "ph2", photo: "data:image/jpeg;base64,aGVsbG8=" },
+        ],
+        activePhotoId: "ph2",
+      }),
     );
+    // Only the current face is exported, not the whole gallery.
     expect(v).toContain("PHOTO;ENCODING=b;TYPE=JPEG:aGVsbG8=");
+    expect(v).not.toContain("b3RoZXI=");
   });
 
   it("skips empty optional fields entirely", () => {

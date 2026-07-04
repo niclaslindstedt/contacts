@@ -76,6 +76,25 @@ export type PhotoTransform = {
   y: number;
 };
 
+/** One photo in a contact's gallery. A card can carry several — a headshot, a
+ *  candid, a logo — and swap which one is its face at will (see
+ *  {@link Contact.activePhotoId} and `contactPhotos.ts`). Each entry is
+ *  self-contained: the baked circular-crop square JPEG data URI (`photo`, what
+ *  the avatar and export read), the resized original the crop was taken from
+ *  (`photoSource`, kept so "Adjust" reopens the cropper), and the framing that
+ *  produced the crop (`photoTransform`). On a cloud backend the two images are
+ *  externalised to binary JPEG files at deterministic paths (`photoPath` /
+ *  `photoSourcePath`) and stripped from the synced document (see
+ *  `photoStore.ts`); those paths are absent until the photo is externalised. */
+export type ContactPhoto = {
+  id: string;
+  photo?: string | null;
+  photoSource?: string | null;
+  photoTransform?: PhotoTransform | null;
+  photoPath?: string | null;
+  photoSourcePath?: string | null;
+};
+
 /** A single contact card, optionally inside a folder. */
 export type Contact = {
   id: string;
@@ -96,30 +115,17 @@ export type Contact = {
    *  free-text label. Separate from `birthday`, which stays special. */
   importantDates: ImportantDate[];
   notes?: string;
-  /** The contact's face, shown everywhere the avatar appears: the baked
-   *  circular-crop square JPEG data URI (see `photo.ts`), or absent. Held inline
-   *  on this device so the menu renders without fetching originals; on a cloud
-   *  backend it is externalised to a binary JPEG file (`photoPath`) and stripped
-   *  from the synced document (see `photoStore.ts`). The fields below describe
-   *  how it was made so the crop can be re-adjusted and the original
-   *  re-exported. */
-  photo?: string | null;
-  /** The resized original the crop was taken from (a larger JPEG data URI),
-   *  kept so "Adjust" reopens the cropper at the same source. On a cloud
-   *  backend this is externalised to a binary JPEG file (`photoSourcePath`) and
-   *  stripped from the synced document once the file is written. */
-  photoSource?: string | null;
-  /** The framing the last crop used, so the cropper restores it: `scale` is the
-   *  zoom over the cover-fit baseline, `x`/`y` the pan offset in the crop
-   *  viewport's unit square (0 = centred). */
-  photoTransform?: PhotoTransform | null;
-  /** The deterministic file path the display crop lives at on a cloud backend
-   *  (`photos/<name>-<id>.jpg`) — a real JPEG, easy to preview in the drive.
-   *  Absent until the photo is externalised. */
-  photoPath?: string | null;
-  /** The file path the larger source original lives at on a cloud backend
-   *  (`photos/<name>-<id>-source.jpg`). Absent until externalised. */
-  photoSourcePath?: string | null;
+  /** The contact's gallery of photos (see {@link ContactPhoto}). A card can
+   *  hold several and swap between them without re-uploading; the one shown
+   *  everywhere the avatar appears is picked by {@link activePhotoId}. Absent or
+   *  empty means no photo — the avatar falls back to the glyph / initials.
+   *  Access it through the helpers in `contactPhotos.ts` rather than reaching
+   *  in directly, so the "which one is the face" rule stays in one place. */
+  photos?: ContactPhoto[];
+  /** Which gallery entry is the current face. When absent (or pointing at a
+   *  since-removed entry) the first photo in {@link photos} is used, so a card
+   *  imported or migrated with a single photo needs no explicit selection. */
+  activePhotoId?: string | null;
   // `null` for a standalone (ungrouped) contact shown at the menu's root.
   folderId: string | null;
   // The card's appearance when it has no photo — a glyph name (from the

@@ -6,14 +6,16 @@
 // The always-present localStorage working copy (`useContactStore`) keeps every
 // photo inline as a data URI, so offline rendering and the local backend are
 // untouched. This layer sits only on the *cloud* push/pull: `withExternalPhotos`
-// wraps a `StorageAdapter` so that, on save, each contact's images — the display
-// crop (`photo`) and the larger original (`photoSource`) — are decoded to bytes
-// and written to deterministic files (`photos/<name>-<id>.jpg` and
-// `…-source.jpg`, see `photoPathFor` / `photoSourcePathFor`) and stripped from
-// the synced JSON — so the document carries no image data at all and the files
-// are genuine, previewable JPEGs — and, on load, re-hydrated back onto the
-// contact from those files. Photos that arrive inline on an imported vCard ride
-// the same seam: they land in `photo`, so the next cloud save files them out.
+// wraps a `StorageAdapter` so that, on save, every image in each contact's photo
+// gallery — the display crop (`photo`) and the larger original (`photoSource`)
+// of each entry — is decoded to bytes and written to a deterministic file
+// (`photos/<name>-<contactId>-<photoId>.jpg` and `…-source.jpg`, see
+// `photoPathFor` / `photoSourcePathFor`) and stripped from the synced JSON — so
+// the document carries no image data at all and the files are genuine,
+// previewable JPEGs — and, on load, re-hydrated back onto each gallery entry
+// from those files. A photo that arrives inline on an imported vCard rides the
+// same seam: it lands in a gallery entry's `photo`, so the next cloud save files
+// it out.
 //
 // The `data:` URL ⇄ bytes conversion (see `photo.ts`) is what keeps the drive
 // copy binary; the byte-level transport is `photoFileStore.ts`.
@@ -83,29 +85,47 @@ export function gdrivePhotoStore(token: string): PhotoStore {
 
 // -- the document shape this layer touches (a loose view of `AppData`) --------
 
-type PhotoContact = {
+/** One gallery photo, as this layer sees it — just the id, the two data-URI
+ *  fields it files out, and the paths they map to. */
+type PhotoEntry = {
   id: string;
-  firstName?: string;
-  lastName?: string;
-  company?: string;
   photo?: string | null;
   photoSource?: string | null;
   photoPath?: string | null;
   photoSourcePath?: string | null;
 };
+type PhotoContact = {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+  photos?: PhotoEntry[];
+};
 type PhotoDoc = { contacts?: PhotoContact[] };
 
-/** One externalisable image on a contact: the data-URI field to file out, the
- *  deterministic path builder, and the doc fields it maps to. */
+/** The naming a deterministic photo path is built from — the contact's identity
+ *  plus the photo's own id, since one card can carry several photos. */
+type PhotoNamed = PhotoContact & { photoId: string };
+
+/** One externalisable image on a gallery photo: the data-URI field to file out,
+ *  the deterministic path builder, and the doc field the path maps to. */
 type Slot = {
   data: "photo" | "photoSource";
   path: "photoPath" | "photoSourcePath";
-  pathFor: (c: PhotoContact) => string;
+  pathFor: (c: PhotoNamed) => string;
 };
 
 const SLOTS: Slot[] = [
-  { data: "photo", path: "photoPath", pathFor: photoPathFor },
-  { data: "photoSource", path: "photoSourcePath", pathFor: photoSourcePathFor },
+  {
+    data: "photo",
+    path: "photoPath",
+    pathFor: (c) => photoPathFor(c, c.photoId),
+  },
+  {
+    data: "photoSource",
+    path: "photoSourcePath",
+    pathFor: (c) => photoSourcePathFor(c, c.photoId),
+  },
 ];
 
 /** A cheap 32-bit fingerprint (djb2) of a source data URI, so an unchanged
@@ -131,10 +151,12 @@ export function hasInlinePhotos(text: string): boolean {
   }
   const contacts = Array.isArray(doc.contacts) ? doc.contacts : null;
   if (!contacts) return false;
-  return contacts.some(
-    (c) =>
-      dataUrlToBytes(c.photo) !== null ||
-      dataUrlToBytes(c.photoSource) !== null,
+  return contacts.some((c) =>
+    (c.photos ?? []).some(
+      (p) =>
+        dataUrlToBytes(p.photo) !== null ||
+        dataUrlToBytes(p.photoSource) !== null,
+    ),
   );
 }
 
@@ -172,35 +194,38 @@ export function withExternalPhotos(
     if (!contacts) return { text, desired };
 
     for (const c of contacts) {
-      for (const slot of SLOTS) {
-        const inline = c[slot.data];
-        if (inline) {
-          const path = slot.pathFor(c);
-          const bytes = dataUrlToBytes(inline);
-          if (!bytes) {
-            // Not a decodable data URI — leave it inline rather than lose it.
-            continue;
-          }
-          const fp = fingerprint(inline);
-          try {
-            if (written.get(path) !== fp) {
-              await photos.write(path, bytes.bytes);
-              written.set(path, fp);
-              log.info(`externalised ${path}`);
+      for (const entry of c.photos ?? []) {
+        const named: PhotoNamed = { ...c, photoId: entry.id };
+        for (const slot of SLOTS) {
+          const inline = entry[slot.data];
+          if (inline) {
+            const path = slot.pathFor(named);
+            const bytes = dataUrlToBytes(inline);
+            if (!bytes) {
+              // Not a decodable data URI — leave it inline rather than lose it.
+              continue;
             }
-            c[slot.path] = path;
-            delete c[slot.data]; // stripped from the cloud copy on success only
-            desired.add(path);
-          } catch (err) {
-            // Externalise-or-embed: keep the image inline so it still syncs.
-            log.warn(
-              `could not externalise ${path} — keeping it inline (${errMsg(err)})`,
-            );
+            const fp = fingerprint(inline);
+            try {
+              if (written.get(path) !== fp) {
+                await photos.write(path, bytes.bytes);
+                written.set(path, fp);
+                log.info(`externalised ${path}`);
+              }
+              entry[slot.path] = path;
+              delete entry[slot.data]; // stripped on success only
+              desired.add(path);
+            } catch (err) {
+              // Externalise-or-embed: keep the image inline so it still syncs.
+              log.warn(
+                `could not externalise ${path} — keeping it inline (${errMsg(err)})`,
+              );
+            }
+          } else if (entry[slot.path]) {
+            // Already filed (rehydrated then left unchanged, or arrived from a
+            // remote copy) — keep its file.
+            desired.add(entry[slot.path]!);
           }
-        } else if (c[slot.path]) {
-          // Already filed (rehydrated then left unchanged, or arrived from a
-          // remote copy) — keep its file.
-          desired.add(c[slot.path]!);
         }
       }
     }
@@ -244,24 +269,26 @@ export function withExternalPhotos(
     if (!contacts) return text;
     let changed = false;
     await Promise.all(
-      contacts.map(async (c) => {
-        for (const slot of SLOTS) {
-          const path = c[slot.path];
-          if (path && !c[slot.data]) {
-            try {
-              const bytes = await photos.read(path);
-              if (bytes) {
-                const url = bytesToDataUrl("image/jpeg", bytes);
-                c[slot.data] = url;
-                written.set(path, fingerprint(url));
-                changed = true;
+      contacts.flatMap((c) =>
+        (c.photos ?? []).map(async (entry) => {
+          for (const slot of SLOTS) {
+            const path = entry[slot.path];
+            if (path && !entry[slot.data]) {
+              try {
+                const bytes = await photos.read(path);
+                if (bytes) {
+                  const url = bytesToDataUrl("image/jpeg", bytes);
+                  entry[slot.data] = url;
+                  written.set(path, fingerprint(url));
+                  changed = true;
+                }
+              } catch (err) {
+                log.warn(`could not read ${path} (${errMsg(err)})`);
               }
-            } catch (err) {
-              log.warn(`could not read ${path} (${errMsg(err)})`);
             }
           }
-        }
-      }),
+        }),
+      ),
     );
     return changed ? JSON.stringify(doc) : text;
   }

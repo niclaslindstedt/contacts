@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { ContactGlyph } from "./ContactGlyph.tsx";
+import { activePhoto } from "./contactPhotos.ts";
 import { PersonIcon } from "./icons.tsx";
 import type { Contact } from "./types.ts";
 import { initials } from "./types.ts";
@@ -44,10 +45,11 @@ export function Avatar({
   const iconDim = ICON_DIMS[size];
   const tint = contact.color ? { color: contact.color } : undefined;
 
-  if (contact.photo) {
+  const face = activePhoto(contact)?.photo;
+  if (face) {
     return (
       <img
-        src={contact.photo}
+        src={face}
         alt=""
         className={`${dim} shrink-0 rounded-full object-cover ${className}`}
       />

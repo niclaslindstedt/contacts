@@ -21,36 +21,40 @@ import {
 // in-memory fakes — the canvas bake and the real cloud stores stay UI-only).
 
 describe("photoPathFor", () => {
-  it("builds a deterministic photos/<name>-<id>.jpg path", () => {
-    const path = photoPathFor({
-      id: "c1",
-      firstName: "Ada",
-      lastName: "Lovelace",
-    });
-    expect(path).toBe("photos/ada-lovelace-c1.jpg");
+  it("builds a deterministic photos/<name>-<id>-<photoId>.jpg path", () => {
+    const path = photoPathFor(
+      { id: "c1", firstName: "Ada", lastName: "Lovelace" },
+      "ph1",
+    );
+    expect(path).toBe("photos/ada-lovelace-c1-ph1.jpg");
     // Deterministic — same input, same path.
     expect(
-      photoPathFor({ id: "c1", firstName: "Ada", lastName: "Lovelace" }),
+      photoPathFor({ id: "c1", firstName: "Ada", lastName: "Lovelace" }, "ph1"),
     ).toBe(path);
   });
 
-  it("disambiguates same-named contacts by id", () => {
-    const a = photoPathFor({ id: "a", firstName: "Sam", lastName: "Lee" });
-    const b = photoPathFor({ id: "b", firstName: "Sam", lastName: "Lee" });
+  it("disambiguates same-named contacts by id, and photos by photo id", () => {
+    const a = photoPathFor({ id: "a", firstName: "Sam", lastName: "Lee" }, "p");
+    const b = photoPathFor({ id: "b", firstName: "Sam", lastName: "Lee" }, "p");
     expect(a).not.toBe(b);
+    // Two photos on the same card get distinct paths.
+    const c = { id: "a", firstName: "Sam", lastName: "Lee" };
+    expect(photoPathFor(c, "p1")).not.toBe(photoPathFor(c, "p2"));
   });
 
   it("falls back to the company, then a generic stem", () => {
-    expect(photoPathFor({ id: "x", company: "Acme Inc" })).toBe(
-      "photos/acme-inc-x.jpg",
+    expect(photoPathFor({ id: "x", company: "Acme Inc" }, "ph")).toBe(
+      "photos/acme-inc-x-ph.jpg",
     );
-    expect(photoPathFor({ id: "y" })).toBe("photos/contact-y.jpg");
+    expect(photoPathFor({ id: "y" }, "ph")).toBe("photos/contact-y-ph.jpg");
   });
 
   it("files the source beside the display crop", () => {
     const c = { id: "c1", firstName: "Ada", lastName: "Lovelace" };
-    expect(photoPathFor(c)).toBe("photos/ada-lovelace-c1.jpg");
-    expect(photoSourcePathFor(c)).toBe("photos/ada-lovelace-c1-source.jpg");
+    expect(photoPathFor(c, "ph1")).toBe("photos/ada-lovelace-c1-ph1.jpg");
+    expect(photoSourcePathFor(c, "ph1")).toBe(
+      "photos/ada-lovelace-c1-ph1-source.jpg",
+    );
   });
 });
 
@@ -132,106 +136,132 @@ const DISPLAY = "data:image/jpeg;base64,QUJD"; // "ABC"
 const SOURCE = "data:image/jpeg;base64,REVG"; // "DEF"
 
 describe("withExternalPhotos", () => {
+  // A contact carrying one gallery photo with the given fields.
+  const withPhoto = (fields: Record<string, unknown>) => ({
+    id: "c1",
+    firstName: "Ada",
+    lastName: "Lovelace",
+    photos: [{ id: "ph1", ...fields }],
+  });
+
   it("externalises both images as binary files and strips them from the doc", async () => {
     const store = memPhotoStore();
     const inner = fakeInner();
     const adapter = withExternalPhotos(inner, store);
 
     await adapter.save(
-      doc([
-        {
-          id: "c1",
-          firstName: "Ada",
-          lastName: "Lovelace",
-          photo: DISPLAY,
-          photoSource: SOURCE,
-        },
-      ]),
+      doc([withPhoto({ photo: DISPLAY, photoSource: SOURCE })]),
     );
 
     // Both files landed at their deterministic paths as raw bytes (not text).
-    const display = store.files.get("photos/ada-lovelace-c1.jpg");
-    const source = store.files.get("photos/ada-lovelace-c1-source.jpg");
+    const display = store.files.get("photos/ada-lovelace-c1-ph1.jpg");
+    const source = store.files.get("photos/ada-lovelace-c1-ph1-source.jpg");
     expect(display).toBeInstanceOf(Uint8Array);
     expect(Array.from(display!)).toEqual(bytesOf(DISPLAY));
     expect(Array.from(source!)).toEqual(bytesOf(SOURCE));
 
     // The synced doc kept the paths but dropped every image byte.
-    const c = JSON.parse(inner.lastSaved()!).contacts[0];
-    expect(c.photoPath).toBe("photos/ada-lovelace-c1.jpg");
-    expect(c.photoSourcePath).toBe("photos/ada-lovelace-c1-source.jpg");
-    expect(c.photo).toBeUndefined();
-    expect(c.photoSource).toBeUndefined();
+    const p = JSON.parse(inner.lastSaved()!).contacts[0].photos[0];
+    expect(p.photoPath).toBe("photos/ada-lovelace-c1-ph1.jpg");
+    expect(p.photoSourcePath).toBe("photos/ada-lovelace-c1-ph1-source.jpg");
+    expect(p.photo).toBeUndefined();
+    expect(p.photoSource).toBeUndefined();
   });
 
-  it("re-hydrates both images from their files on load", async () => {
+  it("externalises every photo in a multi-photo gallery", async () => {
     const store = memPhotoStore();
-    store.files.set(
-      "photos/ada-lovelace-c1.jpg",
-      dataUrlToBytes(DISPLAY)!.bytes,
-    );
-    store.files.set(
-      "photos/ada-lovelace-c1-source.jpg",
-      dataUrlToBytes(SOURCE)!.bytes,
-    );
     const inner = fakeInner();
-    await inner.save(
+    const adapter = withExternalPhotos(inner, store);
+
+    await adapter.save(
       doc([
         {
           id: "c1",
           firstName: "Ada",
           lastName: "Lovelace",
-          photoPath: "photos/ada-lovelace-c1.jpg",
-          photoSourcePath: "photos/ada-lovelace-c1-source.jpg",
+          photos: [
+            { id: "ph1", photo: DISPLAY },
+            { id: "ph2", photo: SOURCE },
+          ],
         },
+      ]),
+    );
+
+    // Each gallery entry files out to its own path — no collision.
+    expect(store.files.has("photos/ada-lovelace-c1-ph1.jpg")).toBe(true);
+    expect(store.files.has("photos/ada-lovelace-c1-ph2.jpg")).toBe(true);
+    const photos = JSON.parse(inner.lastSaved()!).contacts[0].photos;
+    expect(photos[0].photoPath).toBe("photos/ada-lovelace-c1-ph1.jpg");
+    expect(photos[1].photoPath).toBe("photos/ada-lovelace-c1-ph2.jpg");
+    expect(photos.every((p: { photo?: string }) => p.photo === undefined)).toBe(
+      true,
+    );
+  });
+
+  it("re-hydrates both images from their files on load", async () => {
+    const store = memPhotoStore();
+    store.files.set(
+      "photos/ada-lovelace-c1-ph1.jpg",
+      dataUrlToBytes(DISPLAY)!.bytes,
+    );
+    store.files.set(
+      "photos/ada-lovelace-c1-ph1-source.jpg",
+      dataUrlToBytes(SOURCE)!.bytes,
+    );
+    const inner = fakeInner();
+    await inner.save(
+      doc([
+        withPhoto({
+          photoPath: "photos/ada-lovelace-c1-ph1.jpg",
+          photoSourcePath: "photos/ada-lovelace-c1-ph1-source.jpg",
+        }),
       ]),
     );
 
     const adapter = withExternalPhotos(inner, store);
     const snap = await adapter.load();
-    const c = JSON.parse(snap!.text).contacts[0];
-    expect(bytesOf(c.photo)).toEqual(bytesOf(DISPLAY));
-    expect(bytesOf(c.photoSource)).toEqual(bytesOf(SOURCE));
+    const p = JSON.parse(snap!.text).contacts[0].photos[0];
+    expect(bytesOf(p.photo)).toEqual(bytesOf(DISPLAY));
+    expect(bytesOf(p.photoSource)).toEqual(bytesOf(SOURCE));
   });
 
   it("files out an imported inline photo on the next save", async () => {
-    // An imported vCard photo lands in `photo` with no source — it should still
-    // be broken out into a file rather than ride inline in the document.
+    // An imported vCard photo lands in a gallery entry's `photo` with no
+    // source — it should still be broken out into a file rather than ride
+    // inline in the document.
     const store = memPhotoStore();
     const inner = fakeInner();
     const adapter = withExternalPhotos(inner, store);
 
-    await adapter.save(
-      doc([
-        { id: "c1", firstName: "Ada", lastName: "Lovelace", photo: DISPLAY },
-      ]),
-    );
+    await adapter.save(doc([withPhoto({ photo: DISPLAY })]));
 
-    expect(store.files.has("photos/ada-lovelace-c1.jpg")).toBe(true);
-    const c = JSON.parse(inner.lastSaved()!).contacts[0];
-    expect(c.photo).toBeUndefined();
-    expect(c.photoPath).toBe("photos/ada-lovelace-c1.jpg");
+    expect(store.files.has("photos/ada-lovelace-c1-ph1.jpg")).toBe(true);
+    const p = JSON.parse(inner.lastSaved()!).contacts[0].photos[0];
+    expect(p.photo).toBeUndefined();
+    expect(p.photoPath).toBe("photos/ada-lovelace-c1-ph1.jpg");
   });
 
   it("prunes orphaned photo files once a contact loses its photo", async () => {
     const store = memPhotoStore();
     store.files.set(
-      "photos/ada-lovelace-c1.jpg",
+      "photos/ada-lovelace-c1-ph1.jpg",
       dataUrlToBytes(DISPLAY)!.bytes,
     );
     store.files.set(
-      "photos/ada-lovelace-c1-source.jpg",
+      "photos/ada-lovelace-c1-ph1-source.jpg",
       dataUrlToBytes(SOURCE)!.bytes,
     );
     const inner = fakeInner();
     const adapter = withExternalPhotos(inner, store);
 
-    // Save a doc where the contact no longer carries a photo.
+    // Save a doc where the contact no longer carries any photo.
     await adapter.save(
-      doc([{ id: "c1", firstName: "Ada", lastName: "Lovelace" }]),
+      doc([{ id: "c1", firstName: "Ada", lastName: "Lovelace", photos: [] }]),
     );
-    expect(store.files.has("photos/ada-lovelace-c1.jpg")).toBe(false);
-    expect(store.files.has("photos/ada-lovelace-c1-source.jpg")).toBe(false);
+    expect(store.files.has("photos/ada-lovelace-c1-ph1.jpg")).toBe(false);
+    expect(store.files.has("photos/ada-lovelace-c1-ph1-source.jpg")).toBe(
+      false,
+    );
   });
 
   it("keeps a photo inline when the file write fails (externalise-or-embed)", async () => {
@@ -243,40 +273,22 @@ describe("withExternalPhotos", () => {
     const adapter = withExternalPhotos(inner, store);
 
     await adapter.save(
-      doc([
-        {
-          id: "c1",
-          firstName: "Ada",
-          lastName: "Lovelace",
-          photo: DISPLAY,
-          photoSource: SOURCE,
-        },
-      ]),
+      doc([withPhoto({ photo: DISPLAY, photoSource: SOURCE })]),
     );
 
-    const c = JSON.parse(inner.lastSaved()!).contacts[0];
+    const p = JSON.parse(inner.lastSaved()!).contacts[0].photos[0];
     // Not filed, so the images stay in the synced doc — never lost.
-    expect(c.photo).toBe(DISPLAY);
-    expect(c.photoSource).toBe(SOURCE);
-    expect(c.photoPath).toBeUndefined();
-    expect(c.photoSourcePath).toBeUndefined();
+    expect(p.photo).toBe(DISPLAY);
+    expect(p.photoSource).toBe(SOURCE);
+    expect(p.photoPath).toBeUndefined();
+    expect(p.photoSourcePath).toBeUndefined();
   });
 
   it("signals a load that still holds inline photos (one-time sweep)", async () => {
     const store = memPhotoStore();
     const inner = fakeInner();
     // A pre-file-layout cloud copy: photos still embedded inline.
-    await inner.save(
-      doc([
-        {
-          id: "c1",
-          firstName: "Ada",
-          lastName: "Lovelace",
-          photo: DISPLAY,
-          photoSource: SOURCE,
-        },
-      ]),
-    );
+    await inner.save(doc([withPhoto({ photo: DISPLAY, photoSource: SOURCE })]));
 
     let signalled = 0;
     const adapter = withExternalPhotos(inner, store, () => (signalled += 1));
@@ -287,20 +299,13 @@ describe("withExternalPhotos", () => {
   it("does not signal a load that is already fully filed out", async () => {
     const store = memPhotoStore();
     store.files.set(
-      "photos/ada-lovelace-c1.jpg",
+      "photos/ada-lovelace-c1-ph1.jpg",
       dataUrlToBytes(DISPLAY)!.bytes,
     );
     const inner = fakeInner();
     // A filed-out cloud copy carries only paths, no inline bytes.
     await inner.save(
-      doc([
-        {
-          id: "c1",
-          firstName: "Ada",
-          lastName: "Lovelace",
-          photoPath: "photos/ada-lovelace-c1.jpg",
-        },
-      ]),
+      doc([withPhoto({ photoPath: "photos/ada-lovelace-c1-ph1.jpg" })]),
     );
 
     let signalled = 0;
@@ -311,22 +316,36 @@ describe("withExternalPhotos", () => {
 });
 
 describe("hasInlinePhotos", () => {
-  it("is true when a contact still embeds image bytes inline", () => {
-    expect(hasInlinePhotos(doc([{ id: "c1", photo: DISPLAY }]))).toBe(true);
-    expect(hasInlinePhotos(doc([{ id: "c1", photoSource: SOURCE }]))).toBe(
-      true,
-    );
+  it("is true when a gallery photo still embeds image bytes inline", () => {
+    expect(
+      hasInlinePhotos(
+        doc([{ id: "c1", photos: [{ id: "ph1", photo: DISPLAY }] }]),
+      ),
+    ).toBe(true);
+    expect(
+      hasInlinePhotos(
+        doc([{ id: "c1", photos: [{ id: "ph1", photoSource: SOURCE }] }]),
+      ),
+    ).toBe(true);
   });
 
   it("is false for a filed-out copy, non-data values, or junk", () => {
     // Only paths — the filed-out layout.
     expect(
       hasInlinePhotos(
-        doc([{ id: "c1", photoPath: "photos/a.jpg", photo: "" }]),
+        doc([
+          {
+            id: "c1",
+            photos: [{ id: "ph1", photoPath: "photos/a.jpg", photo: "" }],
+          },
+        ]),
       ),
     ).toBe(false);
     // A non-data-URI string (e.g. a stray label) doesn't count as image bytes.
-    expect(hasInlinePhotos(doc([{ id: "c1", photo: "p" }]))).toBe(false);
+    expect(
+      hasInlinePhotos(doc([{ id: "c1", photos: [{ id: "ph1", photo: "p" }] }])),
+    ).toBe(false);
+    expect(hasInlinePhotos(doc([{ id: "c1", photos: [] }]))).toBe(false);
     expect(hasInlinePhotos(doc([]))).toBe(false);
     expect(hasInlinePhotos("not json")).toBe(false);
   });

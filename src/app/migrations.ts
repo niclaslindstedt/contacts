@@ -21,7 +21,7 @@ import type { AppData, Contact, Folder } from "./types.ts";
 
 /** The current persisted-document version. Bump it and add a step below when
  *  the on-disk shape changes — every shipped step stays forever. */
-export const LATEST_VERSION = 3;
+export const LATEST_VERSION = 4;
 
 const migrations = {
   // v0 (pre-versioning / blank) → v1: the bootstrap step. Guarantee the two
@@ -98,6 +98,52 @@ const migrations = {
       },
     );
     return { ...doc, version: 3, contacts };
+  },
+  // v3 → v4: the single inline photo (`photo` / `photoSource` / `photoTransform`
+  // and the cloud `photoPath` / `photoSourcePath`) becomes a `photos` array so a
+  // card can hold several pictures and swap which is its face (see
+  // `contactPhotos.ts`). Fold any existing photo into the first gallery entry —
+  // its id derived from the contact id so the migration is deterministic across
+  // parses (localStorage and the cloud copy agree) — and drop the retired flat
+  // keys. A photo-less card gets no `photos` key at all, so the upgrade doesn't
+  // bloat the document; the accessors treat an absent array as an empty gallery.
+  3: (doc: Versioned): Versioned => {
+    const contacts = (Array.isArray(doc.contacts) ? doc.contacts : []).map(
+      (raw) => {
+        const {
+          photo,
+          photoSource,
+          photoTransform,
+          photoPath,
+          photoSourcePath,
+          ...rest
+        } = raw as Record<string, unknown>;
+        const photos = Array.isArray(rest.photos) ? rest.photos : [];
+        const hasLegacy = [photo, photoSource, photoPath, photoSourcePath].some(
+          (v) => typeof v === "string" && v.trim(),
+        );
+        if (hasLegacy && photos.length === 0) {
+          photos.push({
+            id: `${typeof rest.id === "string" ? rest.id : "photo"}-photo`,
+            ...(typeof photo === "string" && photo.trim() ? { photo } : {}),
+            ...(typeof photoSource === "string" && photoSource.trim()
+              ? { photoSource }
+              : {}),
+            ...(photoTransform && typeof photoTransform === "object"
+              ? { photoTransform }
+              : {}),
+            ...(typeof photoPath === "string" && photoPath.trim()
+              ? { photoPath }
+              : {}),
+            ...(typeof photoSourcePath === "string" && photoSourcePath.trim()
+              ? { photoSourcePath }
+              : {}),
+          });
+        }
+        return photos.length > 0 ? { ...rest, photos } : rest;
+      },
+    );
+    return { ...doc, version: 4, contacts };
   },
 } as const;
 

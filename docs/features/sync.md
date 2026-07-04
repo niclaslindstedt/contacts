@@ -31,15 +31,16 @@ _conflict_, handled by the header glyph as above.)
 
 ## Photo files
 
-On a cloud drive (Dropbox or Google Drive), a contact's photos are filed out of
-the document into their own **binary JPEG** files at deterministic paths — the
-display crop at `photos/<name>-<id>.jpg` and the larger original at
-`photos/<name>-<id>-source.jpg`, both built from the contact's name and stable
-id. They are real image files you can preview in the drive, and because every
-image byte moves out to a file, the synced document carries no picture data at
-all — it stays small. Photos that come in on an imported vCard ride the same
-path: they are broken out into files on the next save rather than bloating the
-document.
+On a cloud drive (Dropbox or Google Drive), each photo in a contact's gallery is
+filed out of the document into its own **binary JPEG** files at deterministic
+paths — the display crop at `photos/<name>-<id>-<photoId>.jpg` and the larger
+original at `photos/<name>-<id>-<photoId>-source.jpg`, built from the contact's
+name, stable id, and the photo's own id (so the several photos one card can hold
+never collide). They are real image files you can preview in the drive, and
+because every image byte moves out to a file, the synced document carries no
+picture data at all — it stays small. Photos that come in on an imported vCard
+ride the same path: they are broken out into files on the next save rather than
+bloating the document.
 
 The copy that lives on this device keeps its photos inline, so nothing depends
 on the drive to render offline; the drive files are written on save and re-read

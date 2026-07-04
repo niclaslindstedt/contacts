@@ -210,7 +210,7 @@ export async function openAppearancePopover(page) {
     .first()
     .click();
   await page
-    .getByText(/^Photo$/)
+    .getByText(/^Photos?$/)
     .first()
     .waitFor();
 }
@@ -310,7 +310,7 @@ function parseArgs(argv) {
 
 async function recipe(page) {
   // Default: the seeded contact card with the appearance popover open,
-  // so its Photo / Colour / Icon layout is on screen. Swap for
+  // so its Photos / Colour / Icon layout is on screen. Swap for
   // `openPhotoCropper(page)` to design the cropper, `openApp(page)` to
   // shoot the read-mode card, or `openSettings(page)` for the settings
   // dialog.
