@@ -22,6 +22,9 @@ On first launch you land in the **Personal** namespace with one blank card.
    full-screen, or pick a glyph and accent colour instead.
 4. **Organise** — create folders from the action grid; drag contacts into
    them, or onto another namespace in the sidebar header, or onto Archive.
+   Folders sort alphabetically by default; switch Settings → **General** →
+   _Folders_ to **Manually** to arrange them yourself by dragging one folder
+   onto another.
 5. **Browse the list** — the **List** button in the action grid opens a
    full-page overview of everyone in the namespace, grouped by folder, with
    phone numbers under each name (tap to call). Use **Select** there to copy or

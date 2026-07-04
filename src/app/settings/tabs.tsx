@@ -32,6 +32,7 @@ import {
   phoneOptions,
   postalOptions,
   type AppSettings,
+  type FolderSort,
   type ListDensity,
   type ListPhonePriority,
 } from "../useAppSettings.ts";
@@ -63,6 +64,16 @@ export function GeneralTab({
   const modeOptions = [
     { value: "swipe" as const, label: t("settings.general.optionSwipe") },
     { value: "button" as const, label: t("settings.general.optionButton") },
+  ];
+  const folderSortOptions = [
+    {
+      value: "alphabetical" as const,
+      label: t("settings.general.folderSortAlphabetical"),
+    },
+    {
+      value: "manual" as const,
+      label: t("settings.general.folderSortManual"),
+    },
   ];
   return (
     <div>
@@ -102,6 +113,23 @@ export function GeneralTab({
           />
           <p className="text-xs text-muted">
             {t("settings.general.sidebarHint")}
+          </p>
+        </div>
+      </Section>
+
+      <Section title={t("settings.general.foldersTitle")}>
+        <div className="flex flex-col gap-1">
+          <span className="text-sm text-fg-bright">
+            {t("settings.general.folderSortLabel")}
+          </span>
+          <SegmentedControl<FolderSort>
+            value={settings.folderSort}
+            options={folderSortOptions}
+            onChange={(next) => update("folderSort", next)}
+            ariaLabel={t("settings.general.folderSortLabel")}
+          />
+          <p className="text-xs text-muted">
+            {t("settings.general.folderSortHint")}
           </p>
         </div>
       </Section>

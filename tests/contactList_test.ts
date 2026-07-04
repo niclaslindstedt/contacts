@@ -8,6 +8,7 @@ import {
   listedContacts,
   prioritizePhones,
   reorderIds,
+  sortFolders,
 } from "../src/app/contactList.ts";
 import type { AppData, Contact, Folder, Phone } from "../src/app/types.ts";
 
@@ -131,6 +132,74 @@ describe("groupContactsByFolder", () => {
     });
     const [group] = groupContactsByFolder(data);
     expect(group!.contacts.map((c) => c.id)).toEqual(["a", "b", "n"]);
+  });
+
+  it("keeps folders in document order by default", () => {
+    const data = doc({
+      folders: [
+        folder({ id: "f1", name: "Work" }),
+        folder({ id: "f2", name: "Amigos" }),
+      ],
+      contacts: [
+        card({ id: "a", folderId: "f1" }),
+        card({ id: "b", folderId: "f2" }),
+      ],
+    });
+    expect(groupContactsByFolder(data).map((g) => g.folder?.id)).toEqual([
+      "f1",
+      "f2",
+    ]);
+  });
+
+  it("orders folders alphabetically when asked", () => {
+    const data = doc({
+      folders: [
+        folder({ id: "f1", name: "Work" }),
+        folder({ id: "f2", name: "Amigos" }),
+      ],
+      contacts: [
+        card({ id: "a", folderId: "f1" }),
+        card({ id: "b", folderId: "f2" }),
+      ],
+    });
+    const groups = groupContactsByFolder(data, { folderSort: "alphabetical" });
+    // Amigos (f2) sorts before Work (f1); the ungrouped null group still trails.
+    expect(groups.map((g) => g.folder?.id)).toEqual(["f2", "f1"]);
+  });
+});
+
+describe("sortFolders", () => {
+  it("keeps the given order in manual mode", () => {
+    const folders = [
+      folder({ id: "f1", name: "Work" }),
+      folder({ id: "f2", name: "Amigos" }),
+    ];
+    expect(sortFolders(folders, "manual").map((f) => f.id)).toEqual([
+      "f1",
+      "f2",
+    ]);
+  });
+
+  it("sorts by name, case-insensitively, in alphabetical mode", () => {
+    const folders = [
+      folder({ id: "f1", name: "work" }),
+      folder({ id: "f2", name: "Amigos" }),
+      folder({ id: "f3", name: "Beta" }),
+    ];
+    expect(sortFolders(folders, "alphabetical").map((f) => f.id)).toEqual([
+      "f2",
+      "f3",
+      "f1",
+    ]);
+  });
+
+  it("never mutates the input", () => {
+    const folders = [
+      folder({ id: "f1", name: "Work" }),
+      folder({ id: "f2", name: "Amigos" }),
+    ];
+    sortFolders(folders, "alphabetical");
+    expect(folders.map((f) => f.id)).toEqual(["f1", "f2"]);
   });
 });
 

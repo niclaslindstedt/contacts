@@ -37,9 +37,10 @@ import {
 } from "@niclaslindstedt/oss-framework/sidebar";
 
 import { Avatar } from "./Avatar.tsx";
-import { emergencyContacts } from "./contactList.ts";
+import { emergencyContacts, reorderIds, sortFolders } from "./contactList.ts";
 import { FavoriteIcon, IceIcon, ListIcon, PersonIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
+import type { FolderSort } from "./useAppSettings.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { Contact } from "./types.ts";
 import { compareContacts, displayName } from "./types.ts";
@@ -115,6 +116,9 @@ type Props = {
   // Notified while a nav row is picked up and dragged, so the host can
   // suppress competing global gestures (pull-to-refresh) for the duration.
   onDraggingChange?: (dragging: boolean) => void;
+  // How the folder rows are ordered. `alphabetical` sorts them by name;
+  // `manual` keeps the hand-dragged order and turns on folder drag-to-reorder.
+  folderSort: FolderSort;
 };
 
 export function SideMenuContent({
@@ -136,12 +140,14 @@ export function SideMenuContent({
   updateAvailable,
   onCheckUpdate,
   trophy,
+  folderSort,
 }: Props) {
   const t = useT();
   const {
     data,
     addContact,
     addFolder,
+    reorderFolders,
     renameFolder,
     deleteFolder,
     archiveFolder,
@@ -156,6 +162,7 @@ export function SideMenuContent({
     canUndo,
     canRedo,
   } = store;
+  const manualFolders = folderSort === "manual";
 
   // Drag-and-drop wiring. The framework hook tracks the gesture and hit-tests
   // the drop zones; the app says which drops are legal (`canDrop`) and what
@@ -166,10 +173,17 @@ export function SideMenuContent({
     canDrop: (drag, target) => {
       switch (target.kind) {
         case "folder":
+          // A folder dropped onto another folder reorders the list — but only
+          // in manual sort (alphabetical order isn't hand-arrangeable), and
+          // never onto itself. A contact dropped onto any folder files into it,
+          // its current one included (a harmless no-op, so a card can always be
+          // returned home).
+          if (drag.kind === "folder") {
+            return manualFolders && drag.id !== target.id;
+          }
+          return data.contacts.some((c) => c.id === drag.id);
         case "root":
-          // Every folder (and the root) is a valid target for a contact —
-          // including its current container; dropping back is a harmless
-          // no-op, so a picked-up card can always be returned home.
+          // The root un-groups a dragged contact; a folder can't drop here.
           return (
             drag.kind === "contact" &&
             data.contacts.some((c) => c.id === drag.id)
@@ -183,7 +197,22 @@ export function SideMenuContent({
     onDrop: (drag, target) => {
       switch (target.kind) {
         case "folder":
-          moveContactToFolder(drag.id, target.id);
+          if (drag.kind === "folder") {
+            // Reorder: slot the dragged folder where it was released, using the
+            // pointer's half of the target row (captured in `folderDropRef`) to
+            // decide which side of the target it lands on.
+            const pending = folderDropRef.current;
+            reorderFolders(
+              reorderIds(
+                folderOrderRef.current,
+                drag.id,
+                target.id,
+                pending?.targetId === target.id ? pending.place : undefined,
+              ),
+            );
+          } else {
+            moveContactToFolder(drag.id, target.id);
+          }
           break;
         case "root":
           moveContactToFolder(drag.id, null);
@@ -200,6 +229,16 @@ export function SideMenuContent({
       }
     },
   });
+  // Folder-reorder bookkeeping: the live folder id order (read at drop time),
+  // the folder header elements (to measure which half of a row the pointer sits
+  // over), and the pending drop side. Refs so the hook's `onDrop` reads current
+  // values rather than a stale render's.
+  const folderOrderRef = useRef<string[]>([]);
+  const folderRowEls = useRef(new Map<string, HTMLElement>());
+  const folderDropRef = useRef<{
+    targetId: string;
+    place: "before" | "after";
+  } | null>(null);
   const archiveZone = dnd.dropZone("archive", { kind: "archive" });
   const rootZone = dnd.dropZone("root", { kind: "root" });
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(
@@ -324,8 +363,13 @@ export function SideMenuContent({
   }
 
   // Archived folders / contacts drop out of the menu but stay in the document
-  // — the Archive button's badge counts them.
-  const folders = data.folders.filter((f) => !f.archived);
+  // — the Archive button's badge counts them. The visible folders show in the
+  // chosen order (alphabetical, or the hand-dragged document order).
+  const folders = sortFolders(
+    data.folders.filter((f) => !f.archived),
+    folderSort,
+  );
+  folderOrderRef.current = folders.map((f) => f.id);
   const standalone = data.contacts
     .filter((c) => c.folderId === null && !c.archived)
     .sort(compareContacts);
@@ -438,10 +482,49 @@ export function SideMenuContent({
               kind: "folder",
               id: folder.id,
             });
+            // A folder being dragged over this one (manual sort only) draws a
+            // thin insertion line rather than the "file into folder" highlight —
+            // top edge when the pointer sits over the header's upper half,
+            // bottom edge (below any expanded contacts) over the lower half. The
+            // pointer's own position picks the slot, mirrored into the drop ref.
+            const folderDrag = dnd.dragging?.kind === "folder";
+            let showFolderLine = false;
+            let folderLineBelow = false;
+            if (
+              manualFolders &&
+              folderDrag &&
+              folderZone.isOver &&
+              dnd.pointer &&
+              dnd.dragging?.id !== folder.id
+            ) {
+              const rect = folderRowEls.current
+                .get(folder.id)
+                ?.getBoundingClientRect();
+              if (rect) {
+                folderLineBelow = dnd.pointer.y > rect.top + rect.height / 2;
+                showFolderLine = true;
+                folderDropRef.current = {
+                  targetId: folder.id,
+                  place: folderLineBelow ? "after" : "before",
+                };
+              }
+            }
             return (
-              <div key={folder.id} ref={folderZone.ref}>
+              <div key={folder.id} ref={folderZone.ref} className="relative">
+                {showFolderLine && (
+                  <div
+                    aria-hidden
+                    className={`pointer-events-none absolute inset-x-0 z-10 h-0.5 rounded-full bg-accent ${
+                      folderLineBelow ? "bottom-0" : "top-0"
+                    }`}
+                  />
+                )}
                 <DraggableRow
                   handle={dnd.dragHandle({ kind: "folder", id: folder.id })}
+                  containerRef={(el) => {
+                    if (el) folderRowEls.current.set(folder.id, el);
+                    else folderRowEls.current.delete(folder.id);
+                  }}
                 >
                   <RowActionMenu
                     ariaLabel={t("menu.folderActions")}
@@ -456,7 +539,11 @@ export function SideMenuContent({
                         label: t("menu.archive"),
                         icon: <ArchiveIcon className="h-5 w-5" />,
                       }}
-                      highlighted={folderZone.isOver}
+                      // Only the "file a contact into this folder" drag lights
+                      // the row up; a folder-reorder drag shows the line instead.
+                      highlighted={
+                        folderZone.isOver && dnd.dragging?.kind === "contact"
+                      }
                     >
                       <FolderRow
                         name={folder.name}
@@ -885,12 +972,21 @@ function BarButton({
 function DraggableRow({
   handle,
   children,
+  containerRef,
 }: {
   handle: DragHandleProps;
   children: ReactNode;
+  // Optional handle on the row element — the folder rows use it to measure
+  // which half of the header a reorder drop was released over.
+  containerRef?: (el: HTMLElement | null) => void;
 }) {
   return (
-    <div {...handle} data-drawer-swipe-ignore className="relative">
+    <div
+      ref={containerRef}
+      {...handle}
+      data-drawer-swipe-ignore
+      className="relative"
+    >
       {children}
     </div>
   );
