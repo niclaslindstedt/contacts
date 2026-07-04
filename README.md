@@ -91,9 +91,9 @@ Enter — and start filling in the card.
   it; the **Favorites** button in the action grid opens a flat shortlist of just
   the starred contacts that you **drag to reorder** (grab the grip on a row).
 - **Website & company** — add a homepage in edit mode (it becomes a tap-to-open
-  link and exports as the vCard `URL`), and flip **This is a company** to turn a
+  link and exports as the vCard `URL`), and flip **Company contact** to turn a
   card into an organisation — one company name, a building icon, exported so it
-  lands as a company.
+  lands as a company (its numbers and emails drop the private/work type).
 - **Attachments** — clip files to a contact (a menu, a contract, a scanned
   card), each with an optional description. Images show as thumbnails you tap to
   expand; PDFs open in a tab, other files download. On a cloud drive they're

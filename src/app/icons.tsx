@@ -308,6 +308,27 @@ export function BuildingIcon({ className }: IconProps) {
   );
 }
 
+/** An "i" in a circle — the details section title in edit mode (company,
+ *  website, birthday — the card's miscellaneous facts). */
+export function InfoIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable={false}
+      className={className}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4M12 8h.01" />
+    </svg>
+  );
+}
+
 /** A calendar — the birthday row in read mode. */
 export function CalendarIcon({ className }: IconProps) {
   return (

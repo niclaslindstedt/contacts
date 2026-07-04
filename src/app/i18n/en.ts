@@ -208,9 +208,9 @@ export const en = {
     // Section title for the person-vs-company switch at the bottom of the card.
     cardType: "Card type",
     // The flip switch that turns a person card into a company card.
-    companyToggle: "This is a company",
+    companyToggle: "Company contact",
     companyToggleHint:
-      "Identify this card by a single company name instead of a first and last name. It shows a building icon and exports as an organisation.",
+      "Titled by one company name, not a person's, and shown with a building icon.",
     homepage: "Website",
     homepagePlaceholder: "https://example.com",
     address: "Address",
@@ -261,12 +261,12 @@ export const en = {
     // The in-case-of-emergency toggle, now at the bottom of edit mode.
     iceToggle: "Emergency contact",
     iceToggleHint:
-      "Pin this contact to the top of the menu so a next-of-kin or first responder can reach them at a glance.",
+      "Pins this card to the top of the menu so a first responder can reach it fast.",
     // Auto-archive: a self-filing schedule on the card.
     autoArchive: "Auto-archive",
-    autoArchiveToggle: "File this contact away automatically",
+    autoArchiveToggle: "Time limited contact",
     autoArchiveHint:
-      "Pick a date and this card tidies itself away — handy for a place you only need for a while, like a pizzeria added for a trip.",
+      "Pick a date and this card files itself away when you no longer need it.",
     autoArchiveDate: "On this date",
     autoArchiveAction: "Then",
     autoArchiveArchive: "Archive",

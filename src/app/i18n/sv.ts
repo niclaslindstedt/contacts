@@ -201,9 +201,9 @@ export const sv: Catalog = {
     lastName: "Efternamn",
     company: "Företag",
     cardType: "Korttyp",
-    companyToggle: "Det här är ett företag",
+    companyToggle: "Företagskontakt",
     companyToggleHint:
-      "Identifiera kortet med ett enda företagsnamn i stället för för- och efternamn. Det visar en byggnadsikon och exporteras som en organisation.",
+      "Kortet identifieras med ett företagsnamn och visas med en byggnadsikon.",
     homepage: "Webbplats",
     homepagePlaceholder: "https://exempel.se",
     address: "Adress",
@@ -254,12 +254,12 @@ export const sv: Catalog = {
     // Nödkontakt-växeln, nu längst ner i redigeringsläget.
     iceToggle: "Nödkontakt",
     iceToggleHint:
-      "Fäst den här kontakten högst upp i menyn så att en anhörig eller räddningspersonal snabbt kan nå dem.",
+      "Fäster kontakten högst upp i menyn så att en anhörig snabbt kan nå den.",
     // Autoarkivering: ett schema som lägger undan kontakten av sig själv.
     autoArchive: "Autoarkivering",
-    autoArchiveToggle: "Lägg undan kontakten automatiskt",
+    autoArchiveToggle: "Tidsbegränsad kontakt",
     autoArchiveHint:
-      "Välj ett datum så städar kortet undan sig självt — smidigt för ett ställe du bara behöver ett tag, som en pizzeria du la till inför en resa.",
+      "Välj ett datum så lägger kortet undan sig självt när det inte behövs längre.",
     autoArchiveDate: "Detta datum",
     autoArchiveAction: "Sedan",
     autoArchiveArchive: "Arkivera",

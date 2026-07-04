@@ -2,12 +2,12 @@
 import { useRef, useState, type ReactNode } from "react";
 
 import {
+  ArchiveIcon,
   Button,
+  NoteIcon,
   PlusIcon,
-  Section,
   SegmentedControl,
   ToggleRow,
-  TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
 
 import {
@@ -20,7 +20,26 @@ import {
 } from "./attachments.ts";
 import { autoArchiveAction, defaultAutoArchiveDate } from "./autoArchive.ts";
 import { filesToAttachments } from "./attachmentIntake.ts";
-import { BuildingIcon, FileIcon, PersonIcon, UploadIcon } from "./icons.tsx";
+import {
+  IconSection,
+  inputClass,
+  LabeledInput,
+  LabeledTextarea,
+  RemoveButton,
+} from "./editWidgets.tsx";
+import {
+  BuildingIcon,
+  FileIcon,
+  GiftIcon,
+  IceIcon,
+  InfoIcon,
+  MailIcon,
+  MapPinIcon,
+  PaperclipIcon,
+  PersonIcon,
+  PhoneIcon,
+  UploadIcon,
+} from "./icons.tsx";
 import { isValidFlexDate, parseFlexDate } from "./importantDates.ts";
 import { log } from "./log.ts";
 import { useLang, useT } from "./i18n/index.ts";
@@ -51,9 +70,13 @@ export function ContactEditView({
   updateContact: (id: string, patch: Partial<Contact>) => void;
 }) {
   const t = useT();
+  // A company's numbers and emails are all just the company's — there's no
+  // private/work person behind them — so the per-row kind picker drops out for
+  // a company card. It stays for a person, where the distinction is real.
+  const showKind = !contact.isCompany;
   return (
     <div className="flex flex-col">
-      <Section title={t("contact.phones")}>
+      <IconSection icon={PhoneIcon} title={t("contact.phones")}>
         <MethodRows<Phone>
           rows={contact.phones}
           placeholder={t("contact.phonePlaceholder")}
@@ -61,6 +84,7 @@ export function ContactEditView({
           addLabel={t("contact.addPhone")}
           removeLabel={t("contact.removeRow")}
           kindLabel={t("contact.phoneKind")}
+          showKind={showKind}
           onCommit={(phones) => updateContact(contact.id, { phones })}
           makeRow={(value, kind) => ({
             id: freshId("phone"),
@@ -68,9 +92,9 @@ export function ContactEditView({
             label: kind,
           })}
         />
-      </Section>
+      </IconSection>
 
-      <Section title={t("contact.emails")}>
+      <IconSection icon={MailIcon} title={t("contact.emails")}>
         <MethodRows<Email>
           rows={contact.emails}
           placeholder={t("contact.emailPlaceholder")}
@@ -78,6 +102,7 @@ export function ContactEditView({
           addLabel={t("contact.addEmail")}
           removeLabel={t("contact.removeRow")}
           kindLabel={t("contact.emailKind")}
+          showKind={showKind}
           onCommit={(emails) => updateContact(contact.id, { emails })}
           makeRow={(value, kind) => ({
             id: freshId("email"),
@@ -85,16 +110,16 @@ export function ContactEditView({
             label: kind,
           })}
         />
-      </Section>
+      </IconSection>
 
-      <Section title={t("contact.addresses")}>
+      <IconSection icon={MapPinIcon} title={t("contact.addresses")}>
         <AddressRows
           rows={contact.addresses}
           onCommit={(addresses) => updateContact(contact.id, { addresses })}
         />
-      </Section>
+      </IconSection>
 
-      <Section title={t("contact.details")}>
+      <IconSection icon={InfoIcon} title={t("contact.details")}>
         {/* The name lives in the identity block above (tap it to rename), so
             the details grid opens straight at company and birthday rather than
             repeating first / last name here. The company switch itself now sits
@@ -127,22 +152,22 @@ export function ContactEditView({
             />
           )}
         </div>
-      </Section>
+      </IconSection>
 
       {/* Extra important dates are a person's affair (name days, anniversaries)
           — a company card hides the section, like the birthday above. */}
       {!contact.isCompany && (
-        <Section title={t("contact.importantDates")}>
+        <IconSection icon={GiftIcon} title={t("contact.importantDates")}>
           <ImportantDateRows
             rows={contact.importantDates}
             onCommit={(importantDates) =>
               updateContact(contact.id, { importantDates })
             }
           />
-        </Section>
+        </IconSection>
       )}
 
-      <Section title={t("contact.notes")}>
+      <IconSection icon={NoteIcon} title={t("contact.notes")}>
         <LabeledTextarea
           label={t("contact.notes")}
           hideLabel
@@ -151,40 +176,42 @@ export function ContactEditView({
           placeholder={t("contact.notesPlaceholder")}
           onCommit={(notes) => updateContact(contact.id, { notes })}
         />
-      </Section>
+      </IconSection>
 
-      <Section title={t("contact.attachments")}>
+      <IconSection icon={PaperclipIcon} title={t("contact.attachments")}>
         <AttachmentRows contact={contact} updateContact={updateContact} />
-      </Section>
+      </IconSection>
 
-      <Section title={t("contact.autoArchive")}>
-        <AutoArchiveRow contact={contact} updateContact={updateContact} />
-      </Section>
-
-      {/* The in-case-of-emergency flag lives here at the bottom of edit mode —
+      {/* The in-case-of-emergency flag lives here near the bottom of edit mode —
           set once and out of the way — rather than always on show in the card
           header. A flagged card still pins to the top of the side menu. */}
-      <Section title={t("menu.emergency")}>
+      <IconSection icon={IceIcon} title={t("menu.emergency")}>
         <ToggleRow
           label={t("contact.iceToggle")}
           hint={t("contact.iceToggleHint")}
           checked={!!contact.ice}
           onChange={(on) => updateContact(contact.id, { ice: on })}
         />
-      </Section>
+      </IconSection>
 
-      {/* Person ↔ company is a set-once choice, so it lives right at the bottom
+      {/* Person ↔ company is a set-once choice, so it lives near the bottom
           beside the emergency flag rather than up in the details grid. Turning
           it on folds away the person-only fields (birthday, important dates)
           and edits the single company name in the identity block above. */}
-      <Section title={t("contact.cardType")}>
+      <IconSection icon={BuildingIcon} title={t("contact.cardType")}>
         <ToggleRow
           label={t("contact.companyToggle")}
           hint={t("contact.companyToggleHint")}
           checked={!!contact.isCompany}
           onChange={(on) => toggleCompany(contact, on, updateContact)}
         />
-      </Section>
+      </IconSection>
+
+      {/* Auto-archive sits at the very bottom of the card — a set-and-forget
+          schedule tucked below the person/company and emergency switches. */}
+      <IconSection icon={ArchiveIcon} title={t("contact.autoArchive")}>
+        <AutoArchiveRow contact={contact} updateContact={updateContact} />
+      </IconSection>
     </div>
   );
 }
@@ -431,92 +458,6 @@ function AttachmentEditRow({
   );
 }
 
-const inputClass =
-  "w-full min-w-0 max-w-full rounded-md border border-line bg-surface-2 px-2 py-1.5 text-sm text-fg outline-none focus:border-accent";
-
-// A labelled single-line field that holds its draft locally and commits on
-// blur (or Enter) — so a settled edit is one undoable store step, not a
-// commit per keystroke.
-function LabeledInput({
-  label,
-  value,
-  type = "text",
-  placeholder,
-  required = false,
-  invalid = false,
-  onCommit,
-}: {
-  label: string;
-  value: string;
-  type?: string;
-  placeholder?: string;
-  // `required` flags the field as mandatory (a11y + a marker on the label);
-  // `invalid` paints the border and sets `aria-invalid` when the value is
-  // missing, so the caller drives the error state it wants to show.
-  required?: boolean;
-  invalid?: boolean;
-  onCommit: (next: string) => void;
-}) {
-  const [draft, setDraft] = useState(value);
-  return (
-    <label className="flex min-w-0 flex-col gap-1">
-      <span className="text-xs text-muted">
-        {label}
-        {required && <span className="text-danger"> *</span>}
-      </span>
-      <input
-        type={type}
-        value={draft}
-        placeholder={placeholder}
-        required={required}
-        aria-invalid={invalid || undefined}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => {
-          if (draft !== value) onCommit(draft);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-        }}
-        className={invalid ? `${inputClass} border-danger` : inputClass}
-      />
-    </label>
-  );
-}
-
-function LabeledTextarea({
-  label,
-  hideLabel = false,
-  value,
-  rows,
-  placeholder,
-  onCommit,
-}: {
-  label: string;
-  hideLabel?: boolean;
-  value: string;
-  rows: number;
-  placeholder?: string;
-  onCommit: (next: string) => void;
-}) {
-  const [draft, setDraft] = useState(value);
-  return (
-    <label className="flex min-w-0 flex-col gap-1">
-      {!hideLabel && <span className="text-xs text-muted">{label}</span>}
-      <textarea
-        aria-label={hideLabel ? label : undefined}
-        value={draft}
-        rows={rows}
-        placeholder={placeholder}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => {
-          if (draft !== value) onCommit(draft);
-        }}
-        className={`${inputClass} resize-y`}
-      />
-    </label>
-  );
-}
-
 // --- Phones / emails (typed) --------------------------------------------------
 
 type MethodRow = { id: string; value: string; label?: string };
@@ -578,6 +519,7 @@ function MethodRows<Row extends MethodRow>({
   addLabel,
   removeLabel,
   kindLabel,
+  showKind,
   onCommit,
   makeRow,
 }: {
@@ -587,6 +529,9 @@ function MethodRows<Row extends MethodRow>({
   addLabel: string;
   removeLabel: string;
   kindLabel: string;
+  // Whether to show the per-row private/work picker. A company card hides it —
+  // its numbers and emails carry no personal kind.
+  showKind: boolean;
   onCommit: (rows: Row[]) => void;
   makeRow: (value: string, kind: ContactMethodKind) => Row;
 }) {
@@ -617,6 +562,7 @@ function MethodRows<Row extends MethodRow>({
           key={row.id}
           initial={row.value}
           kind={methodKind(row.label)}
+          showKind={showKind}
           placeholder={placeholder}
           inputMode={inputMode}
           removeLabel={removeLabel}
@@ -632,6 +578,7 @@ function MethodRows<Row extends MethodRow>({
           // New numbers and addresses are most often work ones, so a fresh row
           // defaults to Work — the picker still flips it to Private per row.
           kind="work"
+          showKind={showKind}
           autoFocus
           placeholder={placeholder}
           inputMode={inputMode}
@@ -658,6 +605,7 @@ function MethodRows<Row extends MethodRow>({
 function MethodValueRow({
   initial,
   kind,
+  showKind,
   autoFocus = false,
   placeholder,
   inputMode,
@@ -669,6 +617,8 @@ function MethodValueRow({
 }: {
   initial: string;
   kind: ContactMethodKind;
+  // Draw the private/work picker (person cards) or leave it off (company cards).
+  showKind: boolean;
   autoFocus?: boolean;
   placeholder: string;
   inputMode: "tel" | "email";
@@ -685,14 +635,16 @@ function MethodValueRow({
   const [draftKind, setDraftKind] = useState(kind);
   return (
     <div className="flex items-center gap-2">
-      <KindToggle
-        kind={onKindChange ? kind : draftKind}
-        ariaLabel={kindLabel}
-        onChange={(k) => {
-          if (onKindChange) onKindChange(k);
-          else setDraftKind(k);
-        }}
-      />
+      {showKind && (
+        <KindToggle
+          kind={onKindChange ? kind : draftKind}
+          ariaLabel={kindLabel}
+          onChange={(k) => {
+            if (onKindChange) onKindChange(k);
+            else setDraftKind(k);
+          }}
+        />
+      )}
       <input
         type={inputMode === "tel" ? "tel" : "email"}
         inputMode={inputMode}
@@ -965,27 +917,6 @@ function FlexDateInput({
         />
       </label>
     </div>
-  );
-}
-
-// The shared trash affordance — a red-on-hover icon button that drops a row.
-function RemoveButton({
-  label,
-  onClick,
-}: {
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded text-muted hover:bg-danger/10 hover:text-danger"
-    >
-      <TrashIcon className="h-4 w-4" />
-    </button>
   );
 }
 
