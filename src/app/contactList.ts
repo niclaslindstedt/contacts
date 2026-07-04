@@ -6,9 +6,23 @@
 // `tests/contactList_test.ts`). It reads the same "archived things drop out of
 // the view but stay in the document" rule the side menu follows.
 
-import type { ListPhonePriority } from "./useAppSettings.ts";
+import type { FolderSort, ListPhonePriority } from "./useAppSettings.ts";
 import type { AppData, Contact, Folder, Phone } from "./types.ts";
 import { compareContacts, methodKind } from "./types.ts";
+
+/** Order a folder list for display. `manual` keeps the document (hand-dragged)
+ *  order untouched; `alphabetical` sorts a copy by name, case-insensitively.
+ *  Pure and total — the input is never mutated, so callers can hand it a
+ *  filtered slice. */
+export function sortFolders(
+  folders: readonly Folder[],
+  sort: FolderSort,
+): Folder[] {
+  if (sort === "manual") return [...folders];
+  return [...folders].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+  );
+}
 
 /** One folder's worth of the list view: the folder heading (or `null` for the
  *  ungrouped contacts shown at the root), and the active contacts it holds,
@@ -25,11 +39,15 @@ export type ContactGroup = {
 export type GroupOptions = {
   /** When set, keep only contacts flagged `favorite`. */
   favoritesOnly?: boolean;
+  /** How to order the folder sections. Defaults to `manual` (document order),
+   *  which is what the view showed before the setting existed. */
+  folderSort?: FolderSort;
 };
 
 /** Group a document's active contacts by folder for the overview screen.
- *  Non-archived folders come first in document order, then the ungrouped
- *  contacts as a trailing `null` group — each group shown only when it holds
+ *  Non-archived folders come first — ordered per `opts.folderSort` (document
+ *  order by default, alphabetically when asked) — then the ungrouped contacts
+ *  as a trailing `null` group — each group shown only when it holds
  *  at least one active contact, so empty folders drop out of the list.
  *  Archived folders and archived contacts are left out; contacts within each
  *  group are sorted by display name (nameless last), the same order the side
@@ -43,7 +61,11 @@ export function groupContactsByFolder(
   const keep = (c: Contact) =>
     !c.archived && (!opts.favoritesOnly || !!c.favorite);
   const groups: ContactGroup[] = [];
-  for (const folder of data.folders.filter((f) => !f.archived)) {
+  const folders = sortFolders(
+    data.folders.filter((f) => !f.archived),
+    opts.folderSort ?? "manual",
+  );
+  for (const folder of folders) {
     const contacts = data.contacts
       .filter((c) => c.folderId === folder.id && keep(c))
       .sort(compareContacts);

@@ -369,6 +369,12 @@ export const en = {
       openSidebarWith: "Open sidebar with",
       sidebarHint:
         "Choose how to open the sidebar on this device — tap the floating button, or swipe in from the edge of the screen. Settings lives in the sidebar's footer.",
+      foldersTitle: "Folders",
+      folderSortLabel: "Sort folders",
+      folderSortAlphabetical: "Alphabetically",
+      folderSortManual: "Manually",
+      folderSortHint:
+        "Order the folders in the sidebar and the List either by name, or in your own order — drag one folder onto another to rearrange them. Folders always sit above the ungrouped contacts.",
       developerTitle: "Developer",
       developerMode: "Developer mode",
       developerModeHint:

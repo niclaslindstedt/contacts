@@ -359,6 +359,12 @@ export const sv: Catalog = {
       openSidebarWith: "Öppna sidofältet med",
       sidebarHint:
         "Välj hur sidofältet öppnas på den här enheten — tryck på den flytande knappen, eller svep in från skärmens kant. Inställningar finns i sidofältets sidfot.",
+      foldersTitle: "Mappar",
+      folderSortLabel: "Sortera mappar",
+      folderSortAlphabetical: "Alfabetiskt",
+      folderSortManual: "Manuellt",
+      folderSortHint:
+        "Ordna mapparna i sidofältet och listan antingen efter namn, eller i din egen ordning — dra en mapp till en annan för att flytta om dem. Mappar ligger alltid ovanför de ogrupperade kontakterna.",
       developerTitle: "Utvecklare",
       developerMode: "Utvecklarläge",
       developerModeHint:

@@ -303,6 +303,7 @@ export function App() {
           updateAvailable={pwa.needRefresh}
           onCheckUpdate={pwa.checkForUpdate}
           trophy={trophyRow}
+          folderSort={settings.folderSort}
         />
       </Sidebar>
 

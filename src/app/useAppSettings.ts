@@ -34,6 +34,12 @@ export type ListDensity = "compact" | "spacious";
  *  not exact, and the card is one tap away. */
 export type ListPhonePriority = "private" | "work" | "both";
 
+/** How the folders are ordered wherever they group contacts (the side menu and
+ *  the overview List). `alphabetical` sorts them by name; `manual` keeps the
+ *  hand-dragged order — dragging one folder onto another reorders the list.
+ *  Either way folders come before the ungrouped contacts. */
+export type FolderSort = "alphabetical" | "manual";
+
 export type AppSettings = {
   menuMode: MenuMode;
   disableAchievements: boolean;
@@ -63,6 +69,9 @@ export type AppSettings = {
   listDensity: ListDensity;
   /** Which phone number(s) the list view prefers under each name. */
   listPhonePriority: ListPhonePriority;
+  /** How folders are ordered in the side menu and the List — alphabetically,
+   *  or in the hand-dragged order. */
+  folderSort: FolderSort;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -94,6 +103,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   // Show every number by default; the user can narrow the list to just private
   // or just work numbers to keep rows tidy.
   listPhonePriority: "both",
+  // Folders sort alphabetically out of the box — the least-surprising order for
+  // a fresh address book; switching to manual unlocks drag-to-reorder.
+  folderSort: "alphabetical",
 };
 
 const STORAGE_KEY = "contacts:settings";

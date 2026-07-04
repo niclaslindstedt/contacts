@@ -91,8 +91,11 @@ export function ContactListScreen({
   // single hand-orderable shortlist instead (see `favoriteContacts`), so
   // reordering can move a card freely rather than only within one folder.
   const groups = useMemo(
-    () => (favoritesOnly ? [] : groupContactsByFolder(data)),
-    [data, favoritesOnly],
+    () =>
+      favoritesOnly
+        ? []
+        : groupContactsByFolder(data, { folderSort: settings.folderSort }),
+    [data, favoritesOnly, settings.folderSort],
   );
   const favorites = useMemo(
     () => (favoritesOnly ? favoriteContacts(data) : []),

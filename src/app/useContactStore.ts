@@ -402,6 +402,28 @@ export function useContactStore(
     [commit, data],
   );
 
+  // Save the hand-dragged order of the folders — the "manual" folder-sort
+  // outcome. `orderedIds` is the new order of the (visible) folders being
+  // reordered; they're slotted back into the positions they currently occupy in
+  // the document, so any interleaved archived folders keep their place. A card
+  // whose id isn't in the list is left untouched. Undoable — one step per
+  // settled drag.
+  const reorderFolders = useCallback(
+    (orderedIds: readonly string[]) => {
+      const inOrder = orderedIds
+        .map((id) => data.folders.find((f) => f.id === id))
+        .filter((f): f is Folder => !!f);
+      if (inOrder.length === 0) return;
+      const moving = new Set(inOrder.map((f) => f.id));
+      let i = 0;
+      const folders = data.folders.map((f) =>
+        moving.has(f.id) ? inOrder[i++]! : f,
+      );
+      commit({ ...data, folders });
+    },
+    [commit, data],
+  );
+
   const renameFolder = useCallback(
     (id: string, name: string) =>
       commit({
@@ -587,6 +609,7 @@ export function useContactStore(
     reorderFavorites,
     sweepAutoArchive,
     addFolder,
+    reorderFolders,
     renameFolder,
     deleteFolder,
     archiveFolder,
