@@ -121,6 +121,26 @@ export function cloudFileName(slug: string): string {
   return `contacts-${slug}.json`;
 }
 
+/** Dropbox's web UI, opened onto this app's `Apps/Contacts` app folder — the
+ *  same path the command centre shows under "File location". */
+const DROPBOX_WEB_FOLDER = "https://www.dropbox.com/home/Apps/Contacts";
+
+/** A web URL that opens the active backend's storage in a browser tab so the
+ *  user can see the synced files, or null when there's nothing to open (the
+ *  on-device localStorage copy). Drives the command centre's "Open in {name}"
+ *  link. Encryption doesn't change this — the envelope is still a real file. */
+function backendWebUrl(backend: SyncBackendId, slug: string): string | null {
+  if (backend === "dropbox") return DROPBOX_WEB_FOLDER;
+  if (backend === "gdrive") {
+    // The document lives in a "Contacts" folder in My Drive; a filename search
+    // opens Drive straight onto it without our having to resolve the folder id.
+    return `https://drive.google.com/drive/search?q=${encodeURIComponent(
+      cloudFileName(slug),
+    )}`;
+  }
+  return null;
+}
+
 export type SyncEngine = {
   backend: SyncBackendId;
   /** Whether the active cloud backend has credentials. Always true for local. */
@@ -714,7 +734,7 @@ export function useSyncEngine(
     backendKind: isCloud ? "cloud" : "folder",
     location: {
       path: isCloud ? `Apps/Contacts/${cloudFileName(slug)}` : docKey(slug),
-      url: null,
+      url: isCloud && connected ? backendWebUrl(backend, slug) : null,
     },
     saveNow,
     reload,

@@ -29,6 +29,16 @@ connect time: an empty drive, or one that already matches this device, connects
 without interruption. (Once connected, a later divergence between devices is a
 _conflict_, handled by the header glyph as above.)
 
+## Opening the files in the drive
+
+The **Sync** command centre (the header glyph) shows an **Open in {provider}**
+button while a cloud drive is connected. It opens the drive's own web UI in a
+new tab, pointed at the synced files — the `Apps/Contacts` app folder in
+Dropbox, or a filename search in Google Drive — so you can see, download, or
+manage the raw `contacts-<namespace>.json` document and its photo files
+directly. The button doesn't appear for the on-device backend: that copy lives
+in the browser's local storage and has no web location to open.
+
 ## Photo files
 
 On a cloud drive (Dropbox or Google Drive), each photo in a contact's gallery is
