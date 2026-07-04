@@ -149,12 +149,18 @@ const LAST_NAMES = [
 
 // Curated folder ids — stable so the sample reads the same every build.
 const FLD_FAMILY = "seed-fld-family";
+const FLD_SPOUSE = "seed-fld-spouse";
+const FLD_COUSINS = "seed-fld-cousins";
 const FLD_WORK = "seed-fld-work";
 const FLD_EMPTY = "seed-fld-empty";
 const FLD_ARCHIVED = "seed-fld-archived";
 
 const CURATED_FOLDERS: Folder[] = [
   { id: FLD_FAMILY, name: "Family" },
+  // Nested folders (Family ▸ Spouse ▸ Cousins) — exercises the subfolder tree,
+  // its indentation, collapse-the-subtree, and deep drag-and-drop.
+  { id: FLD_SPOUSE, name: "Spouse", parentId: FLD_FAMILY },
+  { id: FLD_COUSINS, name: "Cousins", parentId: FLD_SPOUSE },
   { id: FLD_WORK, name: "Work" },
   // An empty folder — the side menu's zero-contact row.
   { id: FLD_EMPTY, name: "Empty folder" },
@@ -335,7 +341,8 @@ function curatedContacts(): Contact[] {
       addresses: [],
       importantDates: [date({ label: "記念日 🎌", date: "2011-03-11" })],
       notes: "Emoji 🎉🚀 and mixed scripts: Ελληνικά, Русский, 中文.",
-      folderId: FLD_FAMILY,
+      // Filed in a subfolder (Family ▸ Spouse).
+      folderId: FLD_SPOUSE,
       glyph: "gift",
       color: "#f9a8d4",
     },
@@ -347,7 +354,8 @@ function curatedContacts(): Contact[] {
       emails: [email("mohammed@example.eg")],
       addresses: [address({ label: "المنزل", city: "القاهرة" })],
       importantDates: [],
-      folderId: null,
+      // Filed two levels deep (Family ▸ Spouse ▸ Cousins).
+      folderId: FLD_COUSINS,
     },
     // Many phones and many emails — the field lists at their tallest.
     {

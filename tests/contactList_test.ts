@@ -2,13 +2,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  canNestFolder,
+  childrenByParent,
+  descendantFolderIds,
   emergencyContacts,
   favoriteContacts,
   groupContactsByFolder,
   listedContacts,
+  orderedFolderTree,
   prioritizePhones,
   reorderIds,
   sortFolders,
+  subtreeFolderIds,
 } from "../src/app/contactList.ts";
 import type { AppData, Contact, Folder, Phone } from "../src/app/types.ts";
 
@@ -165,6 +170,180 @@ describe("groupContactsByFolder", () => {
     const groups = groupContactsByFolder(data, { folderSort: "alphabetical" });
     // Amigos (f2) sorts before Work (f1); the ungrouped null group still trails.
     expect(groups.map((g) => g.folder?.id)).toEqual(["f2", "f1"]);
+  });
+
+  it("walks subfolders depth-first, each under its parent, annotating depth", () => {
+    const data = doc({
+      folders: [
+        folder({ id: "fam", name: "Family" }),
+        folder({ id: "spouse", name: "Spouse", parentId: "fam" }),
+        folder({ id: "cousins", name: "Cousins", parentId: "spouse" }),
+      ],
+      contacts: [
+        card({ id: "a", firstName: "Ada", folderId: "fam" }),
+        card({ id: "s", firstName: "Sam", folderId: "spouse" }),
+        card({ id: "c", firstName: "Coz", folderId: "cousins" }),
+      ],
+    });
+    const groups = groupContactsByFolder(data);
+    expect(groups.map((g) => [g.folder?.id, g.depth])).toEqual([
+      ["fam", 0],
+      ["spouse", 1],
+      ["cousins", 2],
+    ]);
+  });
+
+  it("keeps a childless-but-not-empty parent as a reachable heading", () => {
+    // Family holds no contacts of its own, but its Spouse subfolder does — so
+    // Family still heads a (contact-less) section so the child is reachable.
+    const data = doc({
+      folders: [
+        folder({ id: "fam", name: "Family" }),
+        folder({ id: "spouse", name: "Spouse", parentId: "fam" }),
+      ],
+      contacts: [card({ id: "s", firstName: "Sam", folderId: "spouse" })],
+    });
+    const groups = groupContactsByFolder(data);
+    expect(groups.map((g) => g.folder?.id)).toEqual(["fam", "spouse"]);
+    expect(groups[0]!.contacts).toEqual([]);
+    expect(groups[1]!.contacts.map((c) => c.id)).toEqual(["s"]);
+  });
+
+  it("drops a whole branch with no contacts anywhere in it", () => {
+    const data = doc({
+      folders: [
+        folder({ id: "fam", name: "Family" }),
+        folder({ id: "spouse", name: "Spouse", parentId: "fam" }),
+        folder({ id: "work", name: "Work" }),
+      ],
+      contacts: [card({ id: "w", firstName: "Wes", folderId: "work" })],
+    });
+    // Family/Spouse are empty end-to-end and drop out; Work stays.
+    expect(groupContactsByFolder(data).map((g) => g.folder?.id)).toEqual([
+      "work",
+    ]);
+  });
+
+  it("surfaces a subfolder as a root when its parent isn't present", () => {
+    // The parent is archived (filtered out), so its non-archived child reads as
+    // a root rather than vanishing.
+    const data = doc({
+      folders: [
+        folder({ id: "fam", name: "Family", archived: true }),
+        folder({ id: "spouse", name: "Spouse", parentId: "fam" }),
+      ],
+      contacts: [card({ id: "s", firstName: "Sam", folderId: "spouse" })],
+    });
+    const groups = groupContactsByFolder(data);
+    expect(groups.map((g) => [g.folder?.id, g.depth])).toEqual([["spouse", 0]]);
+  });
+});
+
+describe("childrenByParent", () => {
+  it("groups folders by their parent, root folders under the null key", () => {
+    const folders = [
+      folder({ id: "fam", name: "Family" }),
+      folder({ id: "spouse", name: "Spouse", parentId: "fam" }),
+      folder({ id: "work", name: "Work" }),
+    ];
+    const byParent = childrenByParent(folders, "manual");
+    expect(byParent.get(null)!.map((f) => f.id)).toEqual(["fam", "work"]);
+    expect(byParent.get("fam")!.map((f) => f.id)).toEqual(["spouse"]);
+  });
+
+  it("treats a folder with a missing parent as a root", () => {
+    const folders = [folder({ id: "spouse", parentId: "gone" })];
+    expect(
+      childrenByParent(folders, "manual")
+        .get(null)!
+        .map((f) => f.id),
+    ).toEqual(["spouse"]);
+  });
+
+  it("orders each sibling group alphabetically when asked", () => {
+    const folders = [
+      folder({ id: "fam", name: "Family" }),
+      folder({ id: "z", name: "Zoe", parentId: "fam" }),
+      folder({ id: "a", name: "Ann", parentId: "fam" }),
+    ];
+    expect(
+      childrenByParent(folders, "alphabetical")
+        .get("fam")!
+        .map((f) => f.id),
+    ).toEqual(["a", "z"]);
+  });
+});
+
+describe("orderedFolderTree", () => {
+  it("flattens the tree depth-first with a depth on every node", () => {
+    const folders = [
+      folder({ id: "fam", name: "Family" }),
+      folder({ id: "spouse", name: "Spouse", parentId: "fam" }),
+      folder({ id: "cousins", name: "Cousins", parentId: "spouse" }),
+      folder({ id: "work", name: "Work" }),
+    ];
+    expect(
+      orderedFolderTree(folders, "manual").map((n) => [n.folder.id, n.depth]),
+    ).toEqual([
+      ["fam", 0],
+      ["spouse", 1],
+      ["cousins", 2],
+      ["work", 0],
+    ]);
+  });
+
+  it("emits a folder caught in a parent cycle only once", () => {
+    // A corrupt loop (a ↔ b) must not spin forever.
+    const folders = [
+      folder({ id: "a", parentId: "b" }),
+      folder({ id: "b", parentId: "a" }),
+    ];
+    const ids = orderedFolderTree(folders, "manual").map((n) => n.folder.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("descendantFolderIds / subtreeFolderIds", () => {
+  const folders = [
+    folder({ id: "fam", name: "Family" }),
+    folder({ id: "spouse", name: "Spouse", parentId: "fam" }),
+    folder({ id: "cousins", name: "Cousins", parentId: "spouse" }),
+    folder({ id: "work", name: "Work" }),
+  ];
+
+  it("collects every id below a folder, excluding itself", () => {
+    expect([...descendantFolderIds(folders, "fam")].sort()).toEqual([
+      "cousins",
+      "spouse",
+    ]);
+    expect([...descendantFolderIds(folders, "work")]).toEqual([]);
+  });
+
+  it("includes the root itself in the subtree", () => {
+    expect([...subtreeFolderIds(folders, "spouse")].sort()).toEqual([
+      "cousins",
+      "spouse",
+    ]);
+  });
+});
+
+describe("canNestFolder", () => {
+  const folders = [
+    folder({ id: "fam", name: "Family" }),
+    folder({ id: "spouse", name: "Spouse", parentId: "fam" }),
+    folder({ id: "cousins", name: "Cousins", parentId: "spouse" }),
+    folder({ id: "work", name: "Work" }),
+  ];
+
+  it("allows nesting into an unrelated folder or the root", () => {
+    expect(canNestFolder(folders, "work", "fam")).toBe(true);
+    expect(canNestFolder(folders, "spouse", null)).toBe(true);
+  });
+
+  it("forbids nesting into itself or its own descendant (a cycle)", () => {
+    expect(canNestFolder(folders, "fam", "fam")).toBe(false);
+    expect(canNestFolder(folders, "fam", "spouse")).toBe(false);
+    expect(canNestFolder(folders, "fam", "cousins")).toBe(false);
   });
 });
 

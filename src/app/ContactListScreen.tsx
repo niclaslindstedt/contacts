@@ -120,6 +120,22 @@ export function ContactListScreen({
       else next.add(key);
       return next;
     });
+  // A collapsed folder section folds its subfolders away with it, so a group
+  // whose ancestor is collapsed is skipped entirely. Climbs the parent chain of
+  // a group's folder looking for a collapsed link.
+  const foldersById = useMemo(
+    () => new Map(data.folders.map((f) => [f.id, f])),
+    [data.folders],
+  );
+  const isSectionHidden = (folderId: string | null): boolean => {
+    let p =
+      folderId === null ? null : (foldersById.get(folderId)?.parentId ?? null);
+    while (p !== null) {
+      if (collapsed.has(p)) return true;
+      p = foldersById.get(p)?.parentId ?? null;
+    }
+    return false;
+  };
 
   // Select mode: off shows tap-to-open rows; on shows checkboxes and the batch
   // copy / export toolbar. Leaving select mode clears the selection.
@@ -217,13 +233,25 @@ export function ContactListScreen({
         ) : (
           groups.map((group) => {
             const key = group.folder?.id ?? UNGROUPED;
+            // Folded away under a collapsed ancestor — skip it whole.
+            if (isSectionHidden(group.folder?.id ?? null)) return null;
             const expanded = !collapsed.has(key);
             // A folder-less document (only the null group) needs no heading —
             // the rows read as one flat list. Otherwise every section, the
             // ungrouped one included, gets a collapsible header.
             const showHeader = group.folder !== null || groups.length > 1;
+            // Subfolder sections step to the right so the nesting reads at a
+            // glance (Family, then Family ▸ Spouse indented under it).
             return (
-              <section key={key} className="mb-1">
+              <section
+                key={key}
+                className="mb-1"
+                style={
+                  group.depth > 0
+                    ? { paddingLeft: `${group.depth}rem` }
+                    : undefined
+                }
+              >
                 {showHeader && (
                   <SectionHeader
                     name={group.folder?.name ?? t("list.ungrouped")}
