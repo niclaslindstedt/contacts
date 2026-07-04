@@ -76,7 +76,6 @@ export const en = {
     title: "List",
     empty: "No contacts yet. Add one from the sidebar to see it here.",
     ungrouped: "No folder",
-    folderEmpty: "No contacts in this folder.",
     noContactMethods: "No phone or email",
     select: "Select",
     selectAll: "Select all",

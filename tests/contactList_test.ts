@@ -48,12 +48,19 @@ describe("groupContactsByFolder", () => {
     expect(groups[1]!.contacts.map((c) => c.id)).toEqual(["b"]);
   });
 
-  it("keeps an empty folder but drops the empty ungrouped group", () => {
+  it("drops empty folders and the empty ungrouped group", () => {
     const data = doc({ folders: [folder({ id: "f1" })], contacts: [] });
     const groups = groupContactsByFolder(data);
-    expect(groups).toHaveLength(1);
-    expect(groups[0]!.folder?.id).toBe("f1");
-    expect(groups[0]!.contacts).toEqual([]);
+    expect(groups).toHaveLength(0);
+  });
+
+  it("keeps a folder that still holds an active contact", () => {
+    const data = doc({
+      folders: [folder({ id: "f1" }), folder({ id: "f2", name: "Empty" })],
+      contacts: [card({ id: "a", folderId: "f1" })],
+    });
+    const groups = groupContactsByFolder(data);
+    expect(groups.map((g) => g.folder?.id ?? null)).toEqual(["f1"]);
   });
 
   it("leaves out archived folders and archived contacts", () => {

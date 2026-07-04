@@ -2,7 +2,6 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 
 import {
-  Button,
   CheckboxGlyph,
   ChevronDownIcon,
   ChevronRightIcon,
@@ -142,7 +141,7 @@ export function ContactListScreen({
         </header>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto pb-10 [overscroll-behavior:contain]">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-10 [overscroll-behavior:contain]">
         {total === 0 && groups.length === 0 ? (
           <p className="px-2 py-10 text-center text-sm text-muted">
             {t("list.empty")}
@@ -167,24 +166,18 @@ export function ContactListScreen({
                 )}
                 {expanded && (
                   <ul className="m-0 list-none p-0">
-                    {group.contacts.length === 0 && showHeader ? (
-                      <li className="px-3 py-3 pl-11 text-sm text-muted">
-                        {t("list.folderEmpty")}
+                    {group.contacts.map((contact) => (
+                      <li key={contact.id}>
+                        <ContactRow
+                          contact={contact}
+                          settings={settings}
+                          selecting={selecting}
+                          selected={selected.has(contact.id)}
+                          onOpen={() => onOpenContact(contact.id)}
+                          onToggleSelected={() => toggleSelected(contact.id)}
+                        />
                       </li>
-                    ) : (
-                      group.contacts.map((contact) => (
-                        <li key={contact.id}>
-                          <ContactRow
-                            contact={contact}
-                            settings={settings}
-                            selecting={selecting}
-                            selected={selected.has(contact.id)}
-                            onOpen={() => onOpenContact(contact.id)}
-                            onToggleSelected={() => toggleSelected(contact.id)}
-                          />
-                        </li>
-                      ))
-                    )}
+                    ))}
                   </ul>
                 )}
               </section>
@@ -227,60 +220,71 @@ function SelectHeader({
   };
 
   return (
-    <header className="mb-2 flex items-center gap-2 border-b border-line px-1 pb-3">
+    <header className="mb-2 flex flex-col gap-2 border-b border-line px-1 pb-3">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          aria-label={t("common.cancel")}
+          title={t("common.cancel")}
+          className="-ml-1 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-line text-muted hover:bg-surface-2 hover:text-fg"
+        >
+          <CloseIcon className="h-5 w-5" />
+        </button>
+        <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-wide text-fg-bright tabular-nums">
+          {t("list.selectedCount", { n: String(count) })}
+        </h1>
+        <CopyButton
+          value={() => contactsToVCards(contacts)}
+          onCopied={() => unlock("exporter")}
+          labels={{ copy: t("list.copy"), copied: t("contact.copied") }}
+        />
+        <button
+          ref={exportRef}
+          type="button"
+          onClick={() => setMenuOpen((v) => !v)}
+          disabled={!has}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          aria-label={t("list.export")}
+          title={t("list.export")}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${
+            has
+              ? "cursor-pointer border-line text-muted hover:bg-surface-2 hover:text-fg"
+              : "cursor-not-allowed border-line text-muted opacity-40"
+          }`}
+        >
+          <DownloadIcon className="h-4 w-4" />
+        </button>
+        <FloatingPanel
+          open={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          triggerRef={exportRef}
+          placement={EXPORT_MENU_PLACEMENT}
+          className="py-1"
+        >
+          <div role="menu" className="flex w-full flex-col">
+            <ExportMenuItem onClick={() => runExport("vcf")}>
+              {t("list.exportVCard")}
+            </ExportMenuItem>
+            <ExportMenuItem onClick={() => runExport("csv")}>
+              {t("list.exportCsv")}
+            </ExportMenuItem>
+          </div>
+        </FloatingPanel>
+      </div>
       <button
         type="button"
-        onClick={onCancel}
-        aria-label={t("common.cancel")}
-        title={t("common.cancel")}
-        className="-ml-1 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-line text-muted hover:bg-surface-2 hover:text-fg"
+        onClick={onToggleAll}
+        role="checkbox"
+        aria-checked={allSelected}
+        className="flex w-fit cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-left text-sm font-medium text-fg hover:text-fg-bright"
       >
-        <CloseIcon className="h-5 w-5" />
+        <span className="shrink-0" aria-hidden>
+          <CheckboxGlyph checked={allSelected} />
+        </span>
+        {t("list.selectAll")}
       </button>
-      <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-wide text-fg-bright tabular-nums">
-        {t("list.selectedCount", { n: String(count) })}
-      </h1>
-      <Button variant="secondary" onClick={onToggleAll}>
-        {allSelected ? t("list.selectNone") : t("list.selectAll")}
-      </Button>
-      <CopyButton
-        value={() => contactsToVCards(contacts)}
-        onCopied={() => unlock("exporter")}
-        labels={{ copy: t("list.copy"), copied: t("contact.copied") }}
-      />
-      <button
-        ref={exportRef}
-        type="button"
-        onClick={() => setMenuOpen((v) => !v)}
-        disabled={!has}
-        aria-haspopup="menu"
-        aria-expanded={menuOpen}
-        aria-label={t("list.export")}
-        title={t("list.export")}
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${
-          has
-            ? "cursor-pointer border-line text-muted hover:bg-surface-2 hover:text-fg"
-            : "cursor-not-allowed border-line text-muted opacity-40"
-        }`}
-      >
-        <DownloadIcon className="h-4 w-4" />
-      </button>
-      <FloatingPanel
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        triggerRef={exportRef}
-        placement={EXPORT_MENU_PLACEMENT}
-        className="py-1"
-      >
-        <div role="menu" className="flex w-full flex-col">
-          <ExportMenuItem onClick={() => runExport("vcf")}>
-            {t("list.exportVCard")}
-          </ExportMenuItem>
-          <ExportMenuItem onClick={() => runExport("csv")}>
-            {t("list.exportCsv")}
-          </ExportMenuItem>
-        </div>
-      </FloatingPanel>
     </header>
   );
 }
@@ -385,10 +389,16 @@ function ContactRow({
   const avatarSize = spacious ? "list-spacious" : "list-compact";
   const rowSpacing = spacious ? "gap-4 py-3" : "gap-3 py-2";
 
+  // Names wrap onto as many lines as they need rather than truncating, so a
+  // long full name reads in full; `[overflow-wrap:anywhere]` also breaks a
+  // single very long token (or unbroken unicode) instead of letting it push
+  // the row wider than the screen.
   const nameNode = name ? (
-    <span className="truncate font-medium text-fg-bright">{name}</span>
+    <span className="font-medium text-fg-bright [overflow-wrap:anywhere]">
+      {name}
+    </span>
   ) : (
-    <span className="truncate font-medium text-muted italic">
+    <span className="font-medium text-muted italic [overflow-wrap:anywhere]">
       {t("contact.unnamed")}
     </span>
   );
