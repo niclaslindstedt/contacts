@@ -548,17 +548,6 @@ export function SideMenuContent({
           </div>
           <div className="flex divide-x divide-line">
             <BarButton
-              label={dnd.dragging ? t("menu.dropToArchive") : t("menu.archive")}
-              badge={archivedCount > 0 ? String(archivedCount) : undefined}
-              onClick={onShowArchive}
-              current={view === "archive"}
-              dropRef={archiveZone.ref}
-              over={archiveZone.isOver}
-              active={archiveZone.isActive}
-            >
-              <ArchiveIcon className="h-5 w-5" />
-            </BarButton>
-            <BarButton
               label={t("menu.undo")}
               disabled={!canUndo}
               onClick={undo}
@@ -574,6 +563,17 @@ export function SideMenuContent({
             </BarButton>
             <BarButton label={t("menu.search")} onClick={onOpenSearch}>
               <SearchIcon className="h-5 w-5" />
+            </BarButton>
+            <BarButton
+              label={dnd.dragging ? t("menu.dropToArchive") : t("menu.archive")}
+              badge={archivedCount > 0 ? String(archivedCount) : undefined}
+              onClick={onShowArchive}
+              current={view === "archive"}
+              dropRef={archiveZone.ref}
+              over={archiveZone.isOver}
+              active={archiveZone.isActive}
+            >
+              <ArchiveIcon className="h-5 w-5" />
             </BarButton>
           </div>
         </div>
