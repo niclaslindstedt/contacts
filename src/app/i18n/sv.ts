@@ -247,6 +247,14 @@ export const sv: Catalog = {
     checkAuthExpired:
       "Din session med {name} har gått ut — återanslut för att fortsätta.",
   },
+  cloudSetup: {
+    title: "{name} har redan kontakter",
+    hint: "Den här enheten och {name} har båda kontakter. Behåll en — den andra ersätts. Det här valet sker bara nu, när synk ställs in.",
+    thisDevice: "Den här enheten",
+    counts: "{contacts} kontakter · {folders} mappar",
+    useCloud: "Använd kopian i {name}",
+    replace: "Ersätt {name} med den här enheten",
+  },
   settings: {
     tabs: {
       general: "Allmänt",

@@ -34,6 +34,7 @@ import {
 } from "@niclaslindstedt/oss-framework/achievements";
 
 import { ArchiveScreen } from "./app/ArchiveScreen.tsx";
+import { CloudSetupModal } from "./app/CloudSetupModal.tsx";
 import { ContactScreen } from "./app/ContactScreen.tsx";
 import { ImportDropZone } from "./app/ImportDropZone.tsx";
 import { RELEASES, FEATURE_DOCS } from "./app/changelog.ts";
@@ -316,6 +317,15 @@ export function App() {
         store={store}
         sync={sync}
         passwordRef={passwordRef}
+      />
+
+      {/* The connect-time replace-or-adopt prompt — opens when a freshly
+          connected cloud backend already holds contacts that differ from this
+          device's copy. The engine (`useSyncEngine`) owns the state and holds
+          auto-save until a side is chosen. */}
+      <CloudSetupModal
+        pending={sync.pendingSetup}
+        onResolve={sync.resolveSetup}
       />
 
       {/* The framework's PWA "a new version is ready" prompt, fed from the

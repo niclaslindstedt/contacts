@@ -90,7 +90,8 @@ Enter — and start filling in the card.
   pick a file from Settings → Storage. See [`docs/features/export.md`](docs/features/export.md).
 - **Sync** — Settings → Storage: connect Dropbox or Google Drive; the cloud
   glyph in the card header shows the save state and opens the sync command
-  centre.
+  centre. Connecting a drive that already holds contacts asks whether to keep
+  the cloud copy or replace it with this device.
 
 ### Install as an app
 
