@@ -22,10 +22,14 @@ import { formatPhoneValue } from "./countries/index.ts";
 import { phoneOptions, type AppSettings } from "./useAppSettings.ts";
 import { contactsToCsv, contactsToVCards } from "./export.ts";
 import { downloadText, MIME_CSV, MIME_VCARD } from "./download.ts";
-import { groupContactsByFolder, listedContacts } from "./contactList.ts";
+import {
+  groupContactsByFolder,
+  listedContacts,
+  prioritizePhones,
+} from "./contactList.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { Contact } from "./types.ts";
-import { displayName } from "./types.ts";
+import { displayName, methodKind } from "./types.ts";
 
 // The overview list — a third top-level view, reached from the side menu's
 // List button. Where the card screen shows one contact and the sidebar is a
@@ -359,11 +363,22 @@ function ContactRow({
   const t = useT();
   const name = displayName(contact);
   const phones = settings.listShowPhone
-    ? contact.phones.filter((p) => p.value.trim())
+    ? prioritizePhones(
+        contact.phones.filter((p) => p.value.trim()),
+        settings.listPhonePriority,
+      )
     : [];
   const emails = settings.listShowEmail
     ? contact.emails.filter((e) => e.value.trim())
     : [];
+  // With more than one number on show, prefix each with its Private / Work type
+  // so it's clear which is which; a lone number needs no such label.
+  const showPhoneKind = phones.length > 1;
+  // The card-size setting drives both the avatar size and the row's breathing
+  // room, so a spacious list reads bigger throughout, not just its photos.
+  const spacious = settings.listDensity === "spacious";
+  const avatarSize = spacious ? "list-spacious" : "list-compact";
+  const rowSpacing = spacious ? "gap-4 py-3" : "gap-3 py-2";
 
   const nameNode = name ? (
     <span className="truncate font-medium text-fg-bright">{name}</span>
@@ -382,24 +397,25 @@ function ContactRow({
         aria-label={t("list.selectContact", {
           name: name || t("contact.unnamed"),
         })}
-        className={`flex w-full items-center gap-3 border-b border-line px-1 py-2.5 text-left ${
+        className={`flex w-full items-center border-b border-line px-1 text-left ${rowSpacing} ${
           selected ? "bg-accent/10" : "hover:bg-surface-2"
         }`}
       >
         <span className="shrink-0" aria-hidden>
           <CheckboxGlyph checked={selected} />
         </span>
-        <Avatar contact={contact} size="header" />
+        <Avatar contact={contact} size={avatarSize} />
         <span className="flex min-w-0 flex-1 flex-col">
           {nameNode}
           <ContactMethodsText
-            phones={phones.map((p) =>
-              formatPhoneValue(
+            phones={phones.map((p) => {
+              const value = formatPhoneValue(
                 p.value,
                 settings.country,
                 phoneOptions(settings),
-              ),
-            )}
+              );
+              return showPhoneKind ? `${kindText(p.label, t)} ${value}` : value;
+            })}
             emails={emails.map((e) => e.value)}
           />
         </span>
@@ -409,34 +425,44 @@ function ContactRow({
 
   const hasMethods = phones.length > 0 || emails.length > 0;
   return (
-    <div className="flex items-center gap-3 border-b border-line px-1 py-2.5">
+    <div
+      className={`flex items-center border-b border-line px-1 ${rowSpacing}`}
+    >
       <button
         type="button"
         onClick={onOpen}
         aria-label={name || t("contact.unnamed")}
         className="shrink-0"
       >
-        <Avatar contact={contact} size="header" />
+        <Avatar contact={contact} size={avatarSize} />
       </button>
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      {/* Narrow screens stack the methods under the name; from `sm` up there's
+          room to sit them to the right of it, so the row reads on one line. */}
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
         <button
           type="button"
           onClick={onOpen}
-          className="min-w-0 text-left leading-tight"
+          className="min-w-0 text-left leading-tight sm:flex-1"
         >
           {nameNode}
         </button>
-        {/* Phone numbers (tap to call) then emails (tap to write) sit under the
-            name in smaller text — each its own link, so the row stays a plain
-            container rather than a button wrapping links. */}
+        {/* Phone numbers (tap to call) then emails (tap to write) in smaller
+            text — each its own link, so the row stays a plain container rather
+            than a button wrapping links. Left-aligned under the name on mobile,
+            right-aligned beside it on wider screens. */}
         {hasMethods ? (
-          <div className="flex min-w-0 flex-col gap-0.5">
+          <div className="flex min-w-0 flex-col gap-0.5 sm:max-w-[55%] sm:shrink-0 sm:items-end">
             {phones.map((phone) => (
               <a
                 key={phone.id}
                 href={`tel:${phone.value.replace(/\s+/g, "")}`}
-                className="w-fit max-w-full truncate text-xs text-accent hover:underline"
+                className="w-fit max-w-full truncate text-xs text-accent hover:underline sm:text-right"
               >
+                {showPhoneKind && (
+                  <span className="text-muted">
+                    {kindText(phone.label, t)}{" "}
+                  </span>
+                )}
                 {formatPhoneValue(
                   phone.value,
                   settings.country,
@@ -448,7 +474,7 @@ function ContactRow({
               <a
                 key={email.id}
                 href={`mailto:${email.value.trim()}`}
-                className="w-fit max-w-full truncate text-xs text-muted hover:text-fg hover:underline"
+                className="w-fit max-w-full truncate text-xs text-muted hover:text-fg hover:underline sm:text-right"
               >
                 {email.value}
               </a>
@@ -456,7 +482,7 @@ function ContactRow({
           </div>
         ) : (
           !name && (
-            <span className="truncate text-xs text-muted">
+            <span className="truncate text-xs text-muted sm:shrink-0">
               {t("list.noContactMethods")}
             </span>
           )
@@ -464,6 +490,17 @@ function ContactRow({
       </div>
     </div>
   );
+}
+
+// The Private / Work label for a phone number, shown as a prefix when a row
+// carries more than one so it's clear which is which.
+function kindText(
+  label: string | undefined,
+  t: ReturnType<typeof useT>,
+): string {
+  return methodKind(label) === "work"
+    ? t("contact.kindWork")
+    : t("contact.kindPrivate");
 }
 
 // The plain-text echo of a contact's methods shown under the name while

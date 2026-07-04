@@ -2,6 +2,7 @@
 import { useCallback, useState } from "react";
 
 import {
+  ArrowLeftIcon,
   CheckIcon,
   CopyButton,
   PencilIcon,
@@ -37,6 +38,7 @@ export function ContactScreen({
   sync,
   settings,
   onOpenSyncDetails,
+  onBack,
   pullEnabled = true,
 }: {
   store: ContactStore;
@@ -46,6 +48,9 @@ export function ContactScreen({
   settings: AppSettings;
   // Open the framework `SyncDetailsModal` (mounted by the app shell).
   onOpenSyncDetails: () => void;
+  // Return to the List page — set only when this card was opened from it, which
+  // is the sole case the header shows a back button.
+  onBack?: () => void;
   // Gate the pull-to-refresh gesture. The shell drops this to false while a
   // sidebar drag owns the pointer or the phone drawer covers the screen.
   pullEnabled?: boolean;
@@ -84,6 +89,7 @@ export function ContactScreen({
         sync={sync}
         settings={settings}
         onOpenSyncDetails={onOpenSyncDetails}
+        onBack={onBack}
       />
     </ContactPhotoDropZone>
   );
@@ -98,12 +104,14 @@ function ContactCard({
   sync,
   settings,
   onOpenSyncDetails,
+  onBack,
 }: {
   contact: Contact;
   updateContact: (id: string, patch: Partial<Contact>) => void;
   sync: SyncEngine;
   settings: AppSettings;
   onOpenSyncDetails: () => void;
+  onBack?: () => void;
 }) {
   const t = useT();
   const [editing, setEditing] = useState(() => isEmptyContact(contact));
@@ -120,6 +128,18 @@ function ContactCard({
   return (
     <>
       <header className="mb-2 flex items-center gap-2 border-b border-line px-1 pb-3">
+        {/* Back to the List page — shown only when the card was opened from it. */}
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            title={t("contact.backToList")}
+            aria-label={t("contact.backToList")}
+            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-line text-muted hover:bg-surface-2 hover:text-fg"
+          >
+            <ArrowLeftIcon className="h-4 w-4" />
+          </button>
+        )}
         {/* The read/edit switch. The pencil enters edit mode; the check
             settles the card back to read mode. */}
         <button

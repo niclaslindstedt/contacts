@@ -32,6 +32,8 @@ import {
   phoneOptions,
   postalOptions,
   type AppSettings,
+  type ListDensity,
+  type ListPhonePriority,
 } from "../useAppSettings.ts";
 import type { ContactStore } from "../useContactStore.ts";
 import {
@@ -129,9 +131,29 @@ export function ListTab({
   update: Update;
 }) {
   const t = useT();
+  const densityOptions = [
+    { value: "compact" as const, label: t("settings.list.densityCompact") },
+    { value: "spacious" as const, label: t("settings.list.densitySpacious") },
+  ];
+  const priorityOptions = [
+    { value: "private" as const, label: t("contact.kindPrivate") },
+    { value: "work" as const, label: t("contact.kindWork") },
+    { value: "both" as const, label: t("settings.list.priorityBoth") },
+  ];
   return (
     <div>
       <p className="mb-3 text-xs text-muted">{t("settings.list.intro")}</p>
+      <Section title={t("settings.list.densityTitle")}>
+        <div className="flex flex-col gap-1">
+          <SegmentedControl<ListDensity>
+            value={settings.listDensity}
+            options={densityOptions}
+            onChange={(next) => update("listDensity", next)}
+            ariaLabel={t("settings.list.densityTitle")}
+          />
+          <p className="text-xs text-muted">{t("settings.list.densityHint")}</p>
+        </div>
+      </Section>
       <Section title={t("settings.list.contactMethodsTitle")}>
         <ToggleRow
           label={t("settings.list.showPhone")}
@@ -139,6 +161,23 @@ export function ListTab({
           checked={settings.listShowPhone}
           onChange={(next) => update("listShowPhone", next)}
         />
+        <NestedOptions enabled={settings.listShowPhone}>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-fg-bright">
+              {t("settings.list.priorityTitle")}
+            </span>
+            <SegmentedControl<ListPhonePriority>
+              value={settings.listPhonePriority}
+              options={priorityOptions}
+              onChange={(next) => update("listPhonePriority", next)}
+              fullWidth
+              ariaLabel={t("settings.list.priorityTitle")}
+            />
+            <p className="text-xs text-muted">
+              {t("settings.list.priorityHint")}
+            </p>
+          </div>
+        </NestedOptions>
         <ToggleRow
           label={t("settings.list.showEmail")}
           hint={t("settings.list.showEmailHint")}

@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import {
   groupContactsByFolder,
   listedContacts,
+  prioritizePhones,
 } from "../src/app/contactList.ts";
-import type { AppData, Contact, Folder } from "../src/app/types.ts";
+import type { AppData, Contact, Folder, Phone } from "../src/app/types.ts";
 
 function card(overrides: Partial<Contact> = {}): Contact {
   return {
@@ -82,6 +83,37 @@ describe("groupContactsByFolder", () => {
     });
     const [group] = groupContactsByFolder(data);
     expect(group!.contacts.map((c) => c.id)).toEqual(["a", "b", "n"]);
+  });
+});
+
+describe("prioritizePhones", () => {
+  const phones: Phone[] = [
+    { id: "h", value: "111", label: "private" },
+    { id: "w", value: "222", label: "work" },
+    { id: "h2", value: "333" }, // no label → private
+  ];
+
+  it("keeps every number when priority is both", () => {
+    expect(prioritizePhones(phones, "both").map((p) => p.id)).toEqual([
+      "h",
+      "w",
+      "h2",
+    ]);
+  });
+
+  it("keeps only the preferred kind when it exists", () => {
+    expect(prioritizePhones(phones, "work").map((p) => p.id)).toEqual(["w"]);
+    expect(prioritizePhones(phones, "private").map((p) => p.id)).toEqual([
+      "h",
+      "h2",
+    ]);
+  });
+
+  it("falls back to every number when the preferred kind is absent", () => {
+    const workOnly: Phone[] = [{ id: "w", value: "222", label: "work" }];
+    expect(prioritizePhones(workOnly, "private").map((p) => p.id)).toEqual([
+      "w",
+    ]);
   });
 });
 
