@@ -18,7 +18,7 @@ import {
   type ThemeAppearance,
 } from "@niclaslindstedt/oss-framework/theme";
 
-import { CodeIcon, FormatIcon } from "./icons.tsx";
+import { CodeIcon, FormatIcon, ListIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { APP_LOOK } from "./look.ts";
 import { DEFAULT_SETTINGS, type AppSettings } from "./useAppSettings.ts";
@@ -28,6 +28,7 @@ import {
   DeveloperTab,
   FormatTab,
   GeneralTab,
+  ListTab,
   LogsTab,
   StorageTab,
 } from "./settings/tabs.tsx";
@@ -41,7 +42,13 @@ import {
 // apply live — they are device state, not draft settings.
 
 type TabId =
-  "general" | "appearance" | "format" | "storage" | "developer" | "logs";
+  | "general"
+  | "appearance"
+  | "list"
+  | "format"
+  | "storage"
+  | "developer"
+  | "logs";
 
 // A typed message key (the argument `useT`'s `t` accepts), so each tab's
 // label stays a compile-checked catalog path.
@@ -56,6 +63,7 @@ type TabDef = {
 const TABS: TabDef[] = [
   { id: "general", labelKey: "settings.tabs.general", icon: SlidersIcon },
   { id: "appearance", labelKey: "settings.tabs.appearance", icon: PaletteIcon },
+  { id: "list", labelKey: "settings.tabs.list", icon: ListIcon },
   { id: "format", labelKey: "settings.tabs.format", icon: FormatIcon },
   { id: "storage", labelKey: "settings.tabs.storage", icon: DatabaseIcon },
   { id: "developer", labelKey: "settings.tabs.developer", icon: CodeIcon },
@@ -221,6 +229,7 @@ export function SettingsModal({
         {activeTab === "appearance" && (
           <AppearancePicker appearance={appearance} onChange={setAppearance} />
         )}
+        {activeTab === "list" && <ListTab settings={draft} update={update} />}
         {activeTab === "format" && (
           <FormatTab settings={draft} update={update} />
         )}

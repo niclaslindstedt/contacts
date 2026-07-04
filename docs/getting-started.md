@@ -22,7 +22,12 @@ On first launch you land in the **Personal** namespace with one blank card.
    full-screen, or pick a glyph and accent colour instead.
 4. **Organise** — create folders from the action grid; drag contacts into
    them, or onto another namespace in the sidebar header, or onto Archive.
-5. **Install it** — the deployed site is an installable PWA and works fully
+5. **Browse the list** — the **List** button in the action grid opens a
+   full-page overview of everyone in the namespace, grouped by folder, with
+   phone numbers under each name (tap to call). Use **Select** there to copy or
+   export several contacts at once. Settings → **List** toggles whether phone
+   numbers and emails show.
+6. **Install it** — the deployed site is an installable PWA and works fully
    offline; updates arrive through an in-app prompt.
 
 ## Choose your formats (optional)

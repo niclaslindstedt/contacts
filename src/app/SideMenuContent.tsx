@@ -37,7 +37,7 @@ import {
 } from "@niclaslindstedt/oss-framework/sidebar";
 
 import { Avatar } from "./Avatar.tsx";
-import { PersonIcon } from "./icons.tsx";
+import { ListIcon, PersonIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { Contact } from "./types.ts";
@@ -96,9 +96,12 @@ type Props = {
   // Close the drawer after a navigation (a no-op when the sidebar is docked)
   // and return the main area to the contact view.
   onNavigate: () => void;
-  // The active top-level view — highlights the Archive button when it shows.
-  view: "contact" | "archive";
+  // The active top-level view — highlights the List / Archive buttons when
+  // their page shows.
+  view: "contact" | "archive" | "list";
   onShowArchive: () => void;
+  // Open the overview List page (all contacts, grouped by folder).
+  onShowList: () => void;
   // PWA update state, threaded from `usePwaUpdate`.
   checkingUpdate: boolean;
   updateAvailable: boolean;
@@ -124,6 +127,7 @@ export function SideMenuContent({
   onNavigate,
   view,
   onShowArchive,
+  onShowList,
   checkingUpdate,
   updateAvailable,
   onCheckUpdate,
@@ -493,6 +497,13 @@ export function SideMenuContent({
               onClick={() => setCreatingFolder(true)}
             >
               <FolderIcon className="h-5 w-5" />
+            </BarButton>
+            <BarButton
+              label={t("menu.list")}
+              onClick={onShowList}
+              current={view === "list"}
+            >
+              <ListIcon className="h-5 w-5" />
             </BarButton>
             <BarButton
               label={dnd.dragging ? t("menu.dropToArchive") : t("menu.archive")}

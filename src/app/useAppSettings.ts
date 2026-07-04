@@ -44,6 +44,10 @@ export type AppSettings = {
   postalFormat: boolean;
   /** Group the postal code with spaces where the country allows it. */
   postalSpaces: boolean;
+  /** Show each contact's phone numbers under their name in the list view. */
+  listShowPhone: boolean;
+  /** Show each contact's email addresses under their name in the list view. */
+  listShowEmail: boolean;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -65,6 +69,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   phoneLeadingZero: true,
   postalFormat: false,
   postalSpaces: true,
+  // The list view shows phone numbers under each name by default (the most
+  // useful thing to glance at); email is opt-in so the rows stay compact.
+  listShowPhone: true,
+  listShowEmail: false,
 };
 
 const STORAGE_KEY = "contacts:settings";

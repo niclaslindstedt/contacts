@@ -9,6 +9,16 @@ notes, and a photo.
   the avatar and name lead the card, phone numbers and emails become tap-to-call
   and tap-to-email links, and the details and notes render as plain, legible
   text. Only the parts a card actually carries are shown.
+- **List overview.** The **List** button in the sidebar's action grid opens a
+  full-page overview of every contact in the namespace, **grouped under the
+  folder** each belongs to. Every folder is a section you can collapse or expand
+  (all start expanded). Each row shows a larger avatar or glyph beside the name,
+  with the contact's phone numbers listed under it (tap one to call) and,
+  optionally, their emails (tap to write) — toggle what shows in
+  **Settings → List**. Tap a row to open that contact's card. The **Select**
+  button turns the list into a multi-select: tick as many contacts as you like,
+  then **Copy** them as one vCard block to the clipboard or **Export** the
+  selection to a vCard or CSV file (see [Export & import](feature:export)).
 - **Private / work types.** Each phone number and email address carries a type —
   Private or Work — chosen from a small dropdown in edit mode. The type is shown
   as the row's label in read mode and maps onto the standard vCard TYPE on

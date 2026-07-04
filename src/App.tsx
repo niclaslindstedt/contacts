@@ -35,6 +35,7 @@ import {
 
 import { ArchiveScreen } from "./app/ArchiveScreen.tsx";
 import { CloudSetupModal } from "./app/CloudSetupModal.tsx";
+import { ContactListScreen } from "./app/ContactListScreen.tsx";
 import { ContactScreen } from "./app/ContactScreen.tsx";
 import { ImportDropZone } from "./app/ImportDropZone.tsx";
 import { RELEASES, FEATURE_DOCS } from "./app/changelog.ts";
@@ -82,9 +83,10 @@ export function App() {
   const store = useContactStore(ns.activeSlug, backend);
   const [namespacesOpen, setNamespacesOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  // The top-level view the main area shows: the active contact, or the
-  // Archive page (reached from the side menu's Archive button).
-  const [view, setView] = useState<"contact" | "archive">("contact");
+  // The top-level view the main area shows: the active contact, the overview
+  // List page, or the Archive page (both reached from the side menu's action
+  // grid).
+  const [view, setView] = useState<"contact" | "archive" | "list">("contact");
   // The "What's new" dialog, opened from the side menu's About dropdown.
   const [changelogOpen, setChangelogOpen] = useState(false);
   const { settings, setSettings } = useAppSettings();
@@ -279,6 +281,10 @@ export function App() {
             setView("archive");
             if (!pinned) setDrawerOpen(false);
           }}
+          onShowList={() => {
+            setView("list");
+            if (!pinned) setDrawerOpen(false);
+          }}
           checkingUpdate={pwa.checking}
           updateAvailable={pwa.needRefresh}
           onCheckUpdate={pwa.checkForUpdate}
@@ -293,6 +299,16 @@ export function App() {
         <ImportDropZone store={store}>
           {view === "archive" ? (
             <ArchiveScreen store={store} />
+          ) : view === "list" ? (
+            <ContactListScreen
+              store={store}
+              settings={settings}
+              onOpenContact={(id) => {
+                store.setActive(id);
+                setView("contact");
+                if (!pinned) setDrawerOpen(false);
+              }}
+            />
           ) : (
             <ContactScreen
               store={store}
