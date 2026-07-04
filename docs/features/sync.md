@@ -73,6 +73,26 @@ and the displayed file location match your Dropbox app's real app folder (which
 Dropbox fixes from the app config) and the My Drive folder the app creates. See
 [configuration](../configuration.md).
 
+## The on-device copy
+
+Whatever backend you sync to, a copy of the current address book always lives on
+this device (in the browser's local storage) — the working copy the screens read
+and edit. That copy is kept **non-destructively**, so a hiccup can't quietly wipe
+it:
+
+- After an **app update**, a still-running older build can briefly read a
+  document the newer build already upgraded and fail to make sense of it. When
+  that happens the stored copy is **left untouched** (and a spare is quarantined
+  for recovery) rather than being replaced with a blank one — it reappears on its
+  own once the update settles. The event is logged to **Settings → Logs** instead
+  of passing silently.
+- If the browser's storage is **full**, the app still keeps every contact by
+  saving a slimmed copy without the cached photo/attachment bytes (a connected
+  drive re-hydrates those) instead of failing the whole save.
+
+Your cloud copy is never touched by any of this — it only concerns the copy held
+on the device.
+
 ## Photo files
 
 On a folder or cloud backend (local folder, Dropbox, or Google Drive), each
