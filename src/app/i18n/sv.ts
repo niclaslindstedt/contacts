@@ -31,6 +31,8 @@ export const sv: Catalog = {
     deleteFolder: "Ta bort mapp",
     folderActions: "Mappåtgärder",
     newContactIn: "Ny kontakt i {name}",
+    collapseAllFolders: "Fäll ihop alla mappar",
+    expandAllFolders: "Fäll ut alla mappar",
     contactName: "Kontaktens namn",
     renameContact: "Byt namn",
     deleteContact: "Ta bort",

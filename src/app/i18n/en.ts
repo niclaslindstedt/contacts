@@ -35,6 +35,8 @@ export const en = {
     deleteFolder: "Delete folder",
     folderActions: "Folder actions",
     newContactIn: "New contact in {name}",
+    collapseAllFolders: "Collapse all folders",
+    expandAllFolders: "Expand all folders",
     contactName: "Contact name",
     renameContact: "Rename",
     deleteContact: "Delete",
