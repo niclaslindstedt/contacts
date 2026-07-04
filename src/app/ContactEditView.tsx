@@ -6,7 +6,6 @@ import {
   PlusIcon,
   Section,
   SegmentedControl,
-  SelectPicker,
   ToggleRow,
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
@@ -21,7 +20,7 @@ import {
 } from "./attachments.ts";
 import { autoArchiveAction, defaultAutoArchiveDate } from "./autoArchive.ts";
 import { filesToAttachments } from "./attachmentIntake.ts";
-import { FileIcon, UploadIcon } from "./icons.tsx";
+import { BuildingIcon, FileIcon, PersonIcon, UploadIcon } from "./icons.tsx";
 import { isValidFlexDate, parseFlexDate } from "./importantDates.ts";
 import { log } from "./log.ts";
 import { useLang, useT } from "./i18n/index.ts";
@@ -98,49 +97,50 @@ export function ContactEditView({
       <Section title={t("contact.details")}>
         {/* The name lives in the identity block above (tap it to rename), so
             the details grid opens straight at company and birthday rather than
-            repeating first / last name here. */}
-        <div className="flex flex-col gap-3">
-          <ToggleRow
-            label={t("contact.companyToggle")}
-            hint={t("contact.companyToggleHint")}
-            checked={!!contact.isCompany}
-            onChange={(on) => toggleCompany(contact, on, updateContact)}
-          />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {/* A company's name is edited above (the identity block), so the
-                redundant Company field only shows for a person. */}
-            {!contact.isCompany && (
-              <LabeledInput
-                label={t("contact.company")}
-                value={contact.company ?? ""}
-                onCommit={(company) => updateContact(contact.id, { company })}
-              />
-            )}
+            repeating first / last name here. The company switch itself now sits
+            at the very bottom of the card, next to the emergency flag. */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* A company's name is edited above (the identity block), so the
+              redundant Company field only shows for a person. */}
+          {!contact.isCompany && (
             <LabeledInput
-              label={t("contact.homepage")}
-              value={contact.homepage ?? ""}
-              type="url"
-              placeholder={t("contact.homepagePlaceholder")}
-              onCommit={(homepage) => updateContact(contact.id, { homepage })}
+              label={t("contact.company")}
+              value={contact.company ?? ""}
+              onCommit={(company) => updateContact(contact.id, { company })}
             />
+          )}
+          <LabeledInput
+            label={t("contact.homepage")}
+            value={contact.homepage ?? ""}
+            type="url"
+            placeholder={t("contact.homepagePlaceholder")}
+            onCommit={(homepage) => updateContact(contact.id, { homepage })}
+          />
+          {/* A company has no birthday — that field is only meaningful for a
+              person, so it drops out when the card is a company. */}
+          {!contact.isCompany && (
             <LabeledInput
               label={t("contact.birthday")}
               value={contact.birthday ?? ""}
               type="date"
               onCommit={(birthday) => updateContact(contact.id, { birthday })}
             />
-          </div>
+          )}
         </div>
       </Section>
 
-      <Section title={t("contact.importantDates")}>
-        <ImportantDateRows
-          rows={contact.importantDates}
-          onCommit={(importantDates) =>
-            updateContact(contact.id, { importantDates })
-          }
-        />
-      </Section>
+      {/* Extra important dates are a person's affair (name days, anniversaries)
+          — a company card hides the section, like the birthday above. */}
+      {!contact.isCompany && (
+        <Section title={t("contact.importantDates")}>
+          <ImportantDateRows
+            rows={contact.importantDates}
+            onCommit={(importantDates) =>
+              updateContact(contact.id, { importantDates })
+            }
+          />
+        </Section>
+      )}
 
       <Section title={t("contact.notes")}>
         <LabeledTextarea
@@ -170,6 +170,19 @@ export function ContactEditView({
           hint={t("contact.iceToggleHint")}
           checked={!!contact.ice}
           onChange={(on) => updateContact(contact.id, { ice: on })}
+        />
+      </Section>
+
+      {/* Person ↔ company is a set-once choice, so it lives right at the bottom
+          beside the emergency flag rather than up in the details grid. Turning
+          it on folds away the person-only fields (birthday, important dates)
+          and edits the single company name in the identity block above. */}
+      <Section title={t("contact.cardType")}>
+        <ToggleRow
+          label={t("contact.companyToggle")}
+          hint={t("contact.companyToggleHint")}
+          checked={!!contact.isCompany}
+          onChange={(on) => toggleCompany(contact, on, updateContact)}
         />
       </Section>
     </div>
@@ -508,10 +521,15 @@ function LabeledTextarea({
 
 type MethodRow = { id: string; value: string; label?: string };
 
-// The private / work type picker shared by phone and email rows. A compact
-// dropdown that sits at the head of the row, iOS-style: the type reads on the
-// left, the value on the right.
-function KindPicker({
+// The private / work type toggle shared by phone and email rows — the
+// framework `SegmentedControl` with a glyph per option (a person for private, a
+// briefcase for work) in place of the old dropdown. The wrapper captures the
+// pointer press and cancels its default so tapping a glyph keeps an open value
+// input focused: without it the mousedown would blur the field first —
+// committing (and, for a fresh draft row, removing) it — before the click
+// lands, forcing a defocus-then-click. Cancelling the focus shift lets a tap on
+// the glyph flip the kind while the user is still typing the number.
+function KindToggle({
   kind,
   ariaLabel,
   onChange,
@@ -521,17 +539,30 @@ function KindPicker({
   onChange: (next: ContactMethodKind) => void;
 }) {
   const t = useT();
+  const glyph = (
+    Icon: (p: { className?: string }) => ReactNode,
+    text: string,
+  ) => (
+    <span className="flex h-4 items-center">
+      <Icon className="h-4 w-4" />
+      <span className="sr-only">{text}</span>
+    </span>
+  );
   return (
-    <SelectPicker<ContactMethodKind>
-      value={kind}
-      ariaLabel={ariaLabel}
-      onChange={onChange}
-      options={[
-        { value: "private", label: t("contact.kindPrivate") },
-        { value: "work", label: t("contact.kindWork") },
-      ]}
-      triggerClassName="flex w-[6.5rem] shrink-0 items-center justify-between gap-1 rounded-md border border-line bg-surface-2 px-2 py-1.5 text-sm text-fg"
-    />
+    <div className="shrink-0" onMouseDownCapture={(e) => e.preventDefault()}>
+      <SegmentedControl<ContactMethodKind>
+        value={kind}
+        ariaLabel={ariaLabel}
+        onChange={onChange}
+        options={[
+          {
+            value: "private",
+            label: glyph(PersonIcon, t("contact.kindPrivate")),
+          },
+          { value: "work", label: glyph(BuildingIcon, t("contact.kindWork")) },
+        ]}
+      />
+    </div>
   );
 }
 
@@ -598,7 +629,9 @@ function MethodRows<Row extends MethodRow>({
       {drafting && (
         <MethodValueRow
           initial=""
-          kind="private"
+          // New numbers and addresses are most often work ones, so a fresh row
+          // defaults to Work — the picker still flips it to Private per row.
+          kind="work"
           autoFocus
           placeholder={placeholder}
           inputMode={inputMode}
@@ -652,7 +685,7 @@ function MethodValueRow({
   const [draftKind, setDraftKind] = useState(kind);
   return (
     <div className="flex items-center gap-2">
-      <KindPicker
+      <KindToggle
         kind={onKindChange ? kind : draftKind}
         ariaLabel={kindLabel}
         onChange={(k) => {

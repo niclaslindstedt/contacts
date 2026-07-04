@@ -147,7 +147,6 @@ export function SideMenuContent({
     archiveFolder,
     deleteContact,
     archiveContact,
-    toggleContactIce,
     moveContactToFolder,
     moveContactToNamespace,
     moveFolderToNamespace,
@@ -266,13 +265,10 @@ export function SideMenuContent({
       danger: true,
       onSelect: () => deleteContact(contact.id),
     };
-    const iceAction = {
-      label: contact.ice ? t("menu.unmarkIce") : t("menu.markIce"),
-      icon: <IceIcon className="h-5 w-5" />,
-      onSelect: () => toggleContactIce(contact.id),
-    };
+    // The emergency flag is a set-once-ever choice, so it lives only in the
+    // card's edit view (a toggle at the bottom) — not cluttering the per-row
+    // right-click menu. The pinned ICE badge below still shows the state.
     const menuActions = [
-      iceAction,
       {
         label: t("menu.archive"),
         icon: <ArchiveIcon className="h-5 w-5" />,

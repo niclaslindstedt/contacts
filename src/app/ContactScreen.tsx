@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import {
   ArrowLeftIcon,
@@ -59,6 +59,23 @@ export function ContactScreen({
 }) {
   const { activeContact, updateContact, reload } = store;
 
+  // Read/edit mode lives here, above the per-card remount, so switching to
+  // another contact keeps you in edit mode instead of dropping back to read —
+  // the card you were on is already saved (every field commits on blur, which
+  // fires as the tap moves focus away). A brand-new (empty) card still forces
+  // edit mode so there's something to fill in.
+  const activeId = activeContact?.id;
+  const [editing, setEditing] = useState(
+    () => !!activeContact && isEmptyContact(activeContact),
+  );
+  const prevIdRef = useRef(activeId);
+  if (activeId !== prevIdRef.current) {
+    prevIdRef.current = activeId;
+    // Only an empty card overrides the carried-over mode; otherwise the edit /
+    // read choice persists across the switch.
+    if (activeContact && isEmptyContact(activeContact)) setEditing(true);
+  }
+
   // The pull-to-refresh "sync": re-read the persisted document to pick up
   // edits from another tab. The header `SyncStatus` glyph reflects the *save*
   // lifecycle separately; this is the read side.
@@ -83,10 +100,13 @@ export function ContactScreen({
         pullDistance={pull.pullDistance}
       />
       {/* Key the card by contact id so switching cards remounts it: fresh
-          field drafts, and the read/edit mode re-chosen for the new card. */}
+          field drafts for the new card. The read/edit mode is held above this
+          remount (in `ContactScreen`) so it carries across the switch. */}
       <ContactCard
         key={activeContact.id}
         contact={activeContact}
+        editing={editing}
+        setEditing={setEditing}
         updateContact={updateContact}
         sync={sync}
         settings={settings}
@@ -102,6 +122,8 @@ export function ContactScreen({
 // there is something to fill in; a card with any content opens in read mode.
 function ContactCard({
   contact,
+  editing,
+  setEditing,
   updateContact,
   sync,
   settings,
@@ -109,6 +131,8 @@ function ContactCard({
   onBack,
 }: {
   contact: Contact;
+  editing: boolean;
+  setEditing: (next: boolean | ((v: boolean) => boolean)) => void;
   updateContact: (id: string, patch: Partial<Contact>) => void;
   sync: SyncEngine;
   settings: AppSettings;
@@ -116,7 +140,6 @@ function ContactCard({
   onBack?: () => void;
 }) {
   const t = useT();
-  const [editing, setEditing] = useState(() => isEmptyContact(contact));
 
   const exportVCard = () => {
     downloadText(
@@ -231,7 +254,14 @@ function ContactCard({
         />
       </header>
 
-      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-10 [overscroll-behavior:contain]">
+      {/* `relative` anchors descendant absolutely-positioned nodes to this
+          scroller. The framework checkbox hides its real <input> with `sr-only`
+          (position: absolute); without a positioning context here it would
+          resolve against the non-scrolling card wrapper and render far from its
+          glyph, so focusing a checkbox near the bottom yanked the whole card
+          off-screen. Anchored to the scroller, the hidden input tracks its
+          glyph and focus no longer scrolls an ancestor. */}
+      <div className="relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-10 [overscroll-behavior:contain]">
         <ContactIdentity
           contact={contact}
           editing={editing}

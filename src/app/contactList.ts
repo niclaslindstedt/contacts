@@ -82,19 +82,27 @@ export function favoriteContacts(data: AppData): Contact[] {
 
 /** Move `dragId` to sit where `targetId` is, returning the reordered id list —
  *  the drop behind a Favorites drag-to-reorder gesture. The dragged id is
- *  lifted out and re-inserted at the target's position, so dropping a card onto
- *  one above it lands it above, and onto one below lands it below. A no-op
- *  (same list) when either id is missing or they're the same. */
+ *  lifted out and re-inserted next to the target. `place` says which side of the
+ *  target it lands on ("before" / "after"), following which half of the target
+ *  row the pointer was released over; omit it and the id simply takes the
+ *  target's slot (dropping onto a card above lands it above, below lands it
+ *  below). A no-op (same list) when either id is missing or they're the same. */
 export function reorderIds(
   ids: readonly string[],
   dragId: string,
   targetId: string,
+  place?: "before" | "after",
 ): string[] {
   if (dragId === targetId) return [...ids];
   const from = ids.indexOf(dragId);
   const to = ids.indexOf(targetId);
   if (from === -1 || to === -1) return [...ids];
   const next = ids.filter((id) => id !== dragId);
+  if (place) {
+    const t = next.indexOf(targetId);
+    next.splice(place === "after" ? t + 1 : t, 0, dragId);
+    return next;
+  }
   next.splice(to, 0, dragId);
   return next;
 }

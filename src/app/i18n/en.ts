@@ -39,12 +39,10 @@ export const en = {
     renameContact: "Rename",
     deleteContact: "Delete",
     contactActions: "Contact actions",
-    // In case of emergency (ICE) — the pinned section and the mark/unmark
-    // actions on a contact row.
+    // In case of emergency (ICE) — the pinned section title and the badge on a
+    // flagged contact row.
     emergency: "In case of emergency",
     iceContact: "Emergency contact",
-    markIce: "Mark as emergency contact",
-    unmarkIce: "Remove emergency contact",
     dropToArchive: "Drop here to archive",
     archive: "Archive",
     list: "List",
@@ -143,9 +141,6 @@ export const en = {
     editContact: "Edit contact",
     doneEditing: "Done",
     backToList: "Back to list",
-    // The card-header toggle that flags the contact as in-case-of-emergency.
-    markIce: "Mark as emergency contact",
-    unmarkIce: "Remove emergency contact",
     addFavorite: "Add to favorites",
     removeFavorite: "Remove from favorites",
     reachTitle: "Get in touch",
@@ -202,6 +197,8 @@ export const en = {
     firstName: "First name",
     lastName: "Last name",
     company: "Company",
+    // Section title for the person-vs-company switch at the bottom of the card.
+    cardType: "Card type",
     // The flip switch that turns a person card into a company card.
     companyToggle: "This is a company",
     companyToggleHint:

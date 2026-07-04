@@ -198,12 +198,13 @@ export function ContactListScreen({
             onOpenContact={onOpenContact}
             onToggleSelected={toggleSelected}
             onToggleFavorite={toggleFavorite}
-            onReorder={(dragId, targetId) =>
+            onReorder={(dragId, targetId, place) =>
               reorderFavorites(
                 reorderIds(
                   favorites.map((c) => c.id),
                   dragId,
                   targetId,
+                  place,
                 ),
               )
             }
@@ -275,25 +276,73 @@ function FavoritesReorderList({
   onOpenContact: (id: string) => void;
   onToggleSelected: (id: string) => void;
   onToggleFavorite: (contact: Contact) => void;
-  onReorder: (dragId: string, targetId: string) => void;
+  onReorder: (
+    dragId: string,
+    targetId: string,
+    place?: "before" | "after",
+  ) => void;
 }) {
   const t = useT();
+  // The live row elements (to measure where the pointer sits within a row) and
+  // the pending drop side, both read at drop time from inside the hook's
+  // `onDrop` — so they go through refs to dodge stale closures.
+  const rowEls = useRef(new Map<string, HTMLElement>());
+  const onReorderRef = useRef(onReorder);
+  onReorderRef.current = onReorder;
+  const dropRef = useRef<{
+    targetId: string;
+    place: "before" | "after";
+  } | null>(null);
   const dnd = useDragDrop<string, string>({
     canDrop: (drag, target) => drag !== target,
-    onDrop: (drag, target) => onReorder(drag, target),
+    onDrop: (drag, target) => {
+      const pending = dropRef.current;
+      onReorderRef.current(
+        drag,
+        target,
+        pending?.targetId === target ? pending.place : undefined,
+      );
+    },
   });
+  const pointer = dnd.pointer;
+  const dragging = dnd.dragging;
   return (
     <ul className="m-0 list-none p-0">
       {contacts.map((contact) => {
         const zone = dnd.dropZone(contact.id, contact.id);
+        // A thin insertion line — not a box ring — marks where the card will
+        // land, so the gesture reads as "drop between rows" rather than "merge
+        // into this contact". The line (and the drop) hug the top edge when the
+        // pointer is over the row's upper half and the bottom edge over the
+        // lower half — the pointer's own position picks the slot.
+        let showLine = false;
+        let lineBelow = false;
+        if (zone.isOver && dragging && pointer) {
+          const rect = rowEls.current.get(contact.id)?.getBoundingClientRect();
+          if (rect) {
+            lineBelow = pointer.y > rect.top + rect.height / 2;
+            showLine = true;
+            dropRef.current = {
+              targetId: contact.id,
+              place: lineBelow ? "after" : "before",
+            };
+          }
+        }
+        const setRef = (el: HTMLElement | null) => {
+          zone.ref(el);
+          if (el) rowEls.current.set(contact.id, el);
+          else rowEls.current.delete(contact.id);
+        };
         return (
-          <li
-            key={contact.id}
-            ref={zone.ref}
-            className={
-              zone.isOver ? "rounded-md ring-2 ring-accent ring-inset" : ""
-            }
-          >
+          <li key={contact.id} ref={setRef} className="relative">
+            {showLine && (
+              <div
+                aria-hidden
+                className={`pointer-events-none absolute inset-x-0 z-10 h-0.5 rounded-full bg-accent ${
+                  lineBelow ? "bottom-0" : "top-0"
+                }`}
+              />
+            )}
             <ContactRow
               contact={contact}
               settings={settings}

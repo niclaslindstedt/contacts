@@ -269,4 +269,34 @@ describe("reorderIds", () => {
     expect(reorderIds(["a", "b"], "a", "a")).toEqual(["a", "b"]);
     expect(reorderIds(["a", "b"], "x", "b")).toEqual(["a", "b"]);
   });
+
+  it("places the id before or after the target when a side is given", () => {
+    // "before" drops the card immediately above the target row (pointer over
+    // the target's upper half); "after" drops it immediately below.
+    expect(reorderIds(["a", "b", "c", "d"], "a", "c", "before")).toEqual([
+      "b",
+      "a",
+      "c",
+      "d",
+    ]);
+    expect(reorderIds(["a", "b", "c", "d"], "a", "c", "after")).toEqual([
+      "b",
+      "c",
+      "a",
+      "d",
+    ]);
+    // Dragging upward lands above / below the target the same way.
+    expect(reorderIds(["a", "b", "c", "d"], "d", "b", "before")).toEqual([
+      "a",
+      "d",
+      "b",
+      "c",
+    ]);
+    expect(reorderIds(["a", "b", "c", "d"], "d", "b", "after")).toEqual([
+      "a",
+      "b",
+      "d",
+      "c",
+    ]);
+  });
 });
