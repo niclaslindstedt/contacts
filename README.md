@@ -86,6 +86,9 @@ Enter — and start filling in the card.
   instead. Tap a photo in read mode to view it full-screen and swipe between the
   gallery; only the current face exports to a vCard. On a cloud drive each photo
   is filed at `photos/<name>-<id>-<photoId>.jpg`.
+- **Favorites** — tap the heart on a contact's card (or on any List row) to star
+  it; the **Favorites** button in the action grid opens a folder-grouped page of
+  just the starred contacts.
 - **Search** — the magnifier in the action grid; matches names, numbers,
   emails, addresses, and notes (`*`/`?` wildcards, `/regex/`).
 - **Export** — the download button in the card header (single vCard) or

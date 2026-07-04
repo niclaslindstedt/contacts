@@ -17,8 +17,8 @@
 // cards, first/last-name-only cards, very long strings, unicode / emoji / RTL,
 // many phones and emails (private and work), several titled addresses (home,
 // cabin, work), important dates both dated and yearless, leap-day and
-// far-past/future birthdays, and every phone / postal-code style the Format tab
-// can render. Everything here is
+// far-past/future birthdays, starred favorites (grouped and standalone), and
+// every phone / postal-code style the Format tab can render. Everything here is
 // deterministic (no `Math.random`, no clock) so the same seed always builds
 // the same document — reproducible bug reports, stable tests.
 
@@ -242,6 +242,8 @@ function curatedContacts(): Contact[] {
       // Flagged in case of emergency — pins to the top of the side menu, even
       // though the card itself is filed under Family.
       ice: true,
+      // Starred — seeds the Favorites page with a fully-loaded card.
+      favorite: true,
     },
     // Company-only: no first/last name at all — `displayName` must fall back to
     // the company, and the monogram to its first letter.
@@ -268,6 +270,8 @@ function curatedContacts(): Contact[] {
       addresses: [],
       importantDates: [date({ label: "Name day", date: "05-20" })],
       folderId: null,
+      // A starred standalone card — the Favorites page's ungrouped section.
+      favorite: true,
     },
     // Last name only (a formal "Dr. …" with no given name recorded).
     {
@@ -385,6 +389,7 @@ function curatedContacts(): Contact[] {
       folderId: FLD_WORK,
       glyph: "person",
       color: "#5eead4",
+      favorite: true,
     },
     // Birthday edge cases: a leap-day, a very old date, and a future one.
     {
@@ -628,6 +633,8 @@ function generatedContact(i: number): Contact {
   }
   // A minority are archived so the Archive screen has bulk to page through.
   if (i % 11 === 0) contact.archived = true;
+  // A slice are starred so the Favorites page has bulk of its own.
+  if (i % 5 === 2) contact.favorite = true;
 
   return contact;
 }

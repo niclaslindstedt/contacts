@@ -81,6 +81,44 @@ describe("groupContactsByFolder", () => {
     expect(groups[0]!.contacts.map((c) => c.id)).toEqual(["a"]);
   });
 
+  it("keeps only starred contacts when favoritesOnly is set", () => {
+    const data = doc({
+      folders: [folder({ id: "f1", name: "Work" })],
+      contacts: [
+        card({ id: "a", firstName: "Ada", folderId: "f1", favorite: true }),
+        card({ id: "b", firstName: "Bob", folderId: "f1" }),
+        card({ id: "c", firstName: "Cyd", folderId: null, favorite: true }),
+        card({ id: "d", firstName: "Dan", folderId: null }),
+      ],
+    });
+    const groups = groupContactsByFolder(data, { favoritesOnly: true });
+    expect(groups.map((g) => g.folder?.id ?? null)).toEqual(["f1", null]);
+    expect(groups[0]!.contacts.map((c) => c.id)).toEqual(["a"]);
+    expect(groups[1]!.contacts.map((c) => c.id)).toEqual(["c"]);
+  });
+
+  it("drops a folder whose only favorite is archived", () => {
+    const data = doc({
+      folders: [folder({ id: "f1" })],
+      contacts: [
+        card({ id: "a", folderId: "f1", favorite: true, archived: true }),
+        card({ id: "b", folderId: "f1" }),
+      ],
+    });
+    expect(groupContactsByFolder(data, { favoritesOnly: true })).toHaveLength(
+      0,
+    );
+  });
+
+  it("returns no groups when nothing is starred", () => {
+    const data = doc({
+      contacts: [card({ id: "a" }), card({ id: "b" })],
+    });
+    expect(groupContactsByFolder(data, { favoritesOnly: true })).toHaveLength(
+      0,
+    );
+  });
+
   it("sorts contacts within a group by display name, nameless last", () => {
     const data = doc({
       contacts: [

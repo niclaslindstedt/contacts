@@ -188,6 +188,8 @@ they're already in scope.
 | `newContact(page)`             | Create a fresh contact and land on its card (opens straight in edit mode). Opens the sidebar first on phones.                                              |
 | `openAppearancePopover(page)`  | Enter edit mode, then tap the avatar to open the Photo / Colour / Icon popover. Verified against `ContactAppearancePopover.tsx`.                           |
 | `openPhotoCropper(page, img)`  | Open the appearance popover and upload an image to open the circle cropper. `img` defaults to a bundled PWA icon, so a recipe needs no fixture of its own. |
+| `openList(page)`               | Open the List overview page from the side-menu action grid (waits on the "List" heading).                                                                  |
+| `openFavorites(page)`          | Open the Favorites page from the action grid (waits on the "Favorites" heading — the button and page share the name, so match the heading role).           |
 | `openSettings(page)`           | Open the Settings dialog from the side menu's footer.                                                                                                      |
 | `openSettingsTab(page, name)`  | Open Settings and switch to a named tab ("Format", "Storage", "Developer", …). The tabs are a FloatingPanel menu behind the title button, not a tab strip. |
 | `scrollSettingsToBottom(page)` | Scroll the Settings dialog's tab body to the bottom to shoot sections below the fold (scoped to the dialog, so it won't scroll the sidebar list).          |

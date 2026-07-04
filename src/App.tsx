@@ -84,13 +84,17 @@ export function App() {
   const [namespacesOpen, setNamespacesOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   // The top-level view the main area shows: the active contact, the overview
-  // List page, or the Archive page (both reached from the side menu's action
-  // grid).
-  const [view, setView] = useState<"contact" | "archive" | "list">("contact");
-  // True when the current contact card was opened from the List page, so its
-  // header offers a back button to that list. Cleared by any other way into a
-  // card (a sidebar pick, a search hit, a fresh contact).
-  const [fromList, setFromList] = useState(false);
+  // List page, the Favorites page, or the Archive page (all reached from the
+  // side menu's action grid).
+  const [view, setView] = useState<
+    "contact" | "archive" | "list" | "favorites"
+  >("contact");
+  // Which browse page the current card was opened from, so its header offers a
+  // back button to that exact page. `null` for any other way into a card (a
+  // sidebar pick, a search hit, a fresh contact).
+  const [openedFrom, setOpenedFrom] = useState<"list" | "favorites" | null>(
+    null,
+  );
   // The "What's new" dialog, opened from the side menu's About dropdown.
   const [changelogOpen, setChangelogOpen] = useState(false);
   const { settings, setSettings } = useAppSettings();
@@ -277,8 +281,8 @@ export function App() {
           }}
           onNavigate={() => {
             // Selecting or creating a contact always lands on the card view —
-            // not via the list, so no back button.
-            setFromList(false);
+            // not via a browse page, so no back button.
+            setOpenedFrom(null);
             setView("contact");
             if (!pinned) setDrawerOpen(false);
           }}
@@ -289,6 +293,10 @@ export function App() {
           }}
           onShowList={() => {
             setView("list");
+            if (!pinned) setDrawerOpen(false);
+          }}
+          onShowFavorites={() => {
+            setView("favorites");
             if (!pinned) setDrawerOpen(false);
           }}
           checkingUpdate={pwa.checking}
@@ -305,13 +313,14 @@ export function App() {
         <ImportDropZone store={store}>
           {view === "archive" ? (
             <ArchiveScreen store={store} />
-          ) : view === "list" ? (
+          ) : view === "list" || view === "favorites" ? (
             <ContactListScreen
               store={store}
               settings={settings}
+              variant={view === "favorites" ? "favorites" : "all"}
               onOpenContact={(id) => {
                 store.setActive(id);
-                setFromList(true);
+                setOpenedFrom(view === "favorites" ? "favorites" : "list");
                 setView("contact");
                 if (!pinned) setDrawerOpen(false);
               }}
@@ -322,8 +331,8 @@ export function App() {
               sync={sync}
               settings={settings}
               onOpenSyncDetails={() => setSyncDetailsOpen(true)}
-              // A card opened from the List page carries a back button to it.
-              onBack={fromList ? () => setView("list") : undefined}
+              // A card opened from a browse page carries a back button to it.
+              onBack={openedFrom ? () => setView(openedFrom) : undefined}
               // Suppress pull-to-refresh while a sidebar drag owns the pointer,
               // and while the phone drawer covers the screen.
               pullEnabled={!sidebarDragging && (pinned || !drawerOpen)}
@@ -461,7 +470,7 @@ export function App() {
         onClose={() => setSearchOpen(false)}
         store={store}
         onNavigate={() => {
-          setFromList(false);
+          setOpenedFrom(null);
           setView("contact");
           if (!pinned) setDrawerOpen(false);
         }}
