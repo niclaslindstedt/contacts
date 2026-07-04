@@ -414,14 +414,22 @@ export const sv: Catalog = {
     },
     storage: {
       intro:
-        "Var dina kontakter finns. De sparas alltid på den här enheten; anslut en molntjänst för att hålla en kopia synkad utanför enheten.",
+        "Var dina kontakter finns. De sparas alltid på den här enheten; anslut en lokal mapp eller en molntjänst för att hålla en kopia synkad utanför enheten.",
       backendTitle: "Var din data finns",
       backendThisDevice: "Den här enheten",
+      backendFolder: "Lokal mapp",
       backendDropbox: "Dropbox",
       backendGdrive: "Google Drive",
       connect: "Anslut {name}",
       connectedAs: "Ansluten — synkar till {name}.",
       disconnect: "Koppla från",
+      folderHint:
+        "Synka till en mapp på den här datorn. Dina kontakter skrivs som ett JSON-dokument, med foton och bilagor arkiverade bredvid som riktiga bild- och dokumentfiler — ett bläddringsbart, git-spårbart träd som du kan säkerhetskopiera eller redigera med andra verktyg.",
+      folderChoose: "Välj en mapp…",
+      folderConnected: "Ansluten — synkar till en lokal mapp.",
+      folderReconnect: "Återanslut mapp",
+      folderReconnectNeeded:
+        "Den här mappen är inte längre åtkomlig — behörigheten återställdes (ett vanligt webbläsarbeteende mellan sessioner). Återanslut för att återuppta synken.",
       missingKeyDropbox:
         "Dropbox-synk kräver en Dropbox-appnyckel i bygget (VITE_DROPBOX_APP_KEY).",
       missingKeyGdrive:

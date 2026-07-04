@@ -39,6 +39,7 @@ import {
 import type { ContactStore } from "../useContactStore.ts";
 import {
   DROPBOX_APP_KEY,
+  FOLDER_BACKEND_AVAILABLE,
   GOOGLE_CLIENT_ID,
   PROVIDER_NAMES,
   type MutablePasswordRef,
@@ -412,9 +413,19 @@ export function StorageTab({
 
   // A cloud backend only appears in the picker when its OAuth identifier is
   // baked into the build — an unconfigured backend can't be connected, so we
-  // hide it rather than offer a dead option. `local` is always available.
+  // hide it rather than offer a dead option. The local folder appears only in
+  // browsers that expose the File System Access API (Chromium-based). `local`
+  // is always available.
   const backendOptions = [
     { value: "local" as const, label: t("settings.storage.backendThisDevice") },
+    ...(FOLDER_BACKEND_AVAILABLE
+      ? [
+          {
+            value: "folder" as const,
+            label: t("settings.storage.backendFolder"),
+          },
+        ]
+      : []),
     ...(DROPBOX_APP_KEY
       ? [
           {
@@ -433,10 +444,13 @@ export function StorageTab({
       : []),
   ];
 
-  // The picker shows the *target* backend; an unconnected cloud pick shows its
-  // Connect affordance until the OAuth flow lands.
+  // The picker shows the *target* backend; an unconnected backend shows its
+  // Connect affordance until the OAuth flow (cloud) or directory pick (folder)
+  // lands.
   const [picked, setPicked] = useState(sync.backend);
-  const pickedCloud = picked !== "local" ? picked : null;
+  const pickedFolder = picked === "folder";
+  const pickedCloud =
+    picked === "dropbox" || picked === "gdrive" ? picked : null;
   // Unconfigured backends are hidden above, so this only fires for a backend
   // persisted by an earlier build that had the key and this one doesn't —
   // still worth explaining rather than leaving the picker silently stuck.
@@ -489,6 +503,49 @@ export function StorageTab({
           options={backendOptions}
           ariaLabel={t("settings.storage.backendTitle")}
         />
+        {pickedFolder && (
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-muted">
+              {t("settings.storage.folderHint")}
+            </p>
+            {sync.backend === "folder" && sync.connected ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-success">
+                  {t("settings.storage.folderConnected")}
+                </span>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    sync.disconnect();
+                    setPicked("local");
+                  }}
+                >
+                  {t("settings.storage.disconnect")}
+                </Button>
+              </div>
+            ) : sync.backend === "folder" && sync.folderReconnectNeeded ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-warning">
+                  {t("settings.storage.folderReconnectNeeded")}
+                </span>
+                <Button
+                  variant="primary"
+                  onClick={() => void sync.reconnectFolder()}
+                >
+                  {t("settings.storage.folderReconnect")}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="primary"
+                className="self-start"
+                onClick={() => void sync.connectFolder()}
+              >
+                {t("settings.storage.folderChoose")}
+              </Button>
+            )}
+          </div>
+        )}
         {pickedCloud && missingKey && (
           <p className="text-xs text-warning">
             {pickedCloud === "dropbox"

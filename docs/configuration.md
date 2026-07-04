@@ -88,4 +88,7 @@ copies strip it so a single root file owns the domain.
 Everything persists in `localStorage` under the `contacts:` prefix — the
 per-namespace documents (`contacts:doc[:slug]`), settings, namespaces
 registry, achievements, sync backend choice, and the offline mirror of the
-cloud copy. Clearing site data resets the app.
+cloud copy. The one exception is the **local-folder** backend's picked-directory
+handle, which is kept in IndexedDB (localStorage can't hold a
+`FileSystemDirectoryHandle`) so the folder grant survives reloads. Clearing site
+data resets the app.

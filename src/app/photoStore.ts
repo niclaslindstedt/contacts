@@ -45,6 +45,7 @@ import {
   gdrivePhotoFileStore,
   type PhotoFileStore,
 } from "./photoFileStore.ts";
+import { folderFileStore } from "./folderFileStore.ts";
 
 const log = logStore.createLogger("photos");
 
@@ -81,6 +82,15 @@ export function dropboxPhotoStore(
 /** The Google Drive photo store, in the app folder's `photos/` tree. */
 export function gdrivePhotoStore(token: string): PhotoStore {
   return scopeToPhotos(gdrivePhotoFileStore(token));
+}
+
+/** The local-folder photo store, filing binary JPEGs to `photos/…` inside the
+ *  picked directory. `onPermissionLost` fires when a revoked OS grant is hit. */
+export function folderPhotoStore(
+  root: FileSystemDirectoryHandle,
+  onPermissionLost?: () => void,
+): PhotoStore {
+  return scopeToPhotos(folderFileStore(root, onPermissionLost));
 }
 
 // -- the document shape this layer touches (a loose view of `AppData`) --------
