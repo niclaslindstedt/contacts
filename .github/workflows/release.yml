@@ -146,6 +146,10 @@ jobs:
           VITE_PWA_IGNORE_PATHS: /preview/,/branch/
           VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          # App-folder names for the "Open in" link / stored documents; unset ->
+          # both default to "Contacts".
+          VITE_DROPBOX_APP_FOLDER: ${{ vars.VITE_DROPBOX_APP_FOLDER }}
+          VITE_GDRIVE_APP_FOLDER: ${{ vars.VITE_GDRIVE_APP_FOLDER }}
           VITE_DONATE_URL: ${{ vars.VITE_DONATE_URL }}
 
       - name: Commit + tag

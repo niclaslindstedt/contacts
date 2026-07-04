@@ -131,6 +131,10 @@ jobs:
           # hidden from the storage picker.
           VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          # App-folder names for the "Open in" link / stored documents; unset ->
+          # both default to "Contacts".
+          VITE_DROPBOX_APP_FOLDER: ${{ vars.VITE_DROPBOX_APP_FOLDER }}
+          VITE_GDRIVE_APP_FOLDER: ${{ vars.VITE_GDRIVE_APP_FOLDER }}
           VITE_DONATE_URL: ${{ vars.VITE_DONATE_URL }}
 
       - name: Stash production dist
@@ -166,6 +170,10 @@ jobs:
           VITE_PWA_IGNORE_PATHS: ${{ steps.tag.outputs.has_release == 'false' && '/preview/,/branch/' || '' }}
           VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          # App-folder names for the "Open in" link / stored documents; unset ->
+          # both default to "Contacts".
+          VITE_DROPBOX_APP_FOLDER: ${{ vars.VITE_DROPBOX_APP_FOLDER }}
+          VITE_GDRIVE_APP_FOLDER: ${{ vars.VITE_GDRIVE_APP_FOLDER }}
           VITE_DONATE_URL: ${{ vars.VITE_DONATE_URL }}
 
       # ---- Optional /branch/ build + persist to orphan branch ----
@@ -192,6 +200,10 @@ jobs:
           VITE_BASE: /branch/
           VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+          # App-folder names for the "Open in" link / stored documents; unset ->
+          # both default to "Contacts".
+          VITE_DROPBOX_APP_FOLDER: ${{ vars.VITE_DROPBOX_APP_FOLDER }}
+          VITE_GDRIVE_APP_FOLDER: ${{ vars.VITE_GDRIVE_APP_FOLDER }}
           VITE_DONATE_URL: ${{ vars.VITE_DONATE_URL }}
 
       - name: Persist /branch/ build to orphan branch

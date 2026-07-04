@@ -113,12 +113,14 @@ prompt — check manually from the sidebar's _Check for updates_ row.
 Cloud sync needs OAuth app identities baked into the build as Vite env vars —
 see [docs/configuration.md](docs/configuration.md):
 
-| Variable                | Purpose                                                                 |
-| ----------------------- | ----------------------------------------------------------------------- |
-| `VITE_DROPBOX_APP_KEY`  | Dropbox app key (PKCE flow, no secret)                                  |
-| `VITE_GOOGLE_CLIENT_ID` | Google OAuth client id (GIS token flow)                                 |
-| `VITE_DONATE_URL`       | Donate link target (defaults to the project's GitHub Sponsors page)     |
-| `VITE_BASE`             | Deploy base path — `/` (release), `/preview/` (main), `/branch/` (slot) |
+| Variable                  | Purpose                                                                 |
+| ------------------------- | ----------------------------------------------------------------------- |
+| `VITE_DROPBOX_APP_KEY`    | Dropbox app key (PKCE flow, no secret)                                  |
+| `VITE_GOOGLE_CLIENT_ID`   | Google OAuth client id (GIS token flow)                                 |
+| `VITE_DROPBOX_APP_FOLDER` | Dropbox app-folder name for the "Open in" link (defaults to `Contacts`) |
+| `VITE_GDRIVE_APP_FOLDER`  | Google Drive folder name for stored documents (defaults to `Contacts`)  |
+| `VITE_DONATE_URL`         | Donate link target (defaults to the project's GitHub Sponsors page)     |
+| `VITE_BASE`               | Deploy base path — `/` (release), `/preview/` (main), `/branch/` (slot) |
 
 ## Examples
 

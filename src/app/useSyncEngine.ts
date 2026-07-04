@@ -66,6 +66,25 @@ export const DROPBOX_APP_KEY: string =
 export const GOOGLE_CLIENT_ID: string =
   (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? "";
 
+// Dropbox fixes the app-folder name from the app's own configuration (an
+// "App folder"-scoped app lives under `Apps/<name>/`), so it isn't always
+// "Contacts". Inject the real name at build time so the "Open in Dropbox" link
+// and the displayed file location point at the folder that actually exists;
+// fall back to "Contacts" when unset.
+export const DROPBOX_APP_FOLDER: string =
+  (import.meta.env.VITE_DROPBOX_APP_FOLDER as string | undefined)?.trim() ||
+  "Contacts";
+
+// Google Drive's folder, unlike Dropbox's, is created by us — this name is the
+// `Contacts` folder we make in the user's My Drive. It's build-time
+// configurable so a deployment can file documents under its own folder name
+// (and the "Open in Google Drive" search / displayed location follow suit);
+// changing it points a fresh build at a differently-named folder. Defaults to
+// "Contacts".
+export const GDRIVE_APP_FOLDER: string =
+  (import.meta.env.VITE_GDRIVE_APP_FOLDER as string | undefined)?.trim() ||
+  "Contacts";
+
 /** The mutable in-memory box the session passphrase lives in. Structurally
  *  satisfies the framework's read-only `PasswordRef`, while the app's unlock
  *  and setup flows can write to it. */
@@ -121,19 +140,29 @@ export function cloudFileName(slug: string): string {
   return `contacts-${slug}.json`;
 }
 
-/** Dropbox's web UI, opened onto this app's `Apps/Contacts` app folder — the
- *  same path the command centre shows under "File location". */
-const DROPBOX_WEB_FOLDER = "https://www.dropbox.com/home/Apps/Contacts";
+/** The document's human-readable location on the active cloud backend — the
+ *  `Apps/<folder>` app folder on Dropbox, the `<folder>` My Drive folder on
+ *  Google Drive. Shown under "File location" in the command centre. */
+function backendPath(backend: SyncBackendId, slug: string): string {
+  const file = cloudFileName(slug);
+  if (backend === "dropbox") return `Apps/${DROPBOX_APP_FOLDER}/${file}`;
+  if (backend === "gdrive") return `${GDRIVE_APP_FOLDER}/${file}`;
+  return file;
+}
 
 /** A web URL that opens the active backend's storage in a browser tab so the
  *  user can see the synced files, or null when there's nothing to open (the
  *  on-device localStorage copy). Drives the command centre's "Open in {name}"
  *  link. Encryption doesn't change this — the envelope is still a real file. */
 function backendWebUrl(backend: SyncBackendId, slug: string): string | null {
-  if (backend === "dropbox") return DROPBOX_WEB_FOLDER;
+  if (backend === "dropbox") {
+    return `https://www.dropbox.com/home/Apps/${encodeURIComponent(
+      DROPBOX_APP_FOLDER,
+    )}`;
+  }
   if (backend === "gdrive") {
-    // The document lives in a "Contacts" folder in My Drive; a filename search
-    // opens Drive straight onto it without our having to resolve the folder id.
+    // The document lives in the My Drive folder above; a filename search opens
+    // Drive straight onto it without our having to resolve the folder id.
     return `https://drive.google.com/drive/search?q=${encodeURIComponent(
       cloudFileName(slug),
     )}`;
@@ -280,7 +309,7 @@ export function useSyncEngine(
     }
     if (backend === "gdrive" && gdriveToken) {
       const cloud = createGdriveAdapter(gdriveToken, {
-        appFolderName: "Contacts",
+        appFolderName: GDRIVE_APP_FOLDER,
         fileName: cloudFileName(slug),
         logger: logStore.createLogger("gdrive"),
       });
@@ -733,7 +762,7 @@ export function useSyncEngine(
     providerName,
     backendKind: isCloud ? "cloud" : "folder",
     location: {
-      path: isCloud ? `Apps/Contacts/${cloudFileName(slug)}` : docKey(slug),
+      path: isCloud ? backendPath(backend, slug) : docKey(slug),
       url: isCloud && connected ? backendWebUrl(backend, slug) : null,
     },
     saveNow,
