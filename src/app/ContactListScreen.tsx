@@ -625,7 +625,7 @@ function ContactRow({
         aria-label={t("list.selectContact", {
           name: name || t("contact.unnamed"),
         })}
-        className={`flex w-full items-center border-b border-line px-1 text-left ${rowSpacing} ${
+        className={`flex w-full cursor-pointer items-center border-b border-line px-1 text-left ${rowSpacing} ${
           selected ? "bg-accent/10" : "hover:bg-surface-2"
         }`}
       >
@@ -654,14 +654,14 @@ function ContactRow({
   const hasMethods = phones.length > 0 || emails.length > 0;
   return (
     <div
-      className={`flex items-center border-b border-line px-1 ${rowSpacing}`}
+      className={`flex items-center border-b border-line px-1 transition-colors hover:bg-surface-2 ${rowSpacing}`}
     >
       {grip}
       <button
         type="button"
         onClick={onOpen}
         aria-label={name || t("contact.unnamed")}
-        className="shrink-0"
+        className="shrink-0 cursor-pointer"
       >
         <Avatar contact={contact} size={avatarSize} />
       </button>
@@ -671,7 +671,7 @@ function ContactRow({
         <button
           type="button"
           onClick={onOpen}
-          className="min-w-0 text-left leading-tight sm:flex-1"
+          className="min-w-0 cursor-pointer text-left leading-tight sm:flex-1"
         >
           {nameNode}
         </button>

@@ -115,7 +115,7 @@ export function ArchiveScreen({ store }: { store: ContactStore }) {
                             {members.map((contact) => (
                               <li
                                 key={contact.id}
-                                className="flex min-h-9 items-center gap-3 border-b border-line py-1.5 pr-3 pl-11"
+                                className="flex min-h-9 items-center gap-3 border-b border-line py-1.5 pr-3 pl-11 transition-colors hover:bg-surface-2"
                               >
                                 <Avatar contact={contact} size="row" />
                                 <span className="min-w-0 flex-1 truncate text-sm text-muted">
@@ -237,7 +237,7 @@ function ArchiveRow({
       actions={actions}
       enabled={desktop}
     >
-      <div className="flex min-h-11 items-center gap-3 border-b border-line px-3 py-2">
+      <div className="flex min-h-11 items-center gap-3 border-b border-line px-3 py-2 transition-colors hover:bg-surface-2">
         {leading}
         <span className="min-w-0 flex-1 truncate text-fg">{title}</span>
         {count !== undefined && count > 0 && (

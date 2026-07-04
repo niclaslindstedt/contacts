@@ -921,7 +921,7 @@ function FolderRow({
         type="button"
         onClick={onToggle}
         aria-expanded={expanded}
-        className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-[var(--density-row-py)] pr-1 pl-5 text-left text-fg hover:text-fg-bright"
+        className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-[var(--density-row-py)] pr-1 pl-5 text-left text-sm text-fg hover:text-fg-bright"
       >
         <span className={expanded ? "text-accent" : "text-muted"}>
           {expanded ? (
