@@ -48,7 +48,7 @@ import { APP_LOOK } from "./app/look.ts";
 import { logStore } from "./app/log.ts";
 import { status } from "./output.ts";
 import { useAchievements } from "./app/useAchievements.ts";
-import { useAppSettings } from "./app/useAppSettings.ts";
+import { applyBackdropVars, useAppSettings } from "./app/useAppSettings.ts";
 import { useDevSeed } from "./app/dev/useDevSeed.ts";
 import { createSeedBackend } from "./app/dev/seedBackend.ts";
 import { localDocBackend, useContactStore } from "./app/useContactStore.ts";
@@ -188,6 +188,16 @@ export function App() {
   useEffect(() => {
     logStore.setCaptureEnabled(settings.captureLogs || settings.devMode);
   }, [settings.captureLogs, settings.devMode]);
+
+  // Project the persisted modal-backdrop knobs (darkness / blur) onto `<html>`
+  // as the CSS variables the scrim rule in `styles.css` reads. The Appearance
+  // tab previews edits live off the draft; this restores the committed values.
+  useEffect(() => {
+    applyBackdropVars(settings);
+    // Keyed on the two backdrop knobs, not the whole settings object — the rest
+    // of the blob changing shouldn't re-project the backdrop variables.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.modalBackdropDarkness, settings.modalBackdropBlur]);
 
   useEffect(() => {
     status("App started");

@@ -13,10 +13,7 @@ import {
   SlidersIcon,
   type IconProps,
 } from "@niclaslindstedt/oss-framework/components";
-import {
-  AppearancePicker,
-  type ThemeAppearance,
-} from "@niclaslindstedt/oss-framework/theme";
+import { type ThemeAppearance } from "@niclaslindstedt/oss-framework/theme";
 
 import { CodeIcon, FormatIcon, ListIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
@@ -25,6 +22,7 @@ import { DEFAULT_SETTINGS, type AppSettings } from "./useAppSettings.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { MutablePasswordRef, SyncEngine } from "./useSyncEngine.ts";
 import {
+  AppearanceTab,
   DeveloperTab,
   FormatTab,
   GeneralTab,
@@ -227,7 +225,13 @@ export function SettingsModal({
           <GeneralTab settings={draft} update={update} />
         )}
         {activeTab === "appearance" && (
-          <AppearancePicker appearance={appearance} onChange={setAppearance} />
+          <AppearanceTab
+            appearance={appearance}
+            setAppearance={setAppearance}
+            draft={draft}
+            committed={settings}
+            update={update}
+          />
         )}
         {activeTab === "list" && <ListTab settings={draft} update={update} />}
         {activeTab === "format" && (

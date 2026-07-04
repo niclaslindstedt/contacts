@@ -341,6 +341,22 @@ export const en = {
       developer: "Developer",
       logs: "Logs",
     },
+    appearance: {
+      backdropTitle: "Dialogs",
+      backdropIntro:
+        "How the page behind an open dialog looks. Adjust either and this Settings dialog previews the change against itself.",
+      darknessLabel: "Backdrop dimming",
+      darknessHint:
+        "How far the page behind a dialog is darkened. More dimming keeps your focus on the dialog; none leaves the page in full view.",
+      blurLabel: "Backdrop blur",
+      blurHint:
+        "How far the page behind a dialog is blurred. Off keeps it crisp.",
+      levelNone: "None",
+      levelSubtle: "Subtle",
+      levelMedium: "Medium",
+      darknessDark: "Dark",
+      blurStrong: "Strong",
+    },
     list: {
       intro: "How the overview List page shows each contact.",
       densityTitle: "Card size",
