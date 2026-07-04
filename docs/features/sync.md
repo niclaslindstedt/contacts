@@ -33,11 +33,17 @@ _conflict_, handled by the header glyph as above.)
 
 The **Sync** command centre (the header glyph) shows an **Open in {provider}**
 button while a cloud drive is connected. It opens the drive's own web UI in a
-new tab, pointed at the synced files — the `Apps/Contacts` app folder in
+new tab, pointed at the synced files — the `Apps/<folder>` app folder in
 Dropbox, or a filename search in Google Drive — so you can see, download, or
 manage the raw `contacts-<namespace>.json` document and its photo files
 directly. The button doesn't appear for the on-device backend: that copy lives
 in the browser's local storage and has no web location to open.
+
+The folder names default to `Contacts` but are build-time configurable via
+`VITE_DROPBOX_APP_FOLDER` and `VITE_GDRIVE_APP_FOLDER` — set them so the link
+and the displayed file location match your Dropbox app's real app folder (which
+Dropbox fixes from the app config) and the My Drive folder the app creates. See
+[configuration](../configuration.md).
 
 ## Photo files
 
