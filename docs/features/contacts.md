@@ -14,8 +14,11 @@ notes, and a photo.
   folder** each belongs to. Every folder is a section you can collapse or expand
   (all start expanded). Each row shows a larger avatar or glyph beside the name,
   with the contact's phone numbers listed under it (tap one to call) and,
-  optionally, their emails (tap to write) — toggle what shows in
-  **Settings → List**. Tap a row to open that contact's card. The **Select**
+  optionally, their emails (tap to write). On wider screens the numbers sit to
+  the right of the name; on a phone they stack under it. **Settings → List**
+  toggles what shows and picks the card size — **Compact** to fit more
+  contacts, or **Spacious** for a larger, easier-to-see photo. Tap a row to open
+  that contact's card. The **Select**
   button turns the list into a multi-select: tick as many contacts as you like,
   then **Copy** them as one vCard block to the clipboard or **Export** the
   selection to a vCard or CSV file (see [Export & import](feature:export)).

@@ -290,6 +290,11 @@ export const en = {
     },
     list: {
       intro: "How the overview List page shows each contact.",
+      densityTitle: "Card size",
+      densityCompact: "Compact",
+      densitySpacious: "Spacious",
+      densityHint:
+        "Spacious rows draw a larger photo, so a contact's picture is easier to see; compact rows fit more contacts on screen.",
       contactMethodsTitle: "Contact methods",
       showPhone: "Show phone numbers",
       showPhoneHint:

@@ -32,6 +32,7 @@ import {
   phoneOptions,
   postalOptions,
   type AppSettings,
+  type ListDensity,
 } from "../useAppSettings.ts";
 import type { ContactStore } from "../useContactStore.ts";
 import {
@@ -129,9 +130,24 @@ export function ListTab({
   update: Update;
 }) {
   const t = useT();
+  const densityOptions = [
+    { value: "compact" as const, label: t("settings.list.densityCompact") },
+    { value: "spacious" as const, label: t("settings.list.densitySpacious") },
+  ];
   return (
     <div>
       <p className="mb-3 text-xs text-muted">{t("settings.list.intro")}</p>
+      <Section title={t("settings.list.densityTitle")}>
+        <div className="flex flex-col gap-1">
+          <SegmentedControl<ListDensity>
+            value={settings.listDensity}
+            options={densityOptions}
+            onChange={(next) => update("listDensity", next)}
+            ariaLabel={t("settings.list.densityTitle")}
+          />
+          <p className="text-xs text-muted">{t("settings.list.densityHint")}</p>
+        </div>
+      </Section>
       <Section title={t("settings.list.contactMethodsTitle")}>
         <ToggleRow
           label={t("settings.list.showPhone")}

@@ -24,6 +24,10 @@ import {
 
 export type MenuMode = "swipe" | "button";
 
+/** How large the List view draws each contact row. `spacious` blows the photo
+ *  up so it's easy to see; `compact` keeps rows dense so more fit on screen. */
+export type ListDensity = "compact" | "spacious";
+
 export type AppSettings = {
   menuMode: MenuMode;
   disableAchievements: boolean;
@@ -48,6 +52,9 @@ export type AppSettings = {
   listShowPhone: boolean;
   /** Show each contact's email addresses under their name in the list view. */
   listShowEmail: boolean;
+  /** How large each contact row is in the list view (bigger photos when
+   *  spacious). */
+  listDensity: ListDensity;
 };
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -73,6 +80,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   // useful thing to glance at); email is opt-in so the rows stay compact.
   listShowPhone: true,
   listShowEmail: false,
+  // Dense by default so the overview fits as many contacts as possible; the
+  // spacious option trades that for a bigger, easier-to-see photo.
+  listDensity: "compact",
 };
 
 const STORAGE_KEY = "contacts:settings";

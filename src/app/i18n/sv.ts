@@ -285,6 +285,11 @@ export const sv: Catalog = {
     },
     list: {
       intro: "Hur översiktssidan Lista visar varje kontakt.",
+      densityTitle: "Kortstorlek",
+      densityCompact: "Kompakt",
+      densitySpacious: "Luftig",
+      densityHint:
+        "Luftiga rader ritar ett större foto så att kontaktens bild syns lättare; kompakta rader får plats med fler kontakter på skärmen.",
       contactMethodsTitle: "Kontaktvägar",
       showPhone: "Visa telefonnummer",
       showPhoneHint:

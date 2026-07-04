@@ -364,6 +364,11 @@ function ContactRow({
   const emails = settings.listShowEmail
     ? contact.emails.filter((e) => e.value.trim())
     : [];
+  // The card-size setting drives both the avatar size and the row's breathing
+  // room, so a spacious list reads bigger throughout, not just its photos.
+  const spacious = settings.listDensity === "spacious";
+  const avatarSize = spacious ? "list-spacious" : "list-compact";
+  const rowSpacing = spacious ? "gap-4 py-3" : "gap-3 py-2";
 
   const nameNode = name ? (
     <span className="truncate font-medium text-fg-bright">{name}</span>
@@ -382,14 +387,14 @@ function ContactRow({
         aria-label={t("list.selectContact", {
           name: name || t("contact.unnamed"),
         })}
-        className={`flex w-full items-center gap-3 border-b border-line px-1 py-2.5 text-left ${
+        className={`flex w-full items-center border-b border-line px-1 text-left ${rowSpacing} ${
           selected ? "bg-accent/10" : "hover:bg-surface-2"
         }`}
       >
         <span className="shrink-0" aria-hidden>
           <CheckboxGlyph checked={selected} />
         </span>
-        <Avatar contact={contact} size="header" />
+        <Avatar contact={contact} size={avatarSize} />
         <span className="flex min-w-0 flex-1 flex-col">
           {nameNode}
           <ContactMethodsText
@@ -409,33 +414,38 @@ function ContactRow({
 
   const hasMethods = phones.length > 0 || emails.length > 0;
   return (
-    <div className="flex items-center gap-3 border-b border-line px-1 py-2.5">
+    <div
+      className={`flex items-center border-b border-line px-1 ${rowSpacing}`}
+    >
       <button
         type="button"
         onClick={onOpen}
         aria-label={name || t("contact.unnamed")}
         className="shrink-0"
       >
-        <Avatar contact={contact} size="header" />
+        <Avatar contact={contact} size={avatarSize} />
       </button>
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      {/* Narrow screens stack the methods under the name; from `sm` up there's
+          room to sit them to the right of it, so the row reads on one line. */}
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
         <button
           type="button"
           onClick={onOpen}
-          className="min-w-0 text-left leading-tight"
+          className="min-w-0 text-left leading-tight sm:flex-1"
         >
           {nameNode}
         </button>
-        {/* Phone numbers (tap to call) then emails (tap to write) sit under the
-            name in smaller text — each its own link, so the row stays a plain
-            container rather than a button wrapping links. */}
+        {/* Phone numbers (tap to call) then emails (tap to write) in smaller
+            text — each its own link, so the row stays a plain container rather
+            than a button wrapping links. Left-aligned under the name on mobile,
+            right-aligned beside it on wider screens. */}
         {hasMethods ? (
-          <div className="flex min-w-0 flex-col gap-0.5">
+          <div className="flex min-w-0 flex-col gap-0.5 sm:max-w-[55%] sm:shrink-0 sm:items-end">
             {phones.map((phone) => (
               <a
                 key={phone.id}
                 href={`tel:${phone.value.replace(/\s+/g, "")}`}
-                className="w-fit max-w-full truncate text-xs text-accent hover:underline"
+                className="w-fit max-w-full truncate text-xs text-accent hover:underline sm:text-right"
               >
                 {formatPhoneValue(
                   phone.value,
@@ -448,7 +458,7 @@ function ContactRow({
               <a
                 key={email.id}
                 href={`mailto:${email.value.trim()}`}
-                className="w-fit max-w-full truncate text-xs text-muted hover:text-fg hover:underline"
+                className="w-fit max-w-full truncate text-xs text-muted hover:text-fg hover:underline sm:text-right"
               >
                 {email.value}
               </a>
@@ -456,7 +466,7 @@ function ContactRow({
           </div>
         ) : (
           !name && (
-            <span className="truncate text-xs text-muted">
+            <span className="truncate text-xs text-muted sm:shrink-0">
               {t("list.noContactMethods")}
             </span>
           )
