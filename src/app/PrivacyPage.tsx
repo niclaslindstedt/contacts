@@ -2,9 +2,10 @@
 // Standalone privacy policy, served at `/privacy` (see `main.tsx`'s path
 // switch and the `emit-privacy-alias` plugin in `vite.config.ts`). Contacts is
 // local-first — by default no backend, no accounts, no analytics — but it also
-// ships optional cloud backends (Dropbox and Google Drive) that send contact
-// data to a provider only when the user explicitly connects one, so this policy
-// covers both cases. It is English-only by design (a legal page, not chrome).
+// ships optional storage backends (a local folder, Dropbox, and Google Drive)
+// that send contact data off the browser only when the user explicitly connects
+// one, so this policy covers both cases. It is English-only by design (a legal
+// page, not chrome).
 import { ArrowLeftIcon } from "@niclaslindstedt/oss-framework/components";
 
 // Last meaningful change to the policy text below. Bump this whenever the
@@ -92,6 +93,14 @@ export function PrivacyPage() {
               transmitted anywhere.
             </li>
             <li>
+              <strong className="text-fg-bright">Local folder</strong> — your
+              address book is written as a file to a folder you pick on this
+              device, using the browser&apos;s File System Access API. The data
+              stays on your device; the folder-access grant is remembered in
+              your browser&apos;s IndexedDB so the app can reopen the folder
+              without asking again.
+            </li>
+            <li>
               <strong className="text-fg-bright">Dropbox</strong> /{" "}
               <strong className="text-fg-bright">Google Drive</strong> — only
               when you explicitly connect one, your contacts are stored in that
@@ -118,15 +127,16 @@ export function PrivacyPage() {
 
         <Section title="Network requests">
           <p>
-            With the default <em>This device</em> backend the app makes no
-            third-party network calls. The only requests your browser makes are
-            to fetch the app&apos;s own static files (HTML, JavaScript, CSS,
-            fonts, and icons) from its origin, and once loaded it works fully
-            offline as an installed PWA. The one exception is the cloud
-            backends: if — and only if — you connect Dropbox or Google Drive,
-            the app talks to that provider&apos;s API to read and write your
-            contacts. No fonts, analytics scripts, error-reporting services, or
-            advertising networks are ever loaded.
+            With the default <em>This device</em> backend — or the{" "}
+            <em>Local folder</em> backend — the app makes no third-party network
+            calls. The only requests your browser makes are to fetch the
+            app&apos;s own static files (HTML, JavaScript, CSS, fonts, and
+            icons) from its origin, and once loaded it works fully offline as an
+            installed PWA. The one exception is the cloud backends: if — and
+            only if — you connect Dropbox or Google Drive, the app talks to that
+            provider&apos;s API to read and write your contacts. No fonts,
+            analytics scripts, error-reporting services, or advertising networks
+            are ever loaded.
           </p>
         </Section>
 

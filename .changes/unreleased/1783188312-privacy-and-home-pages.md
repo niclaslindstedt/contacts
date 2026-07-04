@@ -7,8 +7,8 @@ Two no-login static pages now ship with the app:
 
 - **`/privacy`** — an English-only **privacy policy** that spells out exactly
   what the app stores, where, and when (if ever) anything leaves your device:
-  local-first by default, with optional Dropbox / Google Drive sync and
-  encryption covered in full.
+  local-first by default, with the optional local-folder, Dropbox, and Google
+  Drive backends and encryption covered in full.
 - **`/home`** — a showcase **about page** that identifies the app, describes
   what it does, and explains — transparently — why it asks for Google Drive or
   Dropbox access only when you turn on optional cloud sync. This is the page

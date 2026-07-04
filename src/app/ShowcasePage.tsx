@@ -149,9 +149,10 @@ export function ShowcasePage() {
             project authors never see your contacts.
           </p>
           <p>
-            If you want your address book on more than one device, you can{" "}
-            <em>optionally</em> point storage at a cloud backend. That choice —
-            and nothing else — is what the permission request below is about.
+            If you want your address book somewhere other than this browser, you
+            can <em>optionally</em> point storage at a folder on your computer
+            or at a cloud backend. That choice — and nothing else — is what the
+            permission request below is about.
           </p>
         </Section>
 
