@@ -20,18 +20,19 @@ export type ContactGroup = {
 };
 
 /** Group a document's active contacts by folder for the overview screen.
- *  Non-archived folders come first in document order (each shown even when
- *  empty, mirroring the side menu), then the ungrouped contacts as a trailing
- *  `null` group — only when there are any. Archived folders and archived
- *  contacts are left out; contacts within each group are sorted by display
- *  name (nameless last), the same order the side menu uses. */
+ *  Non-archived folders come first in document order, then the ungrouped
+ *  contacts as a trailing `null` group — each group shown only when it holds
+ *  at least one active contact, so empty folders drop out of the list.
+ *  Archived folders and archived contacts are left out; contacts within each
+ *  group are sorted by display name (nameless last), the same order the side
+ *  menu uses. */
 export function groupContactsByFolder(data: AppData): ContactGroup[] {
   const groups: ContactGroup[] = [];
   for (const folder of data.folders.filter((f) => !f.archived)) {
     const contacts = data.contacts
       .filter((c) => c.folderId === folder.id && !c.archived)
       .sort(compareContacts);
-    groups.push({ folder, contacts });
+    if (contacts.length > 0) groups.push({ folder, contacts });
   }
   const standalone = data.contacts
     .filter((c) => c.folderId === null && !c.archived)

@@ -73,7 +73,6 @@ export const sv: Catalog = {
     empty:
       "Inga kontakter ännu. Lägg till en från sidofältet så visas den här.",
     ungrouped: "Ingen mapp",
-    folderEmpty: "Inga kontakter i den här mappen.",
     noContactMethods: "Ingen telefon eller e-post",
     select: "Välj",
     selectAll: "Välj alla",
