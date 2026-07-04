@@ -116,6 +116,40 @@ export function GeneralTab({
   );
 }
 
+// --- List ------------------------------------------------------------------
+
+// The overview List page's display knobs: whether each row shows the contact's
+// phone numbers and / or emails under their name. Staged like the other draft
+// settings and only committed on Save.
+export function ListTab({
+  settings,
+  update,
+}: {
+  settings: AppSettings;
+  update: Update;
+}) {
+  const t = useT();
+  return (
+    <div>
+      <p className="mb-3 text-xs text-muted">{t("settings.list.intro")}</p>
+      <Section title={t("settings.list.contactMethodsTitle")}>
+        <ToggleRow
+          label={t("settings.list.showPhone")}
+          hint={t("settings.list.showPhoneHint")}
+          checked={settings.listShowPhone}
+          onChange={(next) => update("listShowPhone", next)}
+        />
+        <ToggleRow
+          label={t("settings.list.showEmail")}
+          hint={t("settings.list.showEmailHint")}
+          checked={settings.listShowEmail}
+          onChange={(next) => update("listShowEmail", next)}
+        />
+      </Section>
+    </div>
+  );
+}
+
 // --- Format ----------------------------------------------------------------
 
 const SAMPLE_DATE = "2026-07-03";

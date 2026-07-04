@@ -37,6 +37,7 @@ export const sv: Catalog = {
     contactActions: "Kontaktåtgärder",
     dropToArchive: "Släpp här för att arkivera",
     archive: "Arkiv",
+    list: "Lista",
     undo: "Ångra",
     redo: "Gör om",
     search: "Sök",
@@ -66,6 +67,23 @@ export const sv: Catalog = {
     restoreContact: "Återställ kontakt",
     delete: "Ta bort",
     rowActions: "Arkivåtgärder",
+  },
+  list: {
+    title: "Lista",
+    empty:
+      "Inga kontakter ännu. Lägg till en från sidofältet så visas den här.",
+    ungrouped: "Ingen mapp",
+    folderEmpty: "Inga kontakter i den här mappen.",
+    noContactMethods: "Ingen telefon eller e-post",
+    select: "Välj",
+    selectAll: "Välj alla",
+    selectNone: "Avmarkera alla",
+    selectContact: "Välj {name}",
+    selectedCount: "{n} valda",
+    copy: "Kopiera valda",
+    export: "Exportera valda",
+    exportVCard: "Exportera som vCard",
+    exportCsv: "Exportera som CSV",
   },
   search: {
     title: "Sök",
@@ -259,10 +277,21 @@ export const sv: Catalog = {
     tabs: {
       general: "Allmänt",
       appearance: "Utseende",
+      list: "Lista",
       format: "Format",
       storage: "Lagring",
       developer: "Utvecklare",
       logs: "Loggar",
+    },
+    list: {
+      intro: "Hur översiktssidan Lista visar varje kontakt.",
+      contactMethodsTitle: "Kontaktvägar",
+      showPhone: "Visa telefonnummer",
+      showPhoneHint:
+        "Visa varje kontakts telefonnummer under namnet. Tryck på ett för att ringa.",
+      showEmail: "Visa e-postadresser",
+      showEmailHint:
+        "Visa varje kontakts e-postadresser under namnet. Tryck på en för att skriva.",
     },
     general: {
       intro: "Allmänna inställningar för den här enheten.",

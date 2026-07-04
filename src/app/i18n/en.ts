@@ -41,6 +41,7 @@ export const en = {
     contactActions: "Contact actions",
     dropToArchive: "Drop here to archive",
     archive: "Archive",
+    list: "List",
     undo: "Undo",
     redo: "Redo",
     search: "Search",
@@ -70,6 +71,22 @@ export const en = {
     restoreContact: "Restore contact",
     delete: "Delete",
     rowActions: "Archive actions",
+  },
+  list: {
+    title: "List",
+    empty: "No contacts yet. Add one from the sidebar to see it here.",
+    ungrouped: "No folder",
+    folderEmpty: "No contacts in this folder.",
+    noContactMethods: "No phone or email",
+    select: "Select",
+    selectAll: "Select all",
+    selectNone: "Select none",
+    selectContact: "Select {name}",
+    selectedCount: "{n} selected",
+    copy: "Copy selected",
+    export: "Export selected",
+    exportVCard: "Export as vCard",
+    exportCsv: "Export as CSV",
   },
   search: {
     title: "Search",
@@ -265,10 +282,21 @@ export const en = {
     tabs: {
       general: "General",
       appearance: "Appearance",
+      list: "List",
       format: "Format",
       storage: "Storage",
       developer: "Developer",
       logs: "Logs",
+    },
+    list: {
+      intro: "How the overview List page shows each contact.",
+      contactMethodsTitle: "Contact methods",
+      showPhone: "Show phone numbers",
+      showPhoneHint:
+        "List each contact's phone numbers under their name. Tap one to call.",
+      showEmail: "Show email addresses",
+      showEmailHint:
+        "List each contact's email addresses under their name. Tap one to write.",
     },
     general: {
       intro: "General preferences for this device.",

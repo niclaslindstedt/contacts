@@ -28,6 +28,29 @@ export function PersonIcon({ className }: IconProps) {
   );
 }
 
+/** A row of lines with leading dots — the contact list / overview surface (the
+ *  side-menu button that opens the full-page list and its Settings tab). */
+export function ListIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable={false}
+      className={className}
+    >
+      <path d="M8 6h13M8 12h13M8 18h13" />
+      <circle cx="3.5" cy="6" r="1" />
+      <circle cx="3.5" cy="12" r="1" />
+      <circle cx="3.5" cy="18" r="1" />
+    </svg>
+  );
+}
+
 /** Angle brackets — the Developer surface. */
 export function CodeIcon({ className }: IconProps) {
   return (
