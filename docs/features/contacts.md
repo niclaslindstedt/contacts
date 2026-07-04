@@ -16,16 +16,16 @@ marked as a **company** rather than a person.
   can collapse or expand (all start expanded); a folder with no contacts is left
   out of the list. Each row shows a larger avatar or glyph beside the name — a
   long name **wraps onto as many lines as it needs** rather than being cut off —
-  with the contact's phone numbers listed under it (tap one to call) and,
-  optionally, their emails (tap to write). On wider screens the numbers sit to
-  the right of the name; on a phone they stack under it. **Settings → List**
-  toggles what shows and picks the card size — **Compact** to fit more
-  contacts, or **Spacious** for a larger, easier-to-see photo — and chooses which
-  number to prefer (**Private**, **Work**, or **Both**); a contact with no number
-  of the chosen type shows whatever it has, so open the card if the wrong one
-  appears. When a row shows more than one number, each leads with a small type
-  glyph — a person for Private, a briefcase for Work — the same marks the edit
-  form's type toggle uses.
+  with the contact's phone numbers under it as **pills** (tap one to call) and,
+  optionally, their emails (tap to write). Every number pill leads with a small
+  type glyph — a person for Private, a briefcase for Work — the same marks the
+  edit form's type toggle uses, so you can tell a private number from a work one
+  at a glance. On wider screens the pills sit to the right of the name; on a
+  phone they stack under it. **Settings → List** toggles what shows and picks the
+  card size — **Compact** to fit more contacts, or **Spacious** for a larger,
+  easier-to-see photo — and chooses which number to prefer (**Private**,
+  **Work**, or **Both**); a contact with no number of the chosen type shows
+  whatever it has, so open the card if the wrong one appears.
   Each row also carries a **heart** at its trailing edge — tap it to star (or
   unstar) that contact as a favorite without opening the card. Tap a row to open
   that contact's card — its header carries a **back button** to return to the

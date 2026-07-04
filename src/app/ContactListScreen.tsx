@@ -623,9 +623,6 @@ function ContactRow({
   const emails = settings.listShowEmail
     ? contact.emails.filter((e) => e.value.trim())
     : [];
-  // With more than one number on show, prefix each with its Private / Work type
-  // so it's clear which is which; a lone number needs no such label.
-  const showPhoneKind = phones.length > 1;
   // The card-size setting drives both the avatar size and the row's breathing
   // room, so a spacious list reads bigger throughout, not just its photos.
   const spacious = settings.listDensity === "spacious";
@@ -663,19 +660,12 @@ function ContactRow({
           <CheckboxGlyph checked={selected} />
         </span>
         <Avatar contact={contact} size={avatarSize} />
-        <span className="flex min-w-0 flex-1 flex-col">
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
           {nameNode}
           <ContactMethodsText
-            phones={phones.map((p) => ({
-              ...p,
-              value: formatPhoneValue(
-                p.value,
-                settings.country,
-                phoneOptions(settings),
-              ),
-            }))}
+            phones={phones}
             emails={emails.map((e) => e.value)}
-            showPhoneKind={showPhoneKind}
+            settings={settings}
           />
         </span>
       </button>
@@ -706,26 +696,24 @@ function ContactRow({
         >
           {nameNode}
         </button>
-        {/* Phone numbers (tap to call) then emails (tap to write) in smaller
-            text — each its own link, so the row stays a plain container rather
-            than a button wrapping links. Left-aligned under the name on mobile,
-            right-aligned beside it on wider screens. */}
+        {/* Phone numbers (tap to call) as Private / Work pills, then emails
+            (tap to write) as smaller links — each its own link, so the row stays
+            a plain container rather than a button wrapping links. Left-aligned
+            under the name on mobile, right-aligned beside it on wider screens. */}
         {hasMethods ? (
-          <div className="flex min-w-0 flex-col gap-0.5 sm:max-w-[55%] sm:shrink-0 sm:items-end">
-            {phones.map((phone) => (
-              <a
-                key={phone.id}
-                href={`tel:${phone.value.replace(/\s+/g, "")}`}
-                className="w-fit max-w-full truncate text-xs text-accent hover:underline sm:text-right"
-              >
-                {showPhoneKind && <PhoneKindGlyph label={phone.label} />}
-                {formatPhoneValue(
-                  phone.value,
-                  settings.country,
-                  phoneOptions(settings),
-                )}
-              </a>
-            ))}
+          <div className="flex min-w-0 flex-col gap-1 sm:max-w-[55%] sm:shrink-0 sm:items-end">
+            {phones.length > 0 && (
+              <div className="flex w-full flex-wrap gap-1 sm:justify-end">
+                {phones.map((phone) => (
+                  <PhonePill
+                    key={phone.id}
+                    phone={phone}
+                    settings={settings}
+                    interactive
+                  />
+                ))}
+              </div>
+            )}
             {emails.map((email) => (
               <a
                 key={email.id}
@@ -790,56 +778,87 @@ function FavoriteToggle({
   );
 }
 
-// The Private / Work marker for a phone number, shown as a leading glyph when a
-// row carries more than one so it's clear which is which — the same two marks
-// the edit form's type toggle uses (a person for Private, a briefcase for Work),
-// so the list reads in the app's established visual language rather than
-// spelling the type out. Muted and inline, with the type name kept for screen
-// readers and as a hover tooltip.
-function PhoneKindGlyph({ label }: { label: string | undefined }) {
+// One phone number rendered as a pill — a rounded chip that leads with the
+// contact-method glyph (a person for a Private number, a briefcase for a Work
+// one) so the type reads at a glance without spelling it out, then the
+// formatted number. The glyphs are the same two the edit form's type toggle
+// uses, so the list speaks the app's established visual language. Tap-to-call
+// on the interactive list rows; a plain, non-tappable chip while selecting,
+// where the row itself is the checkbox and there's nothing to dial. The type
+// name rides along for screen readers and as the hover tooltip.
+function PhonePill({
+  phone,
+  settings,
+  interactive = false,
+}: {
+  phone: Phone;
+  settings: AppSettings;
+  interactive?: boolean;
+}) {
   const t = useT();
-  const work = methodKind(label) === "work";
+  const work = methodKind(phone.label) === "work";
   const Icon = work ? BuildingIcon : PersonIcon;
-  const text = work ? t("contact.kindWork") : t("contact.kindPrivate");
+  const kindText = work ? t("contact.kindWork") : t("contact.kindPrivate");
+  const value = formatPhoneValue(
+    phone.value,
+    settings.country,
+    phoneOptions(settings),
+  );
+  const base =
+    "flex max-w-full items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent";
+  const body = (
+    <>
+      <Icon className="h-3 w-3 shrink-0" />
+      <span className="sr-only">{kindText}</span>
+      <span className="truncate">{value}</span>
+    </>
+  );
+  if (!interactive) {
+    return (
+      <span className={base} title={`${kindText} · ${value}`}>
+        {body}
+      </span>
+    );
+  }
   return (
-    <span className="text-muted" title={text}>
-      <Icon className="mr-0.5 inline-block h-3 w-3 align-[-0.125em]" />
-      <span className="sr-only">{text}</span>
-    </span>
+    <a
+      href={`tel:${phone.value.replace(/\s+/g, "")}`}
+      title={`${kindText} · ${value}`}
+      className={`${base} hover:bg-accent/20`}
+    >
+      {body}
+    </a>
   );
 }
 
-// The plain-text echo of a contact's methods shown under the name while
-// selecting (no links — the row is busy being a checkbox). Phones still lead
-// with their Private / Work glyph when there's more than one, matching the
-// tappable rows; the methods themselves read as text, dot-separated.
+// The echo of a contact's methods shown under the name while selecting (no
+// links — the row is busy being a checkbox). Phones read as the same Private /
+// Work pills the tappable rows use, just non-tappable; the emails follow as
+// dot-separated text.
 function ContactMethodsText({
   phones,
   emails,
-  showPhoneKind,
+  settings,
 }: {
   phones: Phone[];
   emails: string[];
-  showPhoneKind: boolean;
+  settings: AppSettings;
 }) {
   if (phones.length === 0 && emails.length === 0) return null;
-  const items: ReactNode[] = [
-    ...phones.map((phone) => (
-      <span key={`phone-${phone.id}`}>
-        {showPhoneKind && <PhoneKindGlyph label={phone.label} />}
-        {phone.value}
-      </span>
-    )),
-    ...emails.map((email, i) => <span key={`email-${i}`}>{email}</span>),
-  ];
   return (
-    <span className="truncate text-xs text-muted">
-      {items.map((item, i) => (
-        <span key={i}>
-          {i > 0 && " · "}
-          {item}
+    <span className="flex flex-col gap-1">
+      {phones.length > 0 && (
+        <span className="flex flex-wrap gap-1">
+          {phones.map((phone) => (
+            <PhonePill key={phone.id} phone={phone} settings={settings} />
+          ))}
         </span>
-      ))}
+      )}
+      {emails.length > 0 && (
+        <span className="truncate text-xs text-muted">
+          {emails.join(" · ")}
+        </span>
+      )}
     </span>
   );
 }
