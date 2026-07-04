@@ -9,7 +9,6 @@ import {
   FloatingPanel,
   FolderIcon,
   FolderOpenIcon,
-  HeartIcon,
   HelpCircleIcon,
   InlineEditRow,
   PencilIcon,
@@ -698,7 +697,7 @@ export function SideMenuContent({
           pinned last under the thumb. */}
       <div className="flex shrink-0 flex-col border-t border-line [padding-top:calc(1.25rem-var(--density-row-py))]">
         <FooterLink
-          icon={<HeartIcon className="h-5 w-5 text-danger" />}
+          icon={<FavoriteIcon filled className="h-5 w-5 text-danger" />}
           href={DONATE_URL}
           external
         >
