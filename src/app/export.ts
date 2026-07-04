@@ -63,7 +63,12 @@ export function contactToVCard(c: Contact): string {
   const lines: string[] = ["BEGIN:VCARD", "VERSION:3.0"];
   lines.push(`N:${vEscape(c.lastName)};${vEscape(c.firstName)};;;`);
   lines.push(`FN:${vEscape(displayName(c) || "Unnamed")}`);
-  if (c.company?.trim()) lines.push(`ORG:${vEscape(c.company)}`);
+  // A company card is identified by its name alone, so its ORG is that name —
+  // fall back to the display name when the `company` field wasn't filled, so a
+  // company always exports with an organisation, never an empty ORG. A person
+  // still exports ORG only when they actually have a company.
+  const org = c.isCompany ? c.company?.trim() || displayName(c) : c.company;
+  if (org?.trim()) lines.push(`ORG:${vEscape(org)}`);
   // Tell Apple/Outlook-family importers to show this card as a company rather
   // than a person, so it lands as an organisation and not "Firstname Lastname".
   if (c.isCompany) lines.push("X-ABShowAs:COMPANY");

@@ -38,8 +38,10 @@ marked as a **company** rather than a person.
   grid. Unlike the List overview, Favorites is a single **hand-orderable
   shortlist**: one flat list (not split by folder) that you arrange yourself.
   Each row carries a **grip handle** — drag a contact up or down to set the
-  order; on a touch screen, press and hold the grip to pick a row up first. The
-  same Select / Copy / Export tools are here too. Toggle a favorite anywhere it
+  order; on a touch screen, press and hold the grip to pick a row up first. A
+  thin line shows where the card will land — above or below the row you're over,
+  depending on which half you're pointing at. The same Select / Copy / Export
+  tools are here too. Toggle a favorite anywhere it
   shows: the **heart** in a contact card's header, or the heart on any List or
   Favorites row. A card opened from the Favorites page gets a back button to it,
   just like the List page. The favorite flag and its order are stored per
@@ -48,14 +50,18 @@ marked as a **company** rather than a person.
   place.
 - **Website & company.** A card can carry a **Website** — add a homepage in edit
   mode and it shows as a tap-to-open link in read mode (and exports as the vCard
-  `URL`). A **This is a company** switch turns the card into a **company**: it's
-  identified by a single company name instead of a first and last name, shows a
-  building icon in place of a monogram, and exports as an organisation so it
-  lands as a company in the address book you send it to.
+  `URL`). A **This is a company** switch — at the bottom of the edit view, beside
+  the emergency flag — turns the card into a **company**: it's identified by a
+  single company name instead of a first and last name, shows a building icon in
+  place of a monogram, and exports with its name as the organisation (`ORG`) so
+  it lands as a company in the address book you send it to. A company hides the
+  person-only fields — the birthday and the extra important dates.
 - **Private / work types.** Each phone number and email address carries a type —
-  Private or Work — chosen from a small dropdown in edit mode. The type is shown
-  as the row's label in read mode and maps onto the standard vCard TYPE on
-  export.
+  Private or Work — flipped with a small two-glyph toggle in edit mode (a person
+  for Private, a briefcase for Work); tapping a glyph flips the type without the
+  field losing focus, so you can type a number and set its type in one go. New
+  numbers and addresses default to Work. The type is shown as the row's label in
+  read mode and maps onto the standard vCard TYPE on export.
 - **Several titled addresses.** A card can hold more than one postal address — a
   home, a cabin, a workplace. Each has a free-text **Title** (defaulting to the
   "Home" placeholder) over the street / postal code / city fields. In read mode
@@ -111,10 +117,8 @@ marked as a **company** rather than a person.
   pinned to a dedicated **In case of emergency** section at the very top of the
   side menu — regardless of which folder it's filed in — so a next-of-kin or
   first responder is one tap away. The toggle lives at the **bottom of the card's
-  edit view** as a labelled switch (set it once and it stays out of the way); you
-  can also toggle it from a contact row's right-click / long-press menu (**Mark
-  as emergency contact** / **Remove emergency contact**). A flagged row wears a
-  small red siren badge wherever it appears. The flag stays in the app — it
+  edit view** as a labelled switch — set it once and it stays out of the way. A
+  flagged row wears a small red siren badge wherever it appears. The flag stays in the app — it
   isn't written to a vCard or CSV — but it's kept in the JSON backup, so a
   restore brings your emergency contacts back pinned.
 - **Archive, don't lose.** Swipe a contact right in the side menu (or drag it

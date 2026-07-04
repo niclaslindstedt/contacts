@@ -141,6 +141,17 @@ describe("contactToVCard", () => {
     expect(person).not.toContain("X-ABShowAs");
   });
 
+  it("exports a company's name as ORG even without a company field", () => {
+    // A company card whose name still lives in first/last (e.g. imported, or
+    // flagged before the name moved into `company`) should still export an
+    // organisation from its display name — never an empty/absent ORG.
+    const v = contactToVCard(
+      card({ firstName: "Ada", lastName: "Corp", isCompany: true }),
+    );
+    expect(v).toContain("ORG:Ada Corp");
+    expect(v).toContain("X-ABShowAs:COMPANY");
+  });
+
   it("skips empty optional fields entirely", () => {
     const v = contactToVCard(card());
     expect(v).not.toContain("ORG:");

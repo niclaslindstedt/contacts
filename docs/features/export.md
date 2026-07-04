@@ -9,8 +9,9 @@ selection to a vCard / CSV file:
   Imports directly into iOS Contacts, Android/Google Contacts, and Outlook. A
   phone number or email's Private / Work type maps onto the standard `TEL` /
   `EMAIL` TYPE; each address becomes its own `ADR` line (typed from its title);
-  a website exports as `URL`; a card marked as a company carries
-  `X-ABShowAs:COMPANY` so it lands as an organisation; the birthday exports as
+  a website exports as `URL`; a card marked as a company exports its name as the
+  organisation (`ORG`) and carries `X-ABShowAs:COMPANY` so it lands as an
+  organisation, not a person; the birthday exports as
   `BDAY`, and other full-date important dates ride as Apple-style grouped
   `X-ABDATE` / `X-ABLABEL` items so iOS/macOS Contacts restore them under their
   occasion.
