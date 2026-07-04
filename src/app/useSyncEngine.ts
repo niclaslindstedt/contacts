@@ -32,6 +32,11 @@ import type {
 
 import { logStore } from "./log.ts";
 import { serializeDoc } from "./migrations.ts";
+import {
+  evaluateCloudSetup,
+  summarizeDoc,
+  type CloudDocSummary,
+} from "./cloudSetup.ts";
 import { docKey, type ContactStore } from "./useContactStore.ts";
 
 // The app's real sync engine — the state machine the framework's `SyncStatus`
@@ -73,6 +78,20 @@ export const PROVIDER_NAMES: Record<Exclude<SyncBackendId, "local">, string> = {
 
 type DropboxTokens = { accessToken: string; refreshToken: string | null };
 
+/** The connect-time replace-or-adopt prompt's inputs: which provider was just
+ *  connected, and a count of what each side holds so the user can tell them
+ *  apart. The raw cloud bytes ride along so "use the cloud copy" can adopt them
+ *  without a second round-trip. */
+export type PendingCloudSetup = {
+  provider: string;
+  /** The existing cloud document's bytes, ready to adopt. */
+  remoteText: string;
+  /** What the cloud copy holds. */
+  cloud: CloudDocSummary;
+  /** What this device holds right now. */
+  local: CloudDocSummary;
+};
+
 function readBackend(): SyncBackendId {
   const raw = localStorage.getItem(BACKEND_KEY);
   return raw === "dropbox" || raw === "gdrive" ? raw : "local";
@@ -110,6 +129,13 @@ export type SyncEngine = {
   setEncrypted: (v: boolean) => void;
   /** True when the cloud copy is an envelope and no passphrase is in memory. */
   locked: boolean;
+  /** Set when a just-connected cloud backend already holds contacts that
+   *  differ from this device's — the app raises the replace-or-adopt prompt.
+   *  Null the rest of the time. Auto-save is held while it stands. */
+  pendingSetup: PendingCloudSetup | null;
+  /** Resolve the connect-time prompt: `"cloud"` adopts the existing cloud copy,
+   *  `"replace"` keeps this device's copy and overwrites the cloud. */
+  resolveSetup: (choice: "cloud" | "replace") => void;
   /** Try a passphrase against the encrypted cloud copy. Throws (and drops the
    *  passphrase again) when it doesn't decrypt — the unlock gate surfaces it. */
   unlock: (password: string) => Promise<void>;
@@ -157,6 +183,22 @@ export function useSyncEngine(
     "none" | "offline" | "auth-error" | "conflict" | "throttled" | "error"
   >("none");
   const [locked, setLocked] = useState(false);
+  // Set when a fresh cloud connect finds the backend already holds differing
+  // contacts — the replace-or-adopt prompt's inputs. Auto-save is held while it
+  // stands so an edit can't overwrite the cloud copy before the user chooses.
+  const [pendingSetup, setPendingSetup] = useState<PendingCloudSetup | null>(
+    null,
+  );
+  // Mirror of `pendingSetup` readable synchronously from `doSave` — so
+  // resolving to "replace" can clear the hold and push in the same tick without
+  // waiting for the state-driven re-render.
+  const pendingSetupRef = useRef<PendingCloudSetup | null>(null);
+  pendingSetupRef.current = pendingSetup;
+  // Marks the next adapter adoption as a fresh user-initiated connect (rather
+  // than a reboot / namespace switch / unlock), so only *that* baseline read
+  // raises the setup prompt. A ref, not state: it's set inside the connect
+  // paths and read once by the baseline effect that the same connect triggers.
+  const justConnected = useRef(false);
   // Set when a loaded cloud copy still holds inline photos (a pre-file-layout
   // document): a one-time save then files them out — see the sweep effect below.
   const [photoSweep, setPhotoSweep] = useState(false);
@@ -252,6 +294,9 @@ export function useSyncEngine(
           refreshToken: result.refreshToken ?? null,
         };
         writeDropboxTokens(tokens);
+        // Mark this adapter adoption as a fresh connect so the baseline read
+        // raises the replace-or-adopt prompt if the backend already holds data.
+        justConnected.current = true;
         setDropboxTokens(tokens);
         localStorage.setItem(BACKEND_KEY, "dropbox");
         setBackendState("dropbox");
@@ -277,12 +322,32 @@ export function useSyncEngine(
   useEffect(() => {
     if (!adapter) return;
     let cancelled = false;
+    // Consume the fresh-connect marker: only a baseline read triggered by the
+    // user just connecting gets to raise the replace-or-adopt prompt.
+    const fresh = justConnected.current;
+    justConnected.current = false;
     void (async () => {
       try {
         const snap = await adapter.load();
         if (cancelled) return;
         baseRevision.current = snap?.revision;
         setLocked(false);
+        // A fresh connect onto a backend that already holds contacts differing
+        // from this device's: don't silently pick a side — surface the choice.
+        const remote =
+          fresh && snap ? evaluateCloudSetup(snap.text, dataRef.current) : null;
+        if (remote) {
+          setPendingSetup({
+            provider:
+              PROVIDER_NAMES[backend as Exclude<SyncBackendId, "local">],
+            remoteText: snap!.text,
+            cloud: summarizeDoc(remote),
+            local: summarizeDoc(dataRef.current),
+          });
+          syncLog.info(
+            `setup: cloud holds ${remote.contacts.length} contact(s) — asking replace-or-adopt`,
+          );
+        }
         syncLog.info(
           snap
             ? `baseline: backend holds ${snap.text.length} B (rev ${snap.revision ?? "n/a"})`
@@ -316,6 +381,9 @@ export function useSyncEngine(
   const doSave = useCallback(async () => {
     // Fake-data takeover in effect — never push the in-memory sample upstream.
     if (paused) return;
+    // A connect-time replace-or-adopt choice is pending — hold the write until
+    // the user decides, so an edit can't overwrite the cloud copy first.
+    if (pendingSetupRef.current) return;
     if (!adapter || saving.current) return;
     if (encrypted && passwordRef.current === null) {
       setLocked(true);
@@ -387,6 +455,8 @@ export function useSyncEngine(
   useEffect(() => {
     if (!isCloud || !connected || !adapter || !dirty || blocked || locked)
       return;
+    // Hold auto-save while the connect-time prompt is open.
+    if (pendingSetup) return;
     const timer = window.setTimeout(() => void doSave(), SAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [
@@ -396,6 +466,7 @@ export function useSyncEngine(
     dirty,
     blocked,
     locked,
+    pendingSetup,
     store.version,
     doSave,
   ]);
@@ -410,6 +481,9 @@ export function useSyncEngine(
     if (!photoSweep) return;
     if (!isCloud || !connected || !adapter || blocked || locked || paused)
       return;
+    // Hold the sweep while the connect-time prompt is open — resolving it
+    // pushes (replace) or adopts (cloud), which settles the photos either way.
+    if (pendingSetup) return;
     if (encrypted && passwordRef.current === null) return;
     setPhotoSweep(false);
     syncLog.info("photos: cloud copy holds inline photos — filing them out");
@@ -422,6 +496,7 @@ export function useSyncEngine(
     blocked,
     locked,
     paused,
+    pendingSetup,
     encrypted,
     passwordRef,
     doSave,
@@ -453,6 +528,8 @@ export function useSyncEngine(
       setSavedVersion(store.version);
       setSaveState("saved");
       setFault("none");
+      // A backend switch retires any open connect-time prompt.
+      setPendingSetup(null);
       setBackendState(b);
     },
     [store.version],
@@ -472,6 +549,9 @@ export function useSyncEngine(
       logStore.createLogger("gdrive"),
     );
     sessionStorage.setItem(GDRIVE_TOKEN_KEY, token);
+    // Mark this adapter adoption as a fresh connect so the baseline read raises
+    // the replace-or-adopt prompt if the backend already holds data.
+    justConnected.current = true;
     setGdriveToken(token);
     setBackend("gdrive");
     syncLog.info("gdrive: connected");
@@ -530,6 +610,34 @@ export function useSyncEngine(
       }
     })();
   }, [adapter, store, encrypted, passwordRef]);
+
+  // Resolve the connect-time replace-or-adopt prompt. "cloud" adopts the
+  // existing cloud copy as the working document (the local copy steps aside);
+  // "replace" keeps this device's copy and pushes it, overwriting the cloud.
+  // Either way the baseline revision is already the cloud's (the baseline read
+  // set it), so an adopt writes nothing and a replace is accepted.
+  const resolveSetup = useCallback(
+    (choice: "cloud" | "replace") => {
+      const pending = pendingSetupRef.current;
+      if (!pending) return;
+      // Clear the hold before pushing so `doSave` isn't blocked by it.
+      pendingSetupRef.current = null;
+      setPendingSetup(null);
+      if (choice === "cloud") {
+        store.adoptRemote(pending.remoteText);
+        // `adoptRemote` bumps the edit counter once; the adopted copy IS the
+        // cloud copy, so baseline the dirty flag away.
+        setSavedVersion(versionRef.current + 1);
+        setFault("none");
+        setSaveState("saved");
+        syncLog.info("setup: adopted the existing cloud copy");
+      } else {
+        syncLog.info("setup: replacing the cloud copy with this device");
+        void doSave();
+      }
+    },
+    [store, doSave],
+  );
 
   // Try a passphrase against the encrypted cloud copy — the unlock gate's
   // callback. A wrong passphrase fails at the AES-GCM auth tag; rethrow so the
@@ -593,6 +701,8 @@ export function useSyncEngine(
     encrypted,
     setEncrypted,
     locked,
+    pendingSetup,
+    resolveSetup,
     unlock,
     connectDropbox,
     connectGdrive,

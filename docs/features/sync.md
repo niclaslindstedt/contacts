@@ -12,6 +12,23 @@ Saves are debounced, retried with backoff on transient failures, and guarded by
 optimistic concurrency — if another device saved a newer copy, the header glyph
 flags a conflict and you choose which copy wins.
 
+## Connecting a drive that already has contacts
+
+When you connect a cloud drive that **already holds an address book**, the app
+doesn't silently pick a side. If the cloud copy differs from the contacts on
+this device, a prompt opens and asks which one to keep:
+
+- **Use the cloud copy** — this device steps aside and adopts what's already on
+  the drive.
+- **Replace with this device** — your local contacts are pushed up, overwriting
+  the cloud copy.
+
+Each side shows how many contacts and folders it holds, and auto-save is held
+until you choose — so an edit can't decide for you. The prompt only appears at
+connect time: an empty drive, or one that already matches this device, connects
+without interruption. (Once connected, a later divergence between devices is a
+_conflict_, handled by the header glyph as above.)
+
 ## Photo files
 
 On a cloud drive (Dropbox or Google Drive), a contact's photos are filed out of

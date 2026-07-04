@@ -252,6 +252,15 @@ export const en = {
     checkAuthExpired:
       "Your session with {name} has expired — reconnect to continue.",
   },
+  cloudSetup: {
+    // The connect-time replace-or-adopt prompt (`CloudSetupModal`).
+    title: "{name} already has contacts",
+    hint: "This device and {name} both hold contacts. Keep one — the other is replaced. This choice only happens now, while setting up sync.",
+    thisDevice: "This device",
+    counts: "{contacts} contacts · {folders} folders",
+    useCloud: "Use the {name} copy",
+    replace: "Replace {name} with this device",
+  },
   settings: {
     tabs: {
       general: "General",
