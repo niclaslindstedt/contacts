@@ -46,6 +46,12 @@ import type {
 import { logStore } from "./log.ts";
 import { serializeDoc } from "./migrations.ts";
 import {
+  dropboxBackupStore,
+  folderBackupStore,
+  gdriveBackupStore,
+  type BackupStore,
+} from "./backup.ts";
+import {
   evaluateCloudSetup,
   summarizeDoc,
   type CloudDocSummary,
@@ -190,10 +196,23 @@ function backendWebUrl(backend: SyncBackendId, slug: string): string | null {
   return null;
 }
 
+/** Where dated backups can be written for the active backend: the byte store
+ *  scoped to its `backups/` folder plus a human name for it. Null whenever there
+ *  is nowhere off-device to file them — the local-only backend, an
+ *  unconnected/permission-lost backend, an encrypted copy (a plaintext backup
+ *  must not land beside an encrypted document), or while fake data is in play. */
+export type BackupTarget = {
+  store: BackupStore;
+  provider: string;
+};
+
 export type SyncEngine = {
   backend: SyncBackendId;
   /** Whether the active cloud backend has credentials. Always true for local. */
   connected: boolean;
+  /** The backend's `backups/` store, or null when backups can't be filed
+   *  off-device (see {@link BackupTarget}). */
+  backupTarget: BackupTarget | null;
   encrypted: boolean;
   setEncrypted: (v: boolean) => void;
   /** True when the cloud copy is an envelope and no passphrase is in memory. */
@@ -421,6 +440,51 @@ export function useSyncEngine(
     return null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [backend, dropboxTokens, gdriveToken, folderHandle, encrypted, slug]);
+
+  // Where dated backups get filed for the active backend. Only a plaintext,
+  // connected, file-backed backend qualifies: an encrypted copy is skipped so a
+  // plaintext backup zip never lands beside the AES-GCM envelope, and fake data
+  // never touches a real backend. Reuses the same byte transports the photo /
+  // attachment externalisers already drive, scoped to the `backups/` subtree.
+  const backupTarget = useMemo<BackupTarget | null>(() => {
+    if (paused || encrypted) return null;
+    if (backend === "dropbox" && dropboxTokens) {
+      const dropboxAuth = {
+        accessToken: dropboxTokens.accessToken,
+        refreshToken: dropboxTokens.refreshToken,
+        onAccessTokenRefreshed: (accessToken: string) => {
+          const next = { ...dropboxTokens, accessToken };
+          writeDropboxTokens(next);
+          setDropboxTokens(next);
+        },
+      };
+      return {
+        store: dropboxBackupStore(dropboxAuth, DROPBOX_APP_KEY || undefined),
+        provider: PROVIDER_NAMES.dropbox,
+      };
+    }
+    if (backend === "gdrive" && gdriveToken) {
+      return {
+        store: gdriveBackupStore(gdriveToken),
+        provider: PROVIDER_NAMES.gdrive,
+      };
+    }
+    if (backend === "folder" && folderHandle) {
+      return {
+        store: folderBackupStore(folderHandle, markFolderPermissionLost),
+        provider: PROVIDER_NAMES.folder,
+      };
+    }
+    return null;
+  }, [
+    backend,
+    dropboxTokens,
+    gdriveToken,
+    folderHandle,
+    encrypted,
+    paused,
+    markFolderPermissionLost,
+  ]);
 
   // Complete a Dropbox OAuth redirect: trade the `?code=` for tokens, persist
   // them, and adopt the backend. Runs once on boot when a flow is mid-flight.
@@ -942,6 +1006,7 @@ export function useSyncEngine(
   return {
     backend,
     connected,
+    backupTarget,
     encrypted,
     setEncrypted,
     locked,

@@ -463,6 +463,40 @@ export const sv: Catalog = {
       exportCsv: "Exportera CSV",
       exportJson: "Exportera JSON-säkerhetskopia",
       exportEmpty: "Inget att exportera ännu — lägg till en kontakt först.",
+      backupsTitle: "Säkerhetskopior",
+      backupsIntro:
+        "Daterade ögonblicksbilder av hela din adressbok — varje kontakt, mapp, foto och bilaga — packade i en komprimerad .zip. Anslut en lokal mapp eller molnlagring för att spara dem utanför enheten, eller ladda ner och återställ en direkt från disk.",
+      backupsOffline:
+        "Anslut en lokal mapp eller molnlagring (och stäng av kryptering) för att spara daterade säkerhetskopior utanför enheten. Du kan fortfarande ladda ner och återställa en säkerhetskopia från disk nedan.",
+      backupExport: "Ladda ner säkerhetskopia (.zip)",
+      backupImport: "Återställ från fil…",
+    },
+    backups: {
+      title: "Säkerhetskopior",
+      intro:
+        "Tidsstämplade ögonblicksbilder som skrivs till din {provider}-säkerhetskopieringsmapp. Att återställa en sparar först dina nuvarande kontakter som ett skyddsnät.",
+      backUpNow: "Säkerhetskopiera nu",
+      browse: "Bläddra bland säkerhetskopior",
+      loading: "Laddar säkerhetskopior…",
+      empty: "Inga säkerhetskopior ännu — skapa en med ”Säkerhetskopiera nu”.",
+      counts: "{contacts} kontakter · {folders} mappar",
+      download: "Ladda ner",
+      delete: "Ta bort",
+      restore: "Återställ",
+      restoreConfirmTitle: "Återställa den här säkerhetskopian?",
+      restoreConfirmBody:
+        "Dina nuvarande kontakter ersätts av den här ögonblicksbilden. En säkerhetskopia av nuvarande data sparas först som skyddsnät, så att du kan ångra detta.",
+      deleteConfirmTitle: "Ta bort den här säkerhetskopian?",
+      deleteConfirmBody:
+        "{name} tas bort permanent från säkerhetskopieringsmappen. Detta kan inte ångras.",
+      importConfirmTitle: "Återställa från den här filen?",
+      importConfirmBody:
+        "Dina nuvarande kontakter ersätts av säkerhetskopian du valde. Om en lagringsplats är ansluten sparas först en säkerhetskopia som skyddsnät.",
+      importConfirm: "Återställ",
+      imported: "Säkerhetskopia återställd.",
+      importBad: "Den filen är inte en kontaktsäkerhetskopia.",
+      gone: "Den här säkerhetskopian finns inte längre på lagringsplatsen.",
+      error: "Säkerhetskopiering misslyckades: {message}",
     },
     developer: {
       intro: "Diagnostikverktyg. Dessa stannar på den här enheten.",

@@ -115,6 +115,16 @@ for offline use, a file that can't be written stays inline rather than being
 lost, and orphaned files are pruned once a save commits. With encryption on,
 attachments stay inside the encrypted envelope instead.
 
+## Backup files
+
+Dated **backups** (see [Export & import](feature:export)) also live on a
+folder or cloud backend, under a `backups/` folder beside the document. Each is
+a self-contained, compressed `.zip` of the whole address book named
+`contacts-<namespace>-<timestamp>-c<contacts>-f<folders>.zip`; **Settings →
+Storage → Backups → Browse backups** lists, takes, downloads, and restores them.
+Because a backup is plaintext, the off-device manager is hidden while encryption
+at rest is on — downloading and restoring from disk still work.
+
 ## Encryption at rest
 
 Flip on **Encrypt the cloud copy** and what lands on the backend is an AES-GCM
