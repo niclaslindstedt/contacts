@@ -233,6 +233,8 @@ export function useContactStore(
         firstName: d.firstName,
         lastName: d.lastName,
         ...(d.company ? { company: d.company } : {}),
+        ...(d.isCompany ? { isCompany: true } : {}),
+        ...(d.homepage ? { homepage: d.homepage } : {}),
         phones: d.phones.map((p) => ({ ...p, id: freshId("phone") })),
         emails: d.emails.map((e) => ({ ...e, id: freshId("email") })),
         addresses: d.addresses.map((a) => ({ ...a, id: freshId("address") })),
@@ -244,6 +246,14 @@ export function useContactStore(
         ...(d.notes ? { notes: d.notes } : {}),
         ...(d.photo
           ? { photos: [{ id: freshId("photo"), photo: d.photo }] }
+          : {}),
+        ...(d.attachments && d.attachments.length > 0
+          ? {
+              attachments: d.attachments.map((a) => ({
+                ...a,
+                id: freshId("attach"),
+              })),
+            }
           : {}),
         ...(d.ice ? { ice: true } : {}),
         folderId: null,
@@ -296,6 +306,24 @@ export function useContactStore(
         ...data,
         contacts,
         activeContactId: nextActiveId(contacts, data.activeContactId),
+      });
+    },
+    [commit, data],
+  );
+
+  // Save the hand-picked order of the Favorites page. `orderedIds` is the full
+  // favorites list in its new order (top to bottom); each card's
+  // `favoriteOrder` is set to its index so the order persists and syncs like
+  // any edit. A card not in the list is left untouched. Undoable — one step per
+  // settled drag.
+  const reorderFavorites = useCallback(
+    (orderedIds: readonly string[]) => {
+      const rank = new Map(orderedIds.map((id, i) => [id, i]));
+      commit({
+        ...data,
+        contacts: data.contacts.map((c) =>
+          rank.has(c.id) ? { ...c, favoriteOrder: rank.get(c.id) } : c,
+        ),
       });
     },
     [commit, data],
@@ -556,6 +584,7 @@ export function useContactStore(
     archiveContact,
     unarchiveContact,
     toggleContactIce,
+    reorderFavorites,
     sweepAutoArchive,
     addFolder,
     renameFolder,

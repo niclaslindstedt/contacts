@@ -16,13 +16,14 @@ import { ContactEditView } from "./ContactEditView.tsx";
 import { ContactIdentity } from "./ContactIdentity.tsx";
 import { ContactPhotoDropZone } from "./ContactPhotoDropZone.tsx";
 import { ContactReadView } from "./ContactReadView.tsx";
-import { DownloadIcon, FavoriteIcon, IceIcon } from "./icons.tsx";
+import { DownloadIcon, FavoriteIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { contactToVCard, exportFileStem } from "./export.ts";
 import { downloadText, MIME_VCARD } from "./download.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { SyncEngine } from "./useSyncEngine.ts";
 import { hasAddress } from "./address.ts";
+import { hasAttachments } from "./attachments.ts";
 import { hasPhoto } from "./contactPhotos.ts";
 import { isValidFlexDate } from "./importantDates.ts";
 import type { AppSettings } from "./useAppSettings.ts";
@@ -164,28 +165,10 @@ function ContactCard({
           )}
         </button>
 
-        {/* Mark this card as an in-case-of-emergency contact — pins it to the
-            top of the side menu. Filled red when on. */}
-        <button
-          type="button"
-          onClick={() => updateContact(contact.id, { ice: !contact.ice })}
-          title={contact.ice ? t("contact.unmarkIce") : t("contact.markIce")}
-          aria-label={
-            contact.ice ? t("contact.unmarkIce") : t("contact.markIce")
-          }
-          aria-pressed={contact.ice ?? false}
-          className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border ${
-            contact.ice
-              ? "border-danger bg-danger/15 text-danger"
-              : "border-line text-muted hover:bg-surface-2 hover:text-fg"
-          }`}
-        >
-          <IceIcon className="h-4 w-4" />
-        </button>
-
         {/* Star this card as a favorite — it gathers on the Favorites page.
-            Filled accent heart when starred, a hollow one otherwise. Sits next
-            to the emergency toggle so the two per-card flags read as a pair. */}
+            Filled accent heart when starred, a hollow one otherwise. The
+            emergency (ICE) flag used to sit beside this; it now lives at the
+            bottom of edit mode, where it's set once rather than always on show. */}
         <button
           type="button"
           onClick={() =>
@@ -276,10 +259,12 @@ function isEmptyContact(c: Contact): boolean {
     c.phones.length === 0 &&
     c.emails.length === 0 &&
     !c.company?.trim() &&
+    !c.homepage?.trim() &&
     !c.addresses.some(hasAddress) &&
     !c.birthday?.trim() &&
     !c.importantDates.some((d) => isValidFlexDate(d.date)) &&
     !c.notes?.trim() &&
-    !hasPhoto(c)
+    !hasPhoto(c) &&
+    !hasAttachments(c)
   );
 }

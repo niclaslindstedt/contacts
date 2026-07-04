@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 
 import {
   Button,
@@ -11,12 +11,24 @@ import {
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
 
+import {
+  attachmentList,
+  formatFileSize,
+  isImageAttachment,
+  withAttachmentAdded,
+  withAttachmentRemoved,
+  withAttachmentUpdated,
+} from "./attachments.ts";
 import { autoArchiveAction, defaultAutoArchiveDate } from "./autoArchive.ts";
+import { filesToAttachments } from "./attachmentIntake.ts";
+import { FileIcon, UploadIcon } from "./icons.tsx";
 import { isValidFlexDate, parseFlexDate } from "./importantDates.ts";
+import { log } from "./log.ts";
 import { useLang, useT } from "./i18n/index.ts";
 import { freshId } from "./useContactStore.ts";
 import type {
   Address,
+  Attachment,
   AutoArchiveAction,
   Contact,
   ContactMethodKind,
@@ -87,18 +99,37 @@ export function ContactEditView({
         {/* The name lives in the identity block above (tap it to rename), so
             the details grid opens straight at company and birthday rather than
             repeating first / last name here. */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <LabeledInput
-            label={t("contact.company")}
-            value={contact.company ?? ""}
-            onCommit={(company) => updateContact(contact.id, { company })}
+        <div className="flex flex-col gap-3">
+          <ToggleRow
+            label={t("contact.companyToggle")}
+            hint={t("contact.companyToggleHint")}
+            checked={!!contact.isCompany}
+            onChange={(on) => toggleCompany(contact, on, updateContact)}
           />
-          <LabeledInput
-            label={t("contact.birthday")}
-            value={contact.birthday ?? ""}
-            type="date"
-            onCommit={(birthday) => updateContact(contact.id, { birthday })}
-          />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {/* A company's name is edited above (the identity block), so the
+                redundant Company field only shows for a person. */}
+            {!contact.isCompany && (
+              <LabeledInput
+                label={t("contact.company")}
+                value={contact.company ?? ""}
+                onCommit={(company) => updateContact(contact.id, { company })}
+              />
+            )}
+            <LabeledInput
+              label={t("contact.homepage")}
+              value={contact.homepage ?? ""}
+              type="url"
+              placeholder={t("contact.homepagePlaceholder")}
+              onCommit={(homepage) => updateContact(contact.id, { homepage })}
+            />
+            <LabeledInput
+              label={t("contact.birthday")}
+              value={contact.birthday ?? ""}
+              type="date"
+              onCommit={(birthday) => updateContact(contact.id, { birthday })}
+            />
+          </div>
         </div>
       </Section>
 
@@ -122,11 +153,54 @@ export function ContactEditView({
         />
       </Section>
 
+      <Section title={t("contact.attachments")}>
+        <AttachmentRows contact={contact} updateContact={updateContact} />
+      </Section>
+
       <Section title={t("contact.autoArchive")}>
         <AutoArchiveRow contact={contact} updateContact={updateContact} />
       </Section>
+
+      {/* The in-case-of-emergency flag lives here at the bottom of edit mode —
+          set once and out of the way — rather than always on show in the card
+          header. A flagged card still pins to the top of the side menu. */}
+      <Section title={t("menu.emergency")}>
+        <ToggleRow
+          label={t("contact.iceToggle")}
+          hint={t("contact.iceToggleHint")}
+          checked={!!contact.ice}
+          onChange={(on) => updateContact(contact.id, { ice: on })}
+        />
+      </Section>
     </div>
   );
+}
+
+// Flip a card between person and company. Turning it on, when the company name
+// is still blank, promotes whatever name the card already had into the company
+// field (and clears the first/last split) so a "Jane's Café" typed as a person
+// isn't lost — the identity block then edits that one company name. Turning it
+// off just drops the flag; the company text stays put.
+function toggleCompany(
+  contact: Contact,
+  on: boolean,
+  updateContact: (id: string, patch: Partial<Contact>) => void,
+): void {
+  if (!on) {
+    updateContact(contact.id, { isCompany: false });
+    return;
+  }
+  const name = [contact.firstName, contact.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const patch: Partial<Contact> = { isCompany: true };
+  if (!contact.company?.trim() && name) {
+    patch.company = name;
+    patch.firstName = "";
+    patch.lastName = "";
+  }
+  updateContact(contact.id, patch);
 }
 
 // The auto-archive control: a toggle that arms a self-filing schedule, and —
@@ -197,6 +271,149 @@ function AutoArchiveRow({
           </label>
         </div>
       )}
+    </div>
+  );
+}
+
+// The attachments editor: upload files (a menu, a contract, a photo of a
+// document), each with an optional description. Images preview as a thumbnail;
+// everything else wears a file glyph. The picker reads each file to bytes and
+// appends it; oversized / unreadable files are refused with an inline note
+// rather than dropped silently. Each add / describe / remove is one undoable
+// store step, like every other field.
+function AttachmentRows({
+  contact,
+  updateContact,
+}: {
+  contact: Contact;
+  updateContact: (id: string, patch: Partial<Contact>) => void;
+}) {
+  const t = useT();
+  const rows = attachmentList(contact);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [rejected, setRejected] = useState<string[]>([]);
+
+  const pick = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setBusy(true);
+    setRejected([]);
+    try {
+      const { attachments, rejected: refused } = await filesToAttachments(
+        Array.from(files),
+      );
+      if (refused.length > 0) {
+        setRejected(refused.map((r) => r.name));
+        for (const r of refused) {
+          log.warn(`attachment: refused ${r.name} (${r.reason})`);
+        }
+      }
+      // Append the whole batch as one edit, threading each add so several files
+      // picked at once all land.
+      let patch: Partial<Contact> = {};
+      let next = contact;
+      for (const a of attachments) {
+        patch = withAttachmentAdded(next, a);
+        next = { ...next, ...patch };
+      }
+      if (attachments.length > 0) updateContact(contact.id, patch);
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      {rows.map((attachment) => (
+        <AttachmentEditRow
+          key={attachment.id}
+          attachment={attachment}
+          onDescribe={(description) =>
+            updateContact(
+              contact.id,
+              withAttachmentUpdated(contact, attachment.id, { description }),
+            )
+          }
+          onRemove={() =>
+            updateContact(
+              contact.id,
+              withAttachmentRemoved(contact, attachment.id),
+            )
+          }
+        />
+      ))}
+      {rejected.length > 0 && (
+        <p className="text-xs text-danger">
+          {t("contact.attachmentTooLarge", { names: rejected.join(", ") })}
+        </p>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(e) => void pick(e.target.files)}
+      />
+      <Button
+        variant="ghost"
+        className="self-start"
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+      >
+        <span className="flex items-center gap-1.5">
+          <UploadIcon className="h-4 w-4" />
+          {busy ? t("contact.attachmentReading") : t("contact.addAttachment")}
+        </span>
+      </Button>
+    </div>
+  );
+}
+
+// One attachment in the editor: a thumbnail (images) or file glyph beside the
+// name and size, a description field, and the trash.
+function AttachmentEditRow({
+  attachment,
+  onDescribe,
+  onRemove,
+}: {
+  attachment: Attachment;
+  onDescribe: (description: string) => void;
+  onRemove: () => void;
+}) {
+  const t = useT();
+  const size = formatFileSize(attachment.size);
+  return (
+    <div className="flex flex-col gap-2 rounded-md border border-line bg-surface-1 p-2.5">
+      <div className="flex items-center gap-2">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-line bg-surface-2 text-muted">
+          {isImageAttachment(attachment) && attachment.data ? (
+            <img
+              src={attachment.data}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <FileIcon className="h-5 w-5" />
+          )}
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-sm text-fg [overflow-wrap:anywhere]">
+            {attachment.name}
+          </span>
+          {size && <span className="text-xs text-muted">{size}</span>}
+        </span>
+        <RemoveButton
+          label={t("contact.removeAttachment")}
+          onClick={onRemove}
+        />
+      </div>
+      <LabeledInput
+        label={t("contact.attachmentDescription")}
+        value={attachment.description ?? ""}
+        placeholder={t("contact.attachmentDescriptionPlaceholder")}
+        onCommit={onDescribe}
+      />
     </div>
   );
 }

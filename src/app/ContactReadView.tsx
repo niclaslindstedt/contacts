@@ -4,11 +4,19 @@ import { useState, type ReactNode } from "react";
 import {
   ArchiveIcon,
   Button,
+  ExternalLinkIcon,
   PencilIcon,
   Section,
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
 
+import {
+  attachmentList,
+  formatFileSize,
+  isImageAttachment,
+  isViewableAttachment,
+} from "./attachments.ts";
+import { downloadAttachment, openAttachment } from "./attachmentView.ts";
 import { autoArchiveAction } from "./autoArchive.ts";
 import { addressLines, hasAddress, mapsUrl } from "./address.ts";
 import { ageOn, daysUntilBirthday } from "./birthday.ts";
@@ -24,11 +32,16 @@ import {
 import {
   BuildingIcon,
   CalendarIcon,
+  DownloadIcon,
+  FileIcon,
   GiftIcon,
+  GlobeIcon,
   MailIcon,
   MapPinIcon,
   PhoneIcon,
 } from "./icons.tsx";
+import { PhotoViewer } from "./PhotoViewer.tsx";
+import { displayUrl, normalizeUrl } from "./url.ts";
 import { useT } from "./i18n/index.ts";
 import { formatDate } from "./format.ts";
 import { formatPhoneValue, formatPostalValue } from "./countries/index.ts";
@@ -37,7 +50,7 @@ import {
   postalOptions,
   type AppSettings,
 } from "./useAppSettings.ts";
-import type { Address, Contact, ImportantDate } from "./types.ts";
+import type { Address, Attachment, Contact, ImportantDate } from "./types.ts";
 import { displayName, methodKind } from "./types.ts";
 
 type Translate = ReturnType<typeof useT>;
@@ -64,11 +77,15 @@ export function ContactReadView({
 
   const phones = contact.phones.filter((p) => p.value.trim());
   const emails = contact.emails.filter((e) => e.value.trim());
-  const company = contact.company?.trim();
+  // A company card is titled by its company name in the identity block above, so
+  // don't repeat it as a detail row; a person still shows their company here.
+  const company = contact.isCompany ? "" : contact.company?.trim();
+  const homepage = contact.homepage?.trim();
   const birthday = contact.birthday?.trim();
   const addresses = contact.addresses.filter(hasAddress);
   const dates = contact.importantDates.filter((d) => isValidFlexDate(d.date));
   const notes = contact.notes?.trim();
+  const attachments = attachmentList(contact);
   // A valid, full-ISO auto-archive date drives the schedule banner; a
   // half-typed value stays hidden until it's a real date.
   const autoArchiveDate = contact.autoArchiveDate?.trim();
@@ -78,12 +95,13 @@ export function ContactReadView({
       : null;
 
   const hasContactMethods = phones.length > 0 || emails.length > 0;
-  const hasDetails = !!company || !!birthday || dates.length > 0;
+  const hasDetails = !!company || !!homepage || !!birthday || dates.length > 0;
   const isEmpty =
     !hasContactMethods &&
     !hasDetails &&
     addresses.length === 0 &&
     !notes &&
+    attachments.length === 0 &&
     !scheduled;
 
   if (isEmpty) {
@@ -141,6 +159,15 @@ export function ContactReadView({
                 value={company}
               />
             )}
+            {homepage && (
+              <ActionRow
+                href={normalizeUrl(homepage)}
+                icon={<GlobeIcon className="h-4 w-4" />}
+                label={t("contact.homepage")}
+                value={displayUrl(homepage)}
+                external
+              />
+            )}
             {birthday && (
               <BirthdayRow
                 iso={birthday}
@@ -179,6 +206,12 @@ export function ContactReadView({
           <p className="rounded-md border border-line bg-surface-1 px-3 py-2.5 text-sm whitespace-pre-line text-fg">
             {notes}
           </p>
+        </Section>
+      )}
+
+      {attachments.length > 0 && (
+        <Section title={t("contact.attachments")}>
+          <AttachmentsSection attachments={attachments} />
         </Section>
       )}
 
@@ -248,16 +281,20 @@ function ActionRow({
   icon,
   label,
   value,
+  external = false,
 }: {
   href: string;
   icon: ReactNode;
   label: string;
   value: string;
+  // A website link opens in a new tab; a tel:/mailto: stays in-page.
+  external?: boolean;
 }) {
   return (
     <a
       href={href}
       title={value}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
       className="group flex items-center gap-3 rounded-md px-2 py-2 hover:bg-surface-2"
     >
       <IconBadge>{icon}</IconBadge>
@@ -487,6 +524,123 @@ function countdownLabel(days: number, t: Translate): string {
   if (days === 0) return t("contact.birthdayToday");
   if (days === 1) return t("contact.birthdayTomorrow");
   return t("contact.birthdayInDays", { n: String(days) });
+}
+
+// The read-view attachments block. Image attachments show as a thumbnail grid
+// that opens the same full-screen lightbox the profile photos use (tap a
+// thumbnail to expand, swipe between them); everything else lists as a file row
+// that opens (a PDF, in a new tab) or downloads (anything else) on tap. Each
+// attachment's optional description reads under it.
+function AttachmentsSection({ attachments }: { attachments: Attachment[] }) {
+  const t = useT();
+  const images = attachments.filter((a) => isImageAttachment(a) && a.data);
+  const files = attachments.filter((a) => !isImageAttachment(a));
+  const imageSrcs = images.map((a) => a.data as string);
+  // Which image the lightbox opens on, or null when closed.
+  const [viewerAt, setViewerAt] = useState<number | null>(null);
+
+  return (
+    <div className="flex flex-col gap-3">
+      {images.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {images.map((attachment, i) => {
+            const caption = attachment.description?.trim();
+            return (
+              <figure key={attachment.id} className="m-0 flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => setViewerAt(i)}
+                  title={caption || attachment.name}
+                  aria-label={t("contact.viewAttachment", {
+                    name: caption || attachment.name,
+                  })}
+                  className="aspect-square cursor-zoom-in overflow-hidden rounded-md border border-line bg-surface-2 hover:opacity-90"
+                >
+                  <img
+                    src={attachment.data as string}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                </button>
+                {caption && (
+                  <figcaption
+                    className="truncate text-xs text-muted"
+                    title={caption}
+                  >
+                    {caption}
+                  </figcaption>
+                )}
+              </figure>
+            );
+          })}
+        </div>
+      )}
+
+      {files.length > 0 && (
+        <div className="flex flex-col gap-1">
+          {files.map((attachment) => (
+            <FileAttachmentRow key={attachment.id} attachment={attachment} />
+          ))}
+        </div>
+      )}
+
+      {viewerAt !== null && imageSrcs.length > 0 && (
+        <PhotoViewer
+          photos={imageSrcs}
+          startIndex={viewerAt}
+          onClose={() => setViewerAt(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// One non-image attachment as a tappable row: a file glyph, the name over the
+// size and any description, and a trailing mark for what the tap does — open in
+// a new tab for a viewable file (a PDF), or download for everything else.
+function FileAttachmentRow({ attachment }: { attachment: Attachment }) {
+  const t = useT();
+  const viewable = isViewableAttachment(attachment);
+  const size = formatFileSize(attachment.size);
+  const description = attachment.description?.trim();
+  const act = () => {
+    // A viewable file opens in a new tab; if its bytes aren't ready (e.g. not
+    // yet pulled from a cloud file) fall back to a download. Non-viewable files
+    // download outright.
+    if (viewable && openAttachment(attachment)) return;
+    downloadAttachment(attachment);
+  };
+  return (
+    <button
+      type="button"
+      onClick={act}
+      title={
+        viewable ? t("contact.openAttachment") : t("contact.downloadAttachment")
+      }
+      className="group flex items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-surface-2"
+    >
+      <IconBadge>
+        <FileIcon className="h-4 w-4" />
+      </IconBadge>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-sm text-fg [overflow-wrap:anywhere]">
+          {attachment.name}
+        </span>
+        {(description || size) && (
+          <span className="truncate text-xs text-muted">
+            {[description, size].filter(Boolean).join(" · ")}
+          </span>
+        )}
+      </span>
+      <span className="shrink-0 text-muted group-hover:text-fg">
+        {viewable ? (
+          <ExternalLinkIcon className="h-4 w-4" />
+        ) : (
+          <DownloadIcon className="h-4 w-4" />
+        )}
+      </span>
+    </button>
+  );
 }
 
 // An address row. Same shape as an action row — the whole row is a link — but

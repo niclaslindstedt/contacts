@@ -86,11 +86,18 @@ export function ContactIdentity({
         editingName ? (
           <h1 className="w-full max-w-xs" ref={nameEditRef}>
             <InlineEditField
-              initial={name}
+              // A company is one name, not a first/last split — edit the company
+              // field directly; a person still splits into first and last.
+              initial={contact.isCompany ? (contact.company ?? "") : name}
               ariaLabel={t("contact.renameContact")}
               className="w-full border-0 bg-transparent p-0 text-center text-2xl font-bold tracking-wide text-fg-bright outline-none"
               onCommit={(full) => {
-                updateContact(contact.id, splitFullName(full));
+                updateContact(
+                  contact.id,
+                  contact.isCompany
+                    ? { company: full.trim() }
+                    : splitFullName(full),
+                );
                 setEditingName(false);
               }}
               onCancel={() => setEditingName(false)}

@@ -70,9 +70,9 @@ Enter — and start filling in the card.
 - **Organise** — drag a contact into a folder, onto another namespace, or onto
   Archive. Swipe right on a row to archive, left to delete. Everything is one
   Undo away (Ctrl/Cmd-Z).
-- **In case of emergency** — flag a contact with the siren button in its header
-  (or from a row's menu) to pin it to an **In case of emergency** section at the
-  top of the sidebar, in reach no matter which folder it lives in.
+- **In case of emergency** — flip the emergency switch at the bottom of a card's
+  edit view (or use a row's menu) to pin it to an **In case of emergency**
+  section at the top of the sidebar, in reach no matter which folder it lives in.
 - **Read & edit** — a contact opens in read mode, laid out to scan; the pencil
   in the toolbar flips it into edit mode (and the check flips it back). Tappable
   phone and email rows — each typed Private or Work — call and compose straight
@@ -87,8 +87,16 @@ Enter — and start filling in the card.
   gallery; only the current face exports to a vCard. On a cloud drive each photo
   is filed at `photos/<name>-<id>-<photoId>.jpg`.
 - **Favorites** — tap the heart on a contact's card (or on any List row) to star
-  it; the **Favorites** button in the action grid opens a folder-grouped page of
-  just the starred contacts.
+  it; the **Favorites** button in the action grid opens a flat shortlist of just
+  the starred contacts that you **drag to reorder** (grab the grip on a row).
+- **Website & company** — add a homepage in edit mode (it becomes a tap-to-open
+  link and exports as the vCard `URL`), and flip **This is a company** to turn a
+  card into an organisation — one company name, a building icon, exported so it
+  lands as a company.
+- **Attachments** — clip files to a contact (a menu, a contract, a scanned
+  card), each with an optional description. Images show as thumbnails you tap to
+  expand; PDFs open in a tab, other files download. On a cloud drive they're
+  filed under `attachments/` as real, previewable files.
 - **Search** — the magnifier in the action grid; matches names, numbers,
   emails, addresses, and notes (`*`/`?` wildcards, `/regex/`).
 - **Export** — the download button in the card header (single vCard) or

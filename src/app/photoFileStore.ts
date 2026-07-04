@@ -27,12 +27,15 @@ import {
 import { logStore } from "./log.ts";
 
 /** A byte-level file store: the same shape as the framework's `FileStore` but
- *  `read`/`write` deal in raw bytes rather than text, so image files stay
- *  binary end to end. */
+ *  `read`/`write` deal in raw bytes rather than text, so image (and, for
+ *  attachments, arbitrary) files stay binary end to end. `write` takes an
+ *  optional MIME type so a filed attachment lands with the right content type
+ *  (a `.pdf` reads as a PDF in the drive, not a JPEG); it defaults to
+ *  `image/jpeg`, the photo case. */
 export type PhotoFileStore = {
   list(): Promise<string[]>;
   read(path: string): Promise<Uint8Array | null>;
-  write(path: string, bytes: Uint8Array): Promise<void>;
+  write(path: string, bytes: Uint8Array, mime?: string): Promise<void>;
   remove(path: string): Promise<void>;
 };
 
@@ -89,6 +92,9 @@ export function dropboxPhotoFileStore(
       }
       return new Uint8Array(await res.arrayBuffer());
     },
+    // Dropbox stores the bytes verbatim and infers the type from the path's
+    // extension, so the upload body is always octet-stream — the `mime` hint is
+    // unused here (it matters only for the Drive content type).
     async write(path, bytes) {
       const res = await authed(DROPBOX_UPLOAD, (t) => ({
         method: "POST",
@@ -211,7 +217,7 @@ export function gdrivePhotoFileStore(token: string): PhotoFileStore {
         throw driveError("download", res.status, await readErrorBody(res));
       return new Uint8Array(await res.arrayBuffer());
     },
-    async write(path, bytes) {
+    async write(path, bytes, mime) {
       const { dir, name } = split(path);
       const dirId = await resolveDir(dir, true);
       if (!dirId) throw new Error(`Google Drive: cannot resolve ${dir}`);
@@ -220,10 +226,12 @@ export function gdrivePhotoFileStore(token: string): PhotoFileStore {
       );
       // Upload the raw bytes: PATCH an existing file's media, or create the file
       // (metadata first, so it lands with the right name/parent) then its media.
+      // The content type defaults to JPEG (the photo case); an attachment passes
+      // its own so a filed PDF is stored as a PDF.
       const id = existing ?? (await createEmpty(dirId, name));
       const res = await fetch(`${DRIVE_UPLOAD}/${id}?uploadType=media`, {
         method: "PATCH",
-        headers: { ...auth(), "Content-Type": JPEG_MIME },
+        headers: { ...auth(), "Content-Type": mime ?? JPEG_MIME },
         body: bytes as BodyInit,
       });
       if (!res.ok)

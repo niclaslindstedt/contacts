@@ -63,6 +63,42 @@ export function listedContacts(groups: readonly ContactGroup[]): Contact[] {
   return groups.flatMap((g) => g.contacts);
 }
 
+/** The Favorites page's shortlist: every active, starred contact as one flat
+ *  list in the user's hand-picked order (see `favoriteOrder`). A card that has
+ *  been placed sorts by its saved position; one that never has sorts after the
+ *  placed cards, by display name — so a brand-new favorite lands at the bottom
+ *  until it's dragged into place. Unlike the folder-grouped List, favorites are
+ *  a single ordered list so they can be reordered freely across folders. */
+export function favoriteContacts(data: AppData): Contact[] {
+  return data.contacts
+    .filter((c) => !c.archived && c.favorite)
+    .sort((a, b) => {
+      const ao = a.favoriteOrder ?? Number.POSITIVE_INFINITY;
+      const bo = b.favoriteOrder ?? Number.POSITIVE_INFINITY;
+      if (ao !== bo) return ao - bo;
+      return compareContacts(a, b);
+    });
+}
+
+/** Move `dragId` to sit where `targetId` is, returning the reordered id list —
+ *  the drop behind a Favorites drag-to-reorder gesture. The dragged id is
+ *  lifted out and re-inserted at the target's position, so dropping a card onto
+ *  one above it lands it above, and onto one below lands it below. A no-op
+ *  (same list) when either id is missing or they're the same. */
+export function reorderIds(
+  ids: readonly string[],
+  dragId: string,
+  targetId: string,
+): string[] {
+  if (dragId === targetId) return [...ids];
+  const from = ids.indexOf(dragId);
+  const to = ids.indexOf(targetId);
+  if (from === -1 || to === -1) return [...ids];
+  const next = ids.filter((id) => id !== dragId);
+  next.splice(to, 0, dragId);
+  return next;
+}
+
 /** Every non-archived contact flagged **in case of emergency**, in display
  *  order — the pinned list the side menu floats to the very top so an
  *  emergency contact is reachable at a glance, no matter which folder it's

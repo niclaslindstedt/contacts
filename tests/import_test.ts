@@ -154,6 +154,21 @@ describe("parseVCards", () => {
     expect(c!.firstName).toBe("Åsa");
   });
 
+  it("reads URL into homepage and X-ABShowAs:COMPANY into isCompany", () => {
+    const vcf = [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      "FN:Acme Inc",
+      "ORG:Acme Inc",
+      "X-ABShowAs:COMPANY",
+      "URL:https://acme.example",
+      "END:VCARD",
+    ].join("\r\n");
+    const [c] = parseVCards(vcf);
+    expect(c!.isCompany).toBe(true);
+    expect(c!.homepage).toBe("https://acme.example");
+  });
+
   it("drops empty or contentless cards", () => {
     const vcf =
       "BEGIN:VCARD\r\nVERSION:3.0\r\nEND:VCARD\r\n" +
@@ -236,6 +251,38 @@ describe("parseJson", () => {
     const cards = parseJson(serializeDoc(doc));
     expect(cards.find((c) => c.firstName === "Ada")?.ice).toBe(true);
     expect(cards.find((c) => c.firstName === "Bob")?.ice).toBeUndefined();
+  });
+
+  it("round-trips homepage, the company flag, and attachments", () => {
+    const doc: AppData = {
+      folders: [],
+      contacts: [
+        card({
+          id: "a",
+          firstName: "",
+          lastName: "",
+          company: "Acme Inc",
+          isCompany: true,
+          homepage: "https://acme.example",
+          attachments: [
+            {
+              id: "att1",
+              name: "menu.pdf",
+              mime: "application/pdf",
+              data: "data:application/pdf;base64,SGVsbG8=",
+              description: "Lunch menu",
+            },
+          ],
+        }),
+      ],
+      activeContactId: "a",
+    };
+    const [back] = parseJson(serializeDoc(doc));
+    expect(back!.isCompany).toBe(true);
+    expect(back!.homepage).toBe("https://acme.example");
+    expect(back!.attachments).toHaveLength(1);
+    expect(back!.attachments![0]!.name).toBe("menu.pdf");
+    expect(back!.attachments![0]!.description).toBe("Lunch menu");
   });
 });
 

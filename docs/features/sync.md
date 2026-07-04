@@ -73,6 +73,18 @@ This applies to the **plaintext** cloud copy only. With encryption on (below),
 photos stay inside the encrypted envelope rather than as separate plaintext
 image files on the drive.
 
+## Attachment files
+
+Contact **attachments** (see [Contact cards](feature:contacts)) are filed out
+the same way. On a cloud drive each attachment's bytes move into their own file
+under `attachments/<name>-<id>-<attachId>.<ext>`, keeping the original file
+extension so what lands on the drive is a genuine, previewable file (a `.pdf` is
+a PDF), and the synced document carries only the path — not the file bytes — so
+it stays small. As with photos, the copy on this device keeps attachments inline
+for offline use, a file that can't be written stays inline rather than being
+lost, and orphaned files are pruned once a save commits. With encryption on,
+attachments stay inside the encrypted envelope instead.
+
 ## Encryption at rest
 
 Flip on **Encrypt the cloud copy** and what lands on the drive is an AES-GCM

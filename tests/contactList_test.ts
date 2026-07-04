@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   emergencyContacts,
+  favoriteContacts,
   groupContactsByFolder,
   listedContacts,
   prioritizePhones,
+  reorderIds,
 } from "../src/app/contactList.ts";
 import type { AppData, Contact, Folder, Phone } from "../src/app/types.ts";
 
@@ -213,5 +215,58 @@ describe("listedContacts", () => {
     });
     const flat = listedContacts(groupContactsByFolder(data));
     expect(flat.map((c) => c.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("favoriteContacts", () => {
+  it("keeps only active, starred cards", () => {
+    const data = doc({
+      contacts: [
+        card({ id: "a", firstName: "Ada", favorite: true }),
+        card({ id: "b", firstName: "Bob" }),
+        card({ id: "c", firstName: "Cy", favorite: true, archived: true }),
+      ],
+    });
+    expect(favoriteContacts(data).map((c) => c.id)).toEqual(["a"]);
+  });
+
+  it("orders by favoriteOrder, then by name for unplaced cards", () => {
+    const data = doc({
+      contacts: [
+        card({ id: "a", firstName: "Ada", favorite: true, favoriteOrder: 2 }),
+        card({ id: "b", firstName: "Bob", favorite: true, favoriteOrder: 0 }),
+        // No order yet — sorts after placed cards, by name (Cy before Zed).
+        card({ id: "z", firstName: "Zed", favorite: true }),
+        card({ id: "c", firstName: "Cy", favorite: true }),
+      ],
+    });
+    expect(favoriteContacts(data).map((c) => c.id)).toEqual([
+      "b",
+      "a",
+      "c",
+      "z",
+    ]);
+  });
+});
+
+describe("reorderIds", () => {
+  it("moves a dragged id to the target's position", () => {
+    expect(reorderIds(["a", "b", "c", "d"], "d", "b")).toEqual([
+      "a",
+      "d",
+      "b",
+      "c",
+    ]);
+    expect(reorderIds(["a", "b", "c", "d"], "a", "c")).toEqual([
+      "b",
+      "c",
+      "a",
+      "d",
+    ]);
+  });
+
+  it("is a no-op for the same id or a missing id", () => {
+    expect(reorderIds(["a", "b"], "a", "a")).toEqual(["a", "b"]);
+    expect(reorderIds(["a", "b"], "x", "b")).toEqual(["a", "b"]);
   });
 });

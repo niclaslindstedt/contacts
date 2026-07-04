@@ -12,9 +12,10 @@
 // `tests/import_test.ts`).
 
 import { hasAddress } from "./address.ts";
+import { attachmentList } from "./attachments.ts";
 import { activePhoto } from "./contactPhotos.ts";
 import { parseDoc } from "./migrations.ts";
-import type { Contact } from "./types.ts";
+import type { Attachment, Contact } from "./types.ts";
 import { splitFullName } from "./types.ts";
 
 /** A parsed card, ready for the store to id and file. Mirrors {@link Contact}
@@ -24,6 +25,11 @@ export type ImportedContact = {
   firstName: string;
   lastName: string;
   company?: string;
+  /** Whether the card is a company. Carried by the app's JSON backup and by a
+   *  vCard's `X-ABShowAs:COMPANY` hint. */
+  isCompany?: boolean;
+  /** The contact's website, from a vCard `URL` line or the JSON backup. */
+  homepage?: string;
   phones: { value: string; label?: string }[];
   emails: { value: string; label?: string }[];
   addresses: { label?: string; street?: string; zip?: string; city?: string }[];
@@ -31,6 +37,10 @@ export type ImportedContact = {
   importantDates: { label?: string; date: string }[];
   notes?: string;
   photo?: string | null;
+  /** The card's attachments. Only the app's own JSON backup carries them — vCard
+   *  / CSV have no field for arbitrary files — so a restored backup keeps them
+   *  (the store re-mints their ids). */
+  attachments?: Attachment[];
   /** The in-case-of-emergency flag. Only the app's own JSON backup carries it —
    *  vCard / CSV have no field for it — so a restored backup keeps its ICE
    *  contacts pinned. */
@@ -63,7 +73,9 @@ export function hasContent(c: ImportedContact): boolean {
     c.birthday?.trim() ||
     c.importantDates.length ||
     c.notes?.trim() ||
-    c.photo
+    c.photo ||
+    c.homepage?.trim() ||
+    c.attachments?.length
   );
 }
 
@@ -312,6 +324,13 @@ function applyLine(
       if (!cur.company)
         cur.company = vUnescape(line.value.split(";")[0] ?? "").trim();
       break;
+    case "URL":
+      if (v && !cur.homepage) cur.homepage = v;
+      break;
+    case "X-ABSHOWAS":
+      // Apple/Outlook hint that the card is an organisation, not a person.
+      if (v.toUpperCase() === "COMPANY") cur.isCompany = true;
+      break;
     case "TEL":
       if (v) cur.phones.push({ value: v, label: methodLabel(line.types) });
       break;
@@ -390,6 +409,8 @@ function fromContact(c: Contact): ImportedContact {
     firstName: c.firstName ?? "",
     lastName: c.lastName ?? "",
     company: c.company,
+    ...(c.isCompany ? { isCompany: true } : {}),
+    ...(c.homepage ? { homepage: c.homepage } : {}),
     phones: c.phones.map((p) => ({ value: p.value, label: p.label })),
     emails: c.emails.map((e) => ({ value: e.value, label: e.label })),
     addresses: c.addresses
@@ -409,6 +430,7 @@ function fromContact(c: Contact): ImportedContact {
     // A single-photo interchange draft carries the card's current face; the
     // importer re-seats it as the sole gallery entry (see `importContacts`).
     photo: activePhoto(c)?.photo ?? undefined,
+    ...(attachmentList(c).length > 0 ? { attachments: attachmentList(c) } : {}),
     ...(c.ice ? { ice: true } : {}),
   };
 }
