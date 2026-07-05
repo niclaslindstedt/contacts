@@ -32,8 +32,8 @@ marked as a **company** rather than a person.
   whatever it has, so open the card if the wrong one appears.
   Each row also carries a **heart** at its trailing edge — tap it to star (or
   unstar) that contact as a favorite without opening the card. Tap a row to open
-  that contact's card — its header carries a **back button** to return to the
-  list.
+  that contact's card as a panel that floats over the list — swipe it down (or
+  press Escape / tap outside) to dismiss it and drop back to where you were.
 - **Organise from the List.** The List page files contacts, too. **Drag** a
   contact row onto a folder section to move it there — the section lights up as
   you hover, and the list auto-scrolls when you drag near its top or bottom edge
@@ -65,8 +65,8 @@ marked as a **company** rather than a person.
   depending on which half you're pointing at. The same Select / Copy / Export
   tools are here too. Toggle a favorite anywhere it
   shows: the **heart** in a contact card's header, or the heart on any List or
-  Favorites row. A card opened from the Favorites page gets a back button to it,
-  just like the List page. The favorite flag and its order are stored per
+  Favorites row. A card opened from the Favorites page floats over it as a
+  swipe-down panel, just like the List page. The favorite flag and its order are stored per
   contact, so they ride along in the JSON backup and sync across your devices; a
   newly starred contact joins the bottom of the list until you drag it into
   place.
