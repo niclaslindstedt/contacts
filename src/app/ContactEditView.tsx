@@ -179,15 +179,19 @@ export function ContactEditView({
 
       {/* The in-case-of-emergency flag lives here near the bottom of edit mode —
           set once and out of the way — rather than always on show in the card
-          header. A flagged card still pins to the top of the side menu. */}
-      <IconSection icon={IceIcon} title={t("menu.emergency")}>
-        <ToggleRow
-          label={t("contact.iceToggle")}
-          hint={t("contact.iceToggleHint")}
-          checked={!!contact.ice}
-          onChange={(on) => updateContact(contact.id, { ice: on })}
-        />
-      </IconSection>
+          header. A flagged card still pins to the top of the side menu. An
+          emergency contact is a person you reach in a crisis, so the flag drops
+          out for a company card, like the person-only fields above. */}
+      {!contact.isCompany && (
+        <IconSection icon={IceIcon} title={t("menu.emergency")}>
+          <ToggleRow
+            label={t("contact.iceToggle")}
+            hint={t("contact.iceToggleHint")}
+            checked={!!contact.ice}
+            onChange={(on) => updateContact(contact.id, { ice: on })}
+          />
+        </IconSection>
+      )}
 
       {/* Person ↔ company is a set-once choice, so it lives near the bottom
           beside the emergency flag rather than up in the details grid. Turning
@@ -214,8 +218,11 @@ export function ContactEditView({
 // Flip a card between person and company. Turning it on, when the company name
 // is still blank, promotes whatever name the card already had into the company
 // field (and clears the first/last split) so a "Jane's Café" typed as a person
-// isn't lost — the identity block then edits that one company name. Turning it
-// off just drops the flag; the company text stays put.
+// isn't lost — the identity block then edits that one company name. It also
+// drops the in-case-of-emergency flag: a company can't be an emergency contact,
+// and the edit view hides that switch for a company, so a stale flag would
+// otherwise be stuck on and keep pinning the card to the emergency list. Turning
+// it off just drops the company flag; the company text stays put.
 function toggleCompany(
   contact: Contact,
   on: boolean,
@@ -229,7 +236,7 @@ function toggleCompany(
     .filter(Boolean)
     .join(" ")
     .trim();
-  const patch: Partial<Contact> = { isCompany: true };
+  const patch: Partial<Contact> = { isCompany: true, ice: false };
   if (!contact.company?.trim() && name) {
     patch.company = name;
     patch.firstName = "";
