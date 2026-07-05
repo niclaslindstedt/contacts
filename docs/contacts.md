@@ -99,8 +99,11 @@ marked as a **company** rather than a person.
   the emergency flag — turns the card into a **company**: it's identified by a
   single company name instead of a first and last name, shows a building icon in
   place of a monogram, and exports with its name as the organisation (`ORG`) so
-  it lands as a company in the address book you send it to. A company hides the
-  person-only fields — the birthday and the extra important dates.
+  it lands as a company in the address book you send it to. Converting clears
+  the person-only fields from the card — the first/last name split (promoted
+  into the company name when that is still blank), the birthday, the extra
+  important dates, and the emergency flag — rather than just hiding them; undo
+  brings the whole card back if the flip was a mistake.
 - **Phone numbers are stored clean.** A phone number is kept as **plain
   national digits** — no spaces, no hyphens, no country code baked into the
   digits. Its **country code** is a separate **dropdown** on the row (a flag and

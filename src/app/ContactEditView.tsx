@@ -19,6 +19,7 @@ import {
   withAttachmentUpdated,
 } from "./attachments.ts";
 import { autoArchiveAction, defaultAutoArchiveDate } from "./autoArchive.ts";
+import { companyTogglePatch } from "./companyCard.ts";
 import { filesToAttachments } from "./attachmentIntake.ts";
 import {
   IconSection,
@@ -195,14 +196,17 @@ export function ContactEditView({
 
       {/* Person ↔ company is a set-once choice, so it lives near the bottom
           beside the emergency flag rather than up in the details grid. Turning
-          it on folds away the person-only fields (birthday, important dates)
-          and edits the single company name in the identity block above. */}
+          it on clears the person-only fields (the name split, birthday,
+          important dates — see `companyTogglePatch`) and edits the single
+          company name in the identity block above. */}
       <IconSection icon={BuildingIcon} title={t("contact.cardType")}>
         <ToggleRow
           label={t("contact.companyToggle")}
           hint={t("contact.companyToggleHint")}
           checked={!!contact.isCompany}
-          onChange={(on) => toggleCompany(contact, on, updateContact)}
+          onChange={(on) =>
+            updateContact(contact.id, companyTogglePatch(contact, on))
+          }
         />
       </IconSection>
 
@@ -213,36 +217,6 @@ export function ContactEditView({
       </IconSection>
     </div>
   );
-}
-
-// Flip a card between person and company. Turning it on, when the company name
-// is still blank, promotes whatever name the card already had into the company
-// field (and clears the first/last split) so a "Jane's Café" typed as a person
-// isn't lost — the identity block then edits that one company name. It also
-// drops the in-case-of-emergency flag: a company can't be an emergency contact,
-// and the edit view hides that switch for a company, so a stale flag would
-// otherwise be stuck on and keep pinning the card to the emergency list. Turning
-// it off just drops the company flag; the company text stays put.
-function toggleCompany(
-  contact: Contact,
-  on: boolean,
-  updateContact: (id: string, patch: Partial<Contact>) => void,
-): void {
-  if (!on) {
-    updateContact(contact.id, { isCompany: false });
-    return;
-  }
-  const name = [contact.firstName, contact.lastName]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-  const patch: Partial<Contact> = { isCompany: true, ice: false };
-  if (!contact.company?.trim() && name) {
-    patch.company = name;
-    patch.firstName = "";
-    patch.lastName = "";
-  }
-  updateContact(contact.id, patch);
 }
 
 // The auto-archive control: a toggle that arms a self-filing schedule, and —

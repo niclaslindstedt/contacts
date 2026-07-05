@@ -37,7 +37,8 @@ field commits when you leave it, and each committed edit is one undo step.
 - **Website & company.** Add a **Website** and it shows as a tap-to-open link
   (exported as the vCard `URL`). A **Company contact** switch turns the card into
   an organisation: it's named by a single company name, wears a building icon,
-  hides the person-only fields, and exports as a company.
+  clears the person-only fields (the name split, birthday, important dates),
+  and exports as a company.
 
 Photos and files have their own read-mores — see [Photos](feature:photos) and
 [Attachments](feature:attachments). For the full reference, see

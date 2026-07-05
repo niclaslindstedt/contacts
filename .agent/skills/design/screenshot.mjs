@@ -127,16 +127,29 @@ const VIEWPORTS = {
 
 // Land on the app and wait until the shell has rendered. The app has no
 // auth gate; `npm run dev` seeds fake contacts (VITE_SEED), so the app
-// comes up on a populated address book with a contact already open.
-// Waits for a control present across every layout and mode: the card's
-// read-mode pencil ("Edit contact") or edit-mode check ("Done"), or the
-// phone's "Open sidebar" floating button.
+// comes up on a populated address book. Waits for a control present
+// across every layout and mode: the card's read-mode pencil ("Edit
+// contact") or edit-mode check ("Done"), the docked sidebar's "New
+// contact" (the seeded app can boot to the List page with no card
+// open), or the phone's "Open sidebar" floating button.
 export async function openApp(page) {
   await page.goto("./");
   await page
-    .getByRole("button", { name: /^(Edit contact|Done|Open sidebar)$/ })
+    .getByRole("button", {
+      name: /^(Edit contact|Done|Open sidebar|New contact)$/,
+    })
     .first()
     .waitFor();
+}
+
+// Flip a ToggleRow / checkbox by its accessible name ("Company contact",
+// "Emergency contact", …). The framework checkbox hides its real <input>
+// as sr-only behind the painted glyph, so a normal click is intercepted —
+// force the click through to the input.
+export async function toggleRow(page, name) {
+  const sw = page.getByRole("switch", { name });
+  if (await sw.count()) return sw.first().click();
+  await page.getByRole("checkbox", { name }).first().click({ force: true });
 }
 
 // Put the open contact card into edit mode (a no-op if it already is).

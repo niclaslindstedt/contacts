@@ -229,7 +229,7 @@ export const en = {
     // The flip switch that turns a person card into a company card.
     companyToggle: "Company contact",
     companyToggleHint:
-      "Titled by one company name, not a person's, and shown with a building icon.",
+      "Titled by one company name and shown with a building icon. Person-only fields — the name, birthday, and important dates — are removed.",
     homepage: "Website",
     homepagePlaceholder: "https://example.com",
     address: "Address",
