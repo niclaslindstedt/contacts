@@ -18,6 +18,13 @@ export const sv: Catalog = {
     doneOne: "Importerade 1 kontakt",
     none: "Inga kontakter hittades i filen",
   },
+  toast: {
+    contactArchived: "Kontakt arkiverad",
+    contactDeleted: "Kontakt borttagen",
+    folderArchived: "Mapp arkiverad",
+    folderDeleted: "Mapp borttagen",
+    undo: "Ångra",
+  },
   menu: {
     namespaces: "Namnrymder",
     switchToNamespace: "Byt till {name}",

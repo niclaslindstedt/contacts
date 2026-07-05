@@ -29,6 +29,6 @@ The favorite flag and its order are stored per contact, so they ride along in th
 JSON backup and sync across your devices. The same Select / Copy / Export tools
 from the [List page](feature:list) are here too, and a card opened from Favorites
 floats over the page as a panel you swipe down to dismiss. Every row also carries
-the side menu's row gestures: **swipe left** to bare a **Delete** button, **swipe
+the List page's row gestures: **swipe left** to bare a **Delete** button, **swipe
 right** to archive, and **right-click** for the **Move to folder / Archive /
 Delete** menu.

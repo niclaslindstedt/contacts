@@ -15,7 +15,6 @@ import {
   RowActionMenu,
   SearchIcon,
   SparklesIcon,
-  SwipeableRow,
   TrashIcon,
   UndoIcon,
   type FloatingPlacement,
@@ -369,9 +368,9 @@ export function SideMenuContent({
   }
 
   // One contact row at nesting `indentLevel` (0 at the root, folder-depth + 1
-  // inside a folder). A swipeable nav row — swipe left for the trash strip
-  // (delete), swipe right to archive. A desktop pointer reaches the same actions
-  // through the right-click menu.
+  // inside a folder). A plain nav row — no swipe here; a desktop pointer reaches
+  // move / archive / delete through the right-click menu, and touch manages
+  // contacts (archive / delete) from the List page instead.
   function renderContact(contact: Contact, indentLevel: number) {
     const deleteAction = {
       label: t("menu.deleteContact"),
@@ -415,39 +414,29 @@ export function SideMenuContent({
         <RowActionMenu
           ariaLabel={t("menu.contactActions")}
           actions={menuActions}
-          // The touch hold drags the row; on touch these actions stay
-          // reachable through the swipe strip, so the menu opens only on a
-          // desktop right-click.
+          // The touch hold drags the row; with no swipe strip these actions are
+          // a desktop right-click affordance (touch archives / deletes from the
+          // List page instead).
           touchLongPress={false}
         >
-          <SwipeableRow
-            actions={[deleteAction]}
-            leading={{
-              kind: "commit",
-              onCommit: () => archiveContact(contact.id),
-              label: t("menu.archive"),
-              icon: <ArchiveIcon className="h-5 w-5" />,
-            }}
+          <NavRow
+            indentLevel={indentLevel}
+            active={active}
+            icon={<Avatar contact={contact} size="row" />}
+            onClick={() => pick(contact.id)}
           >
-            <NavRow
-              indentLevel={indentLevel}
-              active={active}
-              icon={<Avatar contact={contact} size="row" />}
-              onClick={() => pick(contact.id)}
-            >
-              <span className="flex-1 truncate">
-                {displayName(contact) || (
-                  <span className="text-muted">{t("contact.unnamed")}</span>
-                )}
-              </span>
-              {contact.ice && (
-                <IceIcon
-                  className="h-4 w-4 shrink-0 text-danger"
-                  aria-label={t("menu.iceContact")}
-                />
+            <span className="flex-1 truncate">
+              {displayName(contact) || (
+                <span className="text-muted">{t("contact.unnamed")}</span>
               )}
-            </NavRow>
-          </SwipeableRow>
+            </span>
+            {contact.ice && (
+              <IceIcon
+                className="h-4 w-4 shrink-0 text-danger"
+                aria-label={t("menu.iceContact")}
+              />
+            )}
+          </NavRow>
         </RowActionMenu>
       </DraggableRow>
     );
@@ -513,11 +502,6 @@ export function SideMenuContent({
       danger: true,
       onSelect: () => deleteFolder(folder.id),
     };
-    const folderActions = [
-      renameFolderAction,
-      newSubfolderAction,
-      deleteFolderAction,
-    ];
     const folderMenuActions = [
       renameFolderAction,
       newSubfolderAction,
@@ -600,22 +584,7 @@ export function SideMenuContent({
             actions={folderMenuActions}
             touchLongPress={false}
           >
-            <SwipeableRow
-              actions={folderActions}
-              leading={{
-                kind: "commit",
-                onCommit: () => archiveFolder(folder.id),
-                label: t("menu.archive"),
-                icon: <ArchiveIcon className="h-5 w-5" />,
-              }}
-              // Filing a contact into this folder, or nesting a folder into it,
-              // lights the row up; a folder-reorder drag shows the insertion
-              // line instead.
-              highlighted={
-                folderZone.isOver &&
-                (dnd.dragging?.kind === "contact" || nestHighlight)
-              }
-            >
+            <div className="relative">
               <FolderRow
                 name={folder.name}
                 addLabel={t("menu.newContactIn", { name: folder.name })}
@@ -625,7 +594,17 @@ export function SideMenuContent({
                 onToggle={() => toggleFolder(folder.id)}
                 onAdd={() => beginCreateContact(folder.id)}
               />
-            </SwipeableRow>
+              {/* Filing a contact into this folder, or nesting a folder into it,
+                  lights the row up; a folder-reorder drag shows the insertion
+                  line instead. */}
+              {folderZone.isOver &&
+                (dnd.dragging?.kind === "contact" || nestHighlight) && (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 z-10 bg-accent/15 ring-2 ring-accent ring-inset"
+                  />
+                )}
+            </div>
           </RowActionMenu>
         </DraggableRow>
         {expanded && (
