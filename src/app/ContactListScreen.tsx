@@ -662,6 +662,8 @@ function ReorderGrip({
       title={label}
       className="mr-0.5 -ml-1 flex h-9 w-7 shrink-0 cursor-grab items-center justify-center rounded text-muted hover:text-fg active:cursor-grabbing"
       {...handle}
+      // The grip is for dragging, not opening — keep its click off the row.
+      onClick={(e) => e.stopPropagation()}
     >
       <GripIcon className="h-5 w-5" />
     </button>
@@ -713,10 +715,13 @@ function SectionHeader({
   );
 }
 
-// One contact in the list. Out of select mode the avatar + name is a button
-// that opens the card, and each phone / email under it is its own tap-to-act
-// link. In select mode the whole row is a toggle for the checkbox, and the
-// contact methods read as plain text (there's nothing to call while picking).
+// One contact in the list. Out of select mode the whole row is a button that
+// opens the card — a click anywhere but the interactive bits opens it — while
+// each phone / email under it stays its own tap-to-act link and the trailing
+// heart still toggles favorite in place (all of them stop the click from
+// bubbling to the row so acting on one never also opens the card). In select
+// mode the whole row is a toggle for the checkbox instead, and the contact
+// methods read as plain text (there's nothing to call while picking).
 function ContactRow({
   contact,
   settings,
@@ -808,29 +813,34 @@ function ContactRow({
   }
 
   const hasMethods = phones.length > 0 || emails.length > 0;
+  // The whole row opens the card: it's a `role="button"` container so a click
+  // anywhere on it — the empty space beside the name included — calls `onOpen`,
+  // with Enter / Space doing the same for the keyboard. The phone pills, email
+  // links, grip, and favorite heart nested inside stop their own clicks from
+  // bubbling up (see their `stopPropagation`), so acting on one of those never
+  // also opens the card.
   return (
     <div
-      className={`flex items-center ${borderClass} px-1 transition-colors hover:bg-surface-2 ${rowSpacing}`}
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      aria-label={name || t("contact.unnamed")}
+      className={`flex cursor-pointer items-center ${borderClass} px-1 transition-colors hover:bg-surface-2 ${rowSpacing}`}
     >
       {grip}
-      <button
-        type="button"
-        onClick={onOpen}
-        aria-label={name || t("contact.unnamed")}
-        className="shrink-0 cursor-pointer"
-      >
+      <span className="shrink-0">
         <Avatar contact={contact} size={avatarSize} />
-      </button>
+      </span>
       {/* Narrow screens stack the methods under the name; from `sm` up there's
           room to sit them to the right of it, so the row reads on one line. */}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
-        <button
-          type="button"
-          onClick={onOpen}
-          className="min-w-0 cursor-pointer text-left leading-tight sm:flex-1"
-        >
-          {nameNode}
-        </button>
+        <span className="min-w-0 leading-tight sm:flex-1">{nameNode}</span>
         {/* Phone numbers (tap to call) as Private / Work pills, then emails
             (tap to write) as smaller links — each its own link, so the row stays
             a plain container rather than a button wrapping links. Left-aligned
@@ -853,6 +863,7 @@ function ContactRow({
               <a
                 key={email.id}
                 href={`mailto:${email.value.trim()}`}
+                onClick={(e) => e.stopPropagation()}
                 className="w-fit max-w-full truncate text-xs text-muted hover:text-fg hover:underline sm:text-right"
               >
                 {email.value}
@@ -898,7 +909,12 @@ function FavoriteToggle({
   return (
     <button
       type="button"
-      onClick={onToggle}
+      // Stop the click here so starring a card doesn't also open it — the row
+      // around this heart is itself a button that calls `onOpen`.
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
       aria-pressed={favorite}
       aria-label={`${label} — ${name}`}
       title={label}
@@ -959,6 +975,8 @@ function PhonePill({
     <a
       href={`tel:${phone.value.replace(/\s+/g, "")}`}
       title={`${kindText} · ${value}`}
+      // Dialing a number shouldn't also open the card the row-wide click opens.
+      onClick={(e) => e.stopPropagation()}
       className={`${base} hover:bg-accent/20`}
     >
       {body}
