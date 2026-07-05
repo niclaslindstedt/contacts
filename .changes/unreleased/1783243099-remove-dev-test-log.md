@@ -1,7 +1,6 @@
 ---
 type: Changed
-title: Drop the "write a test log line" button from the Developer settings tab
+title: Drop the test-log button
 ---
 
-The Developer tab's throwaway **Write a test log line** button has been removed;
-the logging section now just carries the **Capture logs** toggle.
+The Developer tab's throwaway "Write a test log line" button is gone, leaving just the Capture logs toggle.

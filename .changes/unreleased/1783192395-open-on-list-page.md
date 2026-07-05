@@ -1,10 +1,6 @@
 ---
 type: Changed
-title: Open on the List page showing every contact
+title: Open on the List page
 ---
 
-The app now **opens on the List page** — the overview of your whole address
-book — instead of a single contact card. A fresh launch always lands on the
-full list of contacts, so you start from the big picture and pick who to open
-from there. Selecting a contact still drops you onto its card, with a back
-button to the List.
+The app now opens on the List overview of your whole address book instead of a single card, with a back button once you open a contact.
