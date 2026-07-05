@@ -192,6 +192,14 @@ export function ContactListScreen({
     setSelecting(false);
     setSelected(new Set());
   };
+  // Leave select mode when the view switches between List and Favorites — the
+  // screen stays mounted across that swap (only `favoritesOnly` flips), so the
+  // selection would otherwise linger onto a page it wasn't made on. Navigating
+  // to any other screen unmounts this one, which resets the mode on its own.
+  useEffect(() => {
+    setSelecting(false);
+    setSelected(new Set());
+  }, [favoritesOnly]);
   const toggleSelectAll = () =>
     setSelected(
       allSelected ? new Set() : new Set(allContacts.map((c) => c.id)),
