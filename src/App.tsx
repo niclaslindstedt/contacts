@@ -282,7 +282,6 @@ export function App() {
       >
         <SideMenuContent
           store={{ ...store, undo: undoWithTrophy }}
-          pinned={pinned}
           onDraggingChange={setSidebarDragging}
           activeNamespace={ns.activeNamespace}
           namespaces={ns.list}
