@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { InlineEditField } from "@niclaslindstedt/oss-framework/components";
+import { Lightbox } from "@niclaslindstedt/oss-framework/viewer";
 
 import { Avatar } from "./Avatar.tsx";
 import { ContactAppearancePopover } from "./ContactAppearancePopover.tsx";
 import { activePhotoIndex, hasPhoto, photoList } from "./contactPhotos.ts";
-import { PhotoViewer } from "./PhotoViewer.tsx";
 import { useT } from "./i18n/index.ts";
 import type { Contact } from "./types.ts";
 import { displayName, splitFullName } from "./types.ts";
@@ -29,16 +29,6 @@ export function ContactIdentity({
   // Tapping the name in edit mode swaps it for an inline editor (select-all on
   // focus, so the first keystroke replaces the name); this holds that mode.
   const [editingName, setEditingName] = useState(false);
-  // The framework's InlineEditField renders a bare <input> with no
-  // autocapitalize hint. Names are proper nouns, so tell the on-screen keyboard
-  // to capitalise each word. Set it here, in a layout effect, so the attribute
-  // lands before InlineEditField's own focus effect opens the keyboard.
-  const nameEditRef = useRef<HTMLHeadingElement>(null);
-  useLayoutEffect(() => {
-    if (!editingName) return;
-    const input = nameEditRef.current?.querySelector("input");
-    input?.setAttribute("autocapitalize", "words");
-  }, [editingName]);
   // Read mode: tapping the photo opens the gallery full-screen. Holds whether
   // the viewer is open; it pages the whole gallery from the active photo.
   const [viewing, setViewing] = useState(false);
@@ -75,21 +65,42 @@ export function ContactIdentity({
       )}
 
       {viewing && viewerSrcs.length > 0 && (
-        <PhotoViewer
-          photos={viewerSrcs}
-          startIndex={activePhotoIndex(contact)}
+        <Lightbox
+          items={viewerSrcs.map((src) => ({
+            render: () => (
+              <img
+                src={src}
+                alt=""
+                draggable={false}
+                className="max-h-full max-w-full rounded-[var(--radius)] object-contain shadow-2xl"
+              />
+            ),
+          }))}
+          initialIndex={activePhotoIndex(contact)}
           onClose={() => setViewing(false)}
+          labels={{
+            title: t("contact.viewPhoto"),
+            close: t("common.close"),
+            previous: t("contact.previousPhoto"),
+            next: t("contact.nextPhoto"),
+            counter: (n, m) =>
+              t("contact.photoPosition", { n: String(n), m: String(m) }),
+            goTo: (n) => t("contact.showPhotoNumber", { n: String(n) }),
+          }}
         />
       )}
 
       {editing ? (
         editingName ? (
-          <h1 className="w-full max-w-xs" ref={nameEditRef}>
+          <h1 className="w-full max-w-xs">
             <InlineEditField
               // A company is one name, not a first/last split — edit the company
               // field directly; a person still splits into first and last.
               initial={contact.isCompany ? (contact.company ?? "") : name}
               ariaLabel={t("contact.renameContact")}
+              // Names are proper nouns — hint the on-screen keyboard to
+              // capitalise each word.
+              inputProps={{ autoCapitalize: "words" }}
               className="w-full border-0 bg-transparent p-0 text-center text-2xl font-bold tracking-wide text-fg-bright outline-none"
               onCommit={(full) => {
                 updateContact(

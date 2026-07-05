@@ -11,7 +11,11 @@ import {
   usePersistentMenuPosition,
   useSidebarInset,
 } from "@niclaslindstedt/oss-framework/sidebar";
-import { Modal, SpinnerIcon } from "@niclaslindstedt/oss-framework/components";
+import {
+  Modal,
+  SpinnerIcon,
+  ToastViewport,
+} from "@niclaslindstedt/oss-framework/components";
 import { UpdateToast, usePwaUpdate } from "@niclaslindstedt/oss-framework/pwa";
 import { SyncDetailsModal } from "@niclaslindstedt/oss-framework/sync";
 import { ChangelogModal } from "@niclaslindstedt/oss-framework/changelog";
@@ -34,7 +38,6 @@ import {
   useAchievementWatcher,
 } from "@niclaslindstedt/oss-framework/achievements";
 
-import { ActionToast } from "./app/ActionToast.tsx";
 import { ArchiveScreen } from "./app/ArchiveScreen.tsx";
 import { CloudSetupModal } from "./app/CloudSetupModal.tsx";
 import { ContactListScreen } from "./app/ContactListScreen.tsx";
@@ -54,6 +57,7 @@ import { applyBackdropVars, useAppSettings } from "./app/useAppSettings.ts";
 import { useDevSeed } from "./app/dev/useDevSeed.ts";
 import { createSeedBackend } from "./app/dev/seedBackend.ts";
 import { localDocBackend, useContactStore } from "./app/useContactStore.ts";
+import { toastStore, UNDO_TOAST_MS } from "./app/toast.ts";
 import { useNamespaces } from "./app/useNamespaces.ts";
 import { useSyncEngine } from "./app/useSyncEngine.ts";
 import { cacheIdForBase } from "./app/pwa.ts";
@@ -222,23 +226,27 @@ export function App() {
 
   // The hovering "archived / deleted — undo?" banner. An archive or a delete
   // (from the List page, the sidebar's right-click menu, a drag onto Archive, or
-  // the archive screen) raises it with its outcome; it auto-dismisses on a timer.
-  const [undoToast, setUndoToast] = useState<string | null>(null);
-  const undoToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const showUndoToast = useCallback((message: string) => {
-    setUndoToast(message);
-    if (undoToastTimer.current) clearTimeout(undoToastTimer.current);
-    undoToastTimer.current = setTimeout(() => setUndoToast(null), 6000);
-  }, []);
-  const dismissUndoToast = useCallback(() => {
-    if (undoToastTimer.current) clearTimeout(undoToastTimer.current);
-    setUndoToast(null);
-  }, []);
-  useEffect(
-    () => () => {
-      if (undoToastTimer.current) clearTimeout(undoToastTimer.current);
+  // the archive screen) raises it with its outcome; the framework toast store
+  // owns the auto-dismiss timer. Clearing first keeps it a single banner — a
+  // fresh outcome replaces the previous one rather than stacking under it. Its
+  // Undo rewinds the archive / delete that raised it (the action's activation
+  // dismisses the toast itself).
+  const showUndoToast = useCallback(
+    (message: string) => {
+      toastStore.clear();
+      toastStore.push({
+        message,
+        durationMs: UNDO_TOAST_MS,
+        action: {
+          label: t("toast.undo"),
+          onAction: () => {
+            store.undo();
+            unlock("timeTraveler");
+          },
+        },
+      });
     },
-    [],
+    [store, t],
   );
 
   // The store the screens act through: archive / delete of a contact or folder
@@ -556,18 +564,15 @@ export function App() {
         onResolve={sync.resolveSetup}
       />
 
-      {/* The hovering "archived / deleted — undo?" banner. Rendered above the
-          content band; its Undo rewinds the archive / delete that raised it. */}
-      {undoToast !== null && (
-        <ActionToast
-          message={undoToast}
-          undoLabel={t("toast.undo")}
-          onUndo={() => {
-            undoWithTrophy();
-            dismissUndoToast();
-          }}
-        />
-      )}
+      {/* The hovering "archived / deleted — undo?" banner — the framework's
+          toast stack, rendered once here. The className override re-seats the
+          viewport over the content band (not the whole viewport) via the
+          sidebar-inset CSS variables, where the old app-local toast sat. */}
+      <ToastViewport
+        store={toastStore}
+        labels={{ dismiss: t("common.close") }}
+        className="pointer-events-none fixed right-[var(--app-content-right,0px)] bottom-[max(1rem,env(safe-area-inset-bottom))] left-[var(--app-content-left,0px)] z-[60] flex flex-col items-center gap-2 px-4"
+      />
 
       {/* The framework's PWA "a new version is ready" prompt, fed from the
           real `usePwaUpdate()` state above. Once "Update" is tapped we swap the

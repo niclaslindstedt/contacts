@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { describe, expect, it } from "vitest";
 
+import { dataUrlToBytes } from "@niclaslindstedt/oss-framework/files";
+
 import {
-  bytesToDataUrl,
-  clampTransform,
-  dataUrlToBytes,
-  drawRect,
+  fromViewTransform,
   parsePhotoPath,
   photoPathFor,
   photoSourcePathFor,
+  toViewTransform,
 } from "../src/app/photo.ts";
 import {
   hasInlinePhotos,
@@ -17,9 +17,11 @@ import {
 } from "../src/app/photoStore.ts";
 
 // The photo layer's node-testable surface: the deterministic file path, the
-// data-URL ⇄ bytes seam the externaliser moves across, the crop geometry, and
-// the strip / re-hydrate / prune behaviour of `withExternalPhotos` (driven with
-// in-memory fakes — the canvas bake and the real cloud stores stay UI-only).
+// stored-transform mapping, and the strip / re-hydrate / prune behaviour of
+// `withExternalPhotos` (driven with in-memory fakes — the crop geometry, the
+// canvas bake, and the real cloud stores are the framework viewer's). The
+// data-URL ⇄ bytes codec the externaliser moves across is the framework's
+// (`files`), used here only as a test helper.
 
 describe("photoPathFor", () => {
   it("builds a deterministic photos/<name>-<id>-<photoId>.jpg path", () => {
@@ -109,39 +111,11 @@ describe("parsePhotoPath", () => {
   });
 });
 
-describe("data URL <-> bytes", () => {
-  it("round-trips bytes through a base64 data URL", () => {
-    const bytes = new Uint8Array([0, 1, 2, 250, 128, 255]);
-    const url = bytesToDataUrl("image/jpeg", bytes);
-    expect(url.startsWith("data:image/jpeg;base64,")).toBe(true);
-    const back = dataUrlToBytes(url);
-    expect(back?.mime).toBe("image/jpeg");
-    expect(Array.from(back!.bytes)).toEqual(Array.from(bytes));
-  });
-
-  it("returns null for a non-base64 / non-data string", () => {
-    expect(dataUrlToBytes("https://example.com/a.png")).toBeNull();
-    expect(dataUrlToBytes(undefined)).toBeNull();
-    expect(dataUrlToBytes("data:image/png,notbase64")).toBeNull();
-  });
-});
-
-describe("crop geometry", () => {
-  it("cover-fits a landscape image centred at the default framing", () => {
-    // 200x100 into a 100 viewport: covers by height, so width overflows.
-    const r = drawRect(200, 100, 100, { scale: 1, x: 0, y: 0 });
-    expect(r.h).toBe(100);
-    expect(r.w).toBe(200);
-    expect(r.y).toBe(0);
-    expect(r.x).toBe(-50); // centred: (100-200)/2
-  });
-
-  it("clamps the pan so the image can't uncover the circle", () => {
-    // Landscape: horizontal pan allowed, vertical pinned; scale floored to 1.
-    const t = clampTransform(200, 100, { scale: 0.2, x: 5, y: 5 });
-    expect(t.scale).toBe(1);
-    expect(t.y).toBe(0);
-    expect(t.x).toBeCloseTo(0.5); // (w-1)/2 with w=2 in unit terms
+describe("stored transform ⇄ viewer transform", () => {
+  it("maps the stored x/y pan onto the framework's tx/ty and back", () => {
+    const stored = { scale: 2.5, x: 0.25, y: -0.1 };
+    expect(toViewTransform(stored)).toEqual({ scale: 2.5, tx: 0.25, ty: -0.1 });
+    expect(fromViewTransform(toViewTransform(stored))).toEqual(stored);
   });
 });
 

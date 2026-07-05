@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 // The browser glue that feeds real files into the pure import readers. Kept
-// apart from `import.ts` (the same way `download.ts` is kept apart from
-// `export.ts`) so the readers stay pure and node-testable: this module reads a
-// dropped or picked `File`'s text and hands it to `parseImportFile`.
+// apart from `import.ts` (the same way the framework's download glue is kept
+// apart from `export.ts`) so the readers stay pure and node-testable: this
+// module reads a dropped or picked `File`'s text and hands it to
+// `parseImportFile`.
 
 import { parseImportFile, type ImportedContact } from "./import.ts";
 
@@ -47,26 +48,4 @@ export async function readImportedContacts(
     }
   }
   return { contacts, usedFiles, emptyFiles };
-}
-
-/** Pull the `File`s off a drop's `DataTransfer`. Prefers the typed `files`
- *  list; falls back to walking `items` (some browsers only populate one). */
-export function filesFromDataTransfer(dt: DataTransfer | null): File[] {
-  if (!dt) return [];
-  if (dt.files && dt.files.length > 0) return Array.from(dt.files);
-  const out: File[] = [];
-  for (const item of Array.from(dt.items ?? [])) {
-    if (item.kind === "file") {
-      const f = item.getAsFile();
-      if (f) out.push(f);
-    }
-  }
-  return out;
-}
-
-/** Whether a drag carries files (rather than text or an element) — the signal
- *  that decides if the import overlay should show. */
-export function dragHasFiles(dt: DataTransfer | null): boolean {
-  if (!dt) return false;
-  return Array.from(dt.types ?? []).includes("Files");
 }

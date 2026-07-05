@@ -3,11 +3,15 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import {
   ArchiveIcon,
+  BuildingIcon,
   CheckboxGlyph,
+  CheckSquareIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   FolderOpenIcon,
   GripIcon,
+  ListIcon,
+  PersonIcon,
   RowActionMenu,
   SwipeableRow,
   TrashIcon,
@@ -20,14 +24,7 @@ import {
 } from "@niclaslindstedt/oss-framework/sidebar";
 
 import { Avatar } from "./Avatar.tsx";
-import {
-  BuildingIcon,
-  CheckSquareIcon,
-  FavoriteIcon,
-  ListIcon,
-  PersonIcon,
-  SectionsToggleIcon,
-} from "./icons.tsx";
+import { FavoriteIcon, SectionsToggleIcon } from "./icons.tsx";
 import { MoveToFolderMenu } from "./MoveToFolderMenu.tsx";
 import { SelectActions, SelectCountBar } from "./SelectToast.tsx";
 import { useT } from "./i18n/index.ts";

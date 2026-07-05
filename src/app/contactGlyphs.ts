@@ -9,8 +9,9 @@
 // adding the handful the neutral set lacks.
 //
 // Pure data + a resolver — no React here, so the ordering and coverage are
-// unit-testable in node (see `tests/contactGlyphs_test.ts`). The renderer and
-// picker that draw these live in `ContactGlyph.tsx`.
+// unit-testable in node (see `tests/contactGlyphs_test.ts`). The framework's
+// `Glyph` / `GlyphPicker` draw these, handed the render map via their `paths`
+// prop (`Avatar.tsx`, `ContactAppearancePopover.tsx`).
 
 import { GLYPH_PATHS } from "@niclaslindstedt/oss-framework/glyphs";
 

@@ -3,12 +3,32 @@ import { useState, type ReactNode } from "react";
 
 import {
   ArchiveIcon,
+  BuildingIcon,
   Button,
+  CalendarIcon,
+  DownloadIcon,
   ExternalLinkIcon,
+  FileIcon,
+  GiftIcon,
+  GlobeIcon,
+  MailIcon,
+  MapPinIcon,
   PencilIcon,
+  PhoneIcon,
   Section,
+  StarIcon,
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
+import {
+  daysUntilNextOccurrence,
+  yearsSince,
+} from "@niclaslindstedt/oss-framework/calendar";
+import { downloadText, MIME_ICS } from "@niclaslindstedt/oss-framework/files";
+import { Lightbox } from "@niclaslindstedt/oss-framework/viewer";
+import {
+  displayUrl,
+  normalizeUrl,
+} from "@niclaslindstedt/oss-framework/format";
 
 import {
   attachmentList,
@@ -19,30 +39,14 @@ import {
 import { downloadAttachment, openAttachment } from "./attachmentView.ts";
 import { autoArchiveAction } from "./autoArchive.ts";
 import { addressLines, hasAddress, mapsUrl } from "./address.ts";
-import { ageOn, daysUntilBirthday } from "./birthday.ts";
-import { birthdayIcs, dateEventIcs } from "./calendar.ts";
-import { downloadText, MIME_ICS } from "./download.ts";
 import { exportFileStem } from "./export.ts";
 import {
+  birthdayIcs,
+  dateEventIcs,
   daysUntilDate,
   formatImportantDate,
   isValidFlexDate,
-  yearsSince,
 } from "./importantDates.ts";
-import {
-  BuildingIcon,
-  CalendarIcon,
-  DownloadIcon,
-  FileIcon,
-  GiftIcon,
-  GlobeIcon,
-  MailIcon,
-  MapPinIcon,
-  PhoneIcon,
-  StarIcon,
-} from "./icons.tsx";
-import { PhotoViewer } from "./PhotoViewer.tsx";
-import { displayUrl, normalizeUrl } from "./url.ts";
 import { primaryPhone } from "./primaryPhone.ts";
 import { useT } from "./i18n/index.ts";
 import { formatDate, phoneDialString } from "./format.ts";
@@ -383,8 +387,8 @@ function BirthdayRow({
   const t = useT();
   const [showAge, setShowAge] = useState(false);
   const now = new Date();
-  const age = ageOn(iso, now);
-  const days = daysUntilBirthday(iso, now);
+  const age = yearsSince(iso, now);
+  const days = daysUntilNextOccurrence(iso, now);
 
   // Download a one-event `.ics` for the calendar app to open and add. Recurs
   // yearly and stays a single entry across re-imports via a stable UID.
@@ -614,10 +618,28 @@ function AttachmentsSection({ attachments }: { attachments: Attachment[] }) {
       )}
 
       {viewerAt !== null && imageSrcs.length > 0 && (
-        <PhotoViewer
-          photos={imageSrcs}
-          startIndex={viewerAt}
+        <Lightbox
+          items={imageSrcs.map((src) => ({
+            render: () => (
+              <img
+                src={src}
+                alt=""
+                draggable={false}
+                className="max-h-full max-w-full rounded-[var(--radius)] object-contain shadow-2xl"
+              />
+            ),
+          }))}
+          initialIndex={viewerAt}
           onClose={() => setViewerAt(null)}
+          labels={{
+            title: t("contact.viewPhoto"),
+            close: t("common.close"),
+            previous: t("contact.previousPhoto"),
+            next: t("contact.nextPhoto"),
+            counter: (n, m) =>
+              t("contact.photoPosition", { n: String(n), m: String(m) }),
+            goTo: (n) => t("contact.showPhotoNumber", { n: String(n) }),
+          }}
         />
       )}
     </div>

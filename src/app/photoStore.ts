@@ -44,12 +44,16 @@
 // the wrapper is composed only for the plaintext cloud path in `useSyncEngine`.
 
 import {
+  bytesToDataUrl,
+  dataUrlToBytes,
+} from "@niclaslindstedt/oss-framework/files";
+import {
   type DropboxAuth,
   type StorageAdapter,
 } from "@niclaslindstedt/oss-framework/storage";
 
 import { logStore } from "./log.ts";
-import { bytesToDataUrl, dataUrlToBytes, parsePhotoPath } from "./photo.ts";
+import { parsePhotoPath } from "./photo.ts";
 import { photoPathFor, photoSourcePathFor } from "./photo.ts";
 import {
   dropboxPhotoFileStore,

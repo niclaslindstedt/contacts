@@ -182,6 +182,9 @@ export const sv: Catalog = {
     // Positionsvisning i bläddringsvyn / miniatyrantal: "2 av 3".
     photoPosition: "{n} av {m}",
     showPhotoNumber: "Visa foto {n}",
+    // Bläddringsvyens kantknappar.
+    previousPhoto: "Föregående foto",
+    nextPhoto: "Nästa foto",
     // Överlägget som visas när en bild dras till den öppna kontakten.
     dropPhotoTitle: "Släpp för att ange foto",
     dropPhotoHint: "Släpp för att ange kontaktens foto",

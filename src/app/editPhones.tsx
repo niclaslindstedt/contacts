@@ -3,8 +3,10 @@ import { useState, type ReactNode } from "react";
 
 import {
   Button,
+  LABELED_FIELD_CLASS,
   PlusIcon,
   SelectPicker,
+  StarIcon,
   type SelectOption,
 } from "@niclaslindstedt/oss-framework/components";
 
@@ -14,8 +16,7 @@ import {
   getCountryByCallingCode,
   type CountryCode,
 } from "./countries/index.ts";
-import { KindToggle, RemoveButton, inputClass } from "./editWidgets.tsx";
-import { StarIcon } from "./icons.tsx";
+import { KindToggle, RemoveButton } from "./editWidgets.tsx";
 import { toStoredPhone } from "./format.ts";
 import { useT } from "./i18n/index.ts";
 import { withPrimaryPhone } from "./primaryPhone.ts";
@@ -177,7 +178,7 @@ function PhoneValueRow({
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
           if (e.key === "Escape") onRemove();
         }}
-        className={inputClass}
+        className={LABELED_FIELD_CLASS}
       />
       <RemoveButton label={t("contact.removeRow")} onClick={onRemove} />
     </div>

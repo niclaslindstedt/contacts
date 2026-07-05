@@ -9,13 +9,13 @@
 // design, like `PrivacyPage`.
 import {
   CloudIcon,
+  CodeIcon,
   DatabaseIcon,
   ExternalLinkIcon,
+  PersonIcon,
   ShieldIcon,
   SparklesIcon,
 } from "@niclaslindstedt/oss-framework/components";
-
-import { CodeIcon, PersonIcon } from "./icons.tsx";
 
 // BASE_URL carries the slot prefix (`/`, `/preview/`, `/branch/`) with a
 // trailing slash, so these resolve correctly under every deploy slot.

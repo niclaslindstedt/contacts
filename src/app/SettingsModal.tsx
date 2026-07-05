@@ -6,7 +6,9 @@ import {
   FloatingPanel,
   Modal,
   CloseIcon,
+  CodeIcon,
   DatabaseIcon,
+  ListIcon,
   MenuIcon,
   PaletteIcon,
   ScrollTextIcon,
@@ -15,7 +17,7 @@ import {
 } from "@niclaslindstedt/oss-framework/components";
 import { type ThemeAppearance } from "@niclaslindstedt/oss-framework/theme";
 
-import { CodeIcon, FormatIcon, ListIcon } from "./icons.tsx";
+import { FormatIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { APP_LOOK } from "./look.ts";
 import { DEFAULT_SETTINGS, type AppSettings } from "./useAppSettings.ts";

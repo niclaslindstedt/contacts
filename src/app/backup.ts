@@ -3,8 +3,8 @@
 // ZIP archive holding a single `contacts.json` — the whole serialized document
 // with photos and attachments inline — so it round-trips everything a contact
 // carries, independent of which backend externalises those files day to day.
-// The ZIP is deflate-compressed (see `zip.ts`), which claws back most of the
-// base64 bloat those inline images add.
+// The ZIP is deflate-compressed (the framework's `zip` module), which claws
+// back most of the base64 bloat those inline images add.
 //
 // Backups live in a `backups/` folder on whichever file-backed backend is
 // active (a picked local folder, Dropbox, or Google Drive), one file per
@@ -19,6 +19,7 @@
 // re-implementing them.
 
 import { type DropboxAuth } from "@niclaslindstedt/oss-framework/storage";
+import { createZip, readZip } from "@niclaslindstedt/oss-framework/zip";
 
 import { serializeDoc } from "./migrations.ts";
 import {
@@ -28,7 +29,6 @@ import {
 } from "./photoFileStore.ts";
 import { folderFileStore } from "./folderFileStore.ts";
 import type { AppData } from "./types.ts";
-import { createZip, readZip } from "./zip.ts";
 
 /** The single file inside every backup archive. */
 const BACKUP_DOC = "contacts.json";

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { useCallback, useRef } from "react";
 
-import { useLocalStorageState } from "./useLocalStorageState.ts";
+import { useLocalStorageState } from "@niclaslindstedt/oss-framework/hooks";
 
 // The app's achievements store — the seam the framework leaves to the app:
 // where earned trophies live. The framework's watcher calls `record` and reads
