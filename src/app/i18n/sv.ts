@@ -528,6 +528,18 @@ export const sv: Catalog = {
       fakeData: "Ladda testdata",
       fakeDataHint:
         "Byt ut din adressbok mot ett tillfälligt exempel fullt av varierade testkontakter. Det finns bara i minnet — inget sparas, och en omladdning av sidan tar tillbaka dina riktiga kontakter.",
+      photosTitle: "Foton",
+      reindexPhotos: "Indexera om foton",
+      reindexHint:
+        "Sök igenom den anslutna enhetens photos/-mapp igen och återkoppla varje fotofil som inte är länkad till en kontakt — så att förlorade foton återfås och bilder du själv lagt in enligt mönstret photos/<namn>-<contactId>-<photoId>.jpg tas upp. Se Loggar-fliken för detaljerna per fil.",
+      reindexDone: "Återkopplade {reconnected} foto(n); {total} är nu länkade.",
+      reindexNoBackend:
+        "Anslut en lokal mapp, Dropbox eller Google Drive först — utan en sådan finns inga fotofiler att indexera om.",
+      reindexEncrypted:
+        "Molnkopian är krypterad, så foton ligger inuti kuvertet och inte som separata filer — det finns inget att indexera om.",
+      reindexEmpty: "Lagringen innehåller inget dokument ännu.",
+      reindexError:
+        "Omindexeringen misslyckades — se Loggar-fliken för detaljer.",
       loggingTitle: "Loggning",
       captureLogs: "Fånga loggar",
       captureLogsHint:

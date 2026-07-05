@@ -250,9 +250,22 @@ export type SyncEngine = {
   // The action handlers the modal calls back.
   saveNow: () => void;
   reload: () => void;
+  /** Developer recovery: rescan the backend's `photos/` tree and reconnect any
+   *  filed photo the document no longer references onto its contact (see
+   *  {@link ReindexPhotosResult}). Resolves to a reasoned failure when it can't
+   *  run (no file backend, or an encrypted copy). */
+  reindexPhotos: () => Promise<ReindexPhotosResult>;
   reconnect: (() => Promise<void>) | null;
   checkConnection: () => Promise<ConnectionProbeResult>;
 };
+
+/** The outcome of a manual photo re-index. `ok` carries how many gallery photos
+ *  the healed backend copy now holds, across how many contacts, and how many of
+ *  them were freshly reconnected; the failure `reason` gates the button's
+ *  feedback. */
+export type ReindexPhotosResult =
+  | { ok: true; reconnected: number; total: number; contacts: number }
+  | { ok: false; reason: "no-backend" | "encrypted" | "empty" | "error" };
 
 export function useSyncEngine(
   store: ContactStore,
@@ -913,6 +926,56 @@ export function useSyncEngine(
     })();
   }, [adapter, store, encrypted, passwordRef]);
 
+  // Developer recovery: rescan the backend's photos/ tree and reconnect any
+  // filed photo the document no longer references onto its contact, then adopt
+  // the healed copy. The reconcile + rehydrate runs inside `adapter.load()`
+  // (which logs each match to the sync log), and the adopt kicks the photo
+  // sweep so the recovered references are persisted on the next save. A reasoned
+  // failure lets the settings button explain why nothing happened.
+  const reindexPhotos = useCallback(async (): Promise<ReindexPhotosResult> => {
+    if (encrypted) {
+      syncLog.info("reindex: skipped — the cloud copy is encrypted");
+      return { ok: false, reason: "encrypted" };
+    }
+    if (!adapter || !connected) {
+      syncLog.info("reindex: skipped — no connected file backend");
+      return { ok: false, reason: "no-backend" };
+    }
+    const before = countGalleryPhotos(dataRef.current.contacts);
+    syncLog.info("reindex: rescanning the backend for lost photo files");
+    try {
+      const snap = await adapter.load();
+      if (!snap) {
+        syncLog.info("reindex: the backend holds no document yet");
+        return { ok: false, reason: "empty" };
+      }
+      baseRevision.current = snap.revision;
+      store.adoptRemote(snap.text);
+      setSavedVersion(versionRef.current + 1);
+      setFault("none");
+      setSaveState("saved");
+      const after = countGalleryPhotosText(snap.text);
+      const reconnected = Math.max(0, after.total - before);
+      syncLog.info(
+        `reindex: done — ${after.total} photo(s) across ${after.contacts} ` +
+          `contact(s), ${reconnected} reconnected`,
+      );
+      return {
+        ok: true,
+        reconnected,
+        total: after.total,
+        contacts: after.contacts,
+      };
+    } catch (err) {
+      if (err instanceof AuthError) setFault("auth-error");
+      else if (encrypted && passwordRef.current === null) setLocked(true);
+      syncLog.error(
+        `reindex: failed — ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return { ok: false, reason: "error" };
+    }
+  }, [adapter, connected, encrypted, store, passwordRef]);
+
   // Resolve the connect-time replace-or-adopt prompt. "cloud" adopts the
   // existing cloud copy as the working document (the local copy steps aside);
   // "replace" keeps this device's copy and pushes it, overwriting the cloud.
@@ -1040,10 +1103,37 @@ export function useSyncEngine(
     },
     saveNow,
     reload,
+    reindexPhotos,
     reconnect:
       (isCloud && connected) || (isFolder && folderReconnectNeeded)
         ? reconnect
         : null,
     checkConnection,
   };
+}
+
+/** Total gallery photos across a set of contacts — the re-index feedback and
+ *  its before/after diff count these. */
+function countGalleryPhotos(
+  contacts: readonly { photos?: readonly unknown[] }[],
+): number {
+  return contacts.reduce(
+    (n, c) => n + (Array.isArray(c.photos) ? c.photos.length : 0),
+    0,
+  );
+}
+
+/** Parse a document's text and count its contacts and their total gallery
+ *  photos — used to report what a re-index reconnected. */
+function countGalleryPhotosText(text: string): {
+  total: number;
+  contacts: number;
+} {
+  try {
+    const doc = JSON.parse(text) as { contacts?: { photos?: unknown[] }[] };
+    const contacts = Array.isArray(doc.contacts) ? doc.contacts : [];
+    return { total: countGalleryPhotos(contacts), contacts: contacts.length };
+  } catch {
+    return { total: 0, contacts: 0 };
+  }
 }

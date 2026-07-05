@@ -241,7 +241,7 @@ export function SettingsModal({
           <StorageTab store={store} sync={sync} passwordRef={passwordRef} />
         )}
         {activeTab === "developer" && (
-          <DeveloperTab settings={draft} update={update} />
+          <DeveloperTab settings={draft} update={update} sync={sync} />
         )}
         {activeTab === "logs" && <LogsTab />}
       </div>

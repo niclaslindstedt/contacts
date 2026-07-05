@@ -138,6 +138,15 @@ Two things fall out of this:
   onto that contact and, on the following save, records the reference in the
   document.
 
+This reconciliation runs automatically each time the app opens the backend. You
+can also trigger it on demand from **Settings → Developer → Photos → Reindex
+photos** — handy right after dropping files in, or to recover lost photos without
+reloading. The button reports how many it reconnected, and **Settings →
+Developer → Logs** carries the per-file detail: one line per reconnected file
+naming its contact, and a warning for any file whose contact id no longer matches
+a card (the usual reason a photo won't reconnect — its card was re-created with a
+new id).
+
 This applies to the **plaintext** folder or cloud copy only. With encryption on
 (below), photos stay inside the encrypted envelope rather than as separate
 plaintext image files.

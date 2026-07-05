@@ -1005,12 +1005,23 @@ export function StorageTab({
 
 // --- Developer -------------------------------------------------------------
 
+// The message shown when a photo re-index can't run, keyed by the engine's
+// reason. Static literal keys so `t()` stays typed (no runtime-built key).
+const REINDEX_REASON_KEY = {
+  "no-backend": "settings.developer.reindexNoBackend",
+  encrypted: "settings.developer.reindexEncrypted",
+  empty: "settings.developer.reindexEmpty",
+  error: "settings.developer.reindexError",
+} as const;
+
 export function DeveloperTab({
   settings,
   update,
+  sync,
 }: {
   settings: AppSettings;
   update: Update;
+  sync: SyncEngine;
 }) {
   const t = useT();
   // Real install context, read from the framework's PWA detection. `true`
@@ -1020,6 +1031,31 @@ export function DeveloperTab({
   // draft setting): flipping it swaps the store's storage backend for the
   // ephemeral seed backend immediately. See `useDevSeed`.
   const { active: fakeData, setActive: setFakeData } = useDevSeed();
+  // The photo re-index recovery action: rescan the backend's `photos/` tree and
+  // reconnect any filed photo the document lost onto its contact. Only meaningful
+  // on a plaintext file backend; `status` reports the outcome (or why it can't
+  // run) below the button, and the sync log carries the per-file detail.
+  const [reindexing, setReindexing] = useState(false);
+  const [reindexStatus, setReindexStatus] = useState<string | null>(null);
+  const runReindex = async () => {
+    setReindexing(true);
+    setReindexStatus(null);
+    try {
+      const result = await sync.reindexPhotos();
+      if (result.ok) {
+        setReindexStatus(
+          t("settings.developer.reindexDone", {
+            reconnected: result.reconnected,
+            total: result.total,
+          }),
+        );
+      } else {
+        setReindexStatus(t(REINDEX_REASON_KEY[result.reason]));
+      }
+    } finally {
+      setReindexing(false);
+    }
+  };
   return (
     <div>
       <p className="mb-3 text-xs text-muted">{t("settings.developer.intro")}</p>
@@ -1030,6 +1066,27 @@ export function DeveloperTab({
           checked={fakeData}
           onChange={setFakeData}
         />
+      </Section>
+      <Section title={t("settings.developer.photosTitle")}>
+        <p className="text-xs text-muted">
+          {t("settings.developer.reindexHint")}
+        </p>
+        <Button
+          variant="secondary"
+          className="self-start"
+          disabled={reindexing}
+          onClick={() => void runReindex()}
+        >
+          <span className="flex items-center gap-1.5">
+            {reindexing && <SpinnerIcon className="h-4 w-4 animate-spin" />}
+            {t("settings.developer.reindexPhotos")}
+          </span>
+        </Button>
+        {reindexStatus && (
+          <p className="text-sm text-fg" role="status">
+            {reindexStatus}
+          </p>
+        )}
       </Section>
       <Section title={t("settings.developer.loggingTitle")}>
         <ToggleRow
