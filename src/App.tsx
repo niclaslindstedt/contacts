@@ -116,6 +116,18 @@ export function App() {
   // sidebar or a search hit takes over the main area as a full page (`view ===
   // "contact"`) instead, so those two paths never set this.
   const [contactModalOpen, setContactModalOpen] = useState(false);
+  // Close the browse-page card modal, saving whatever field the user was
+  // mid-edit in. The framework inputs commit on blur, and React fires no blur
+  // when the card unmounts, so a swipe- or Escape-close would otherwise drop
+  // the in-progress field — blur the active element ourselves first to force
+  // its commit. Closing then unmounts the card, which also drops its edit mode:
+  // reopening a card lands in read mode. The sidebar full page is deliberately
+  // different — it keeps edit mode across contact switches so you can edit one
+  // card after another — so only this modal path resets it.
+  const closeContactModal = useCallback(() => {
+    (document.activeElement as HTMLElement | null)?.blur?.();
+    setContactModalOpen(false);
+  }, []);
   // The "What's new" dialog, opened from the side menu's About dropdown.
   const [changelogOpen, setChangelogOpen] = useState(false);
   const { settings, setSettings } = useAppSettings();
@@ -454,23 +466,23 @@ export function App() {
           onNavigate={() => {
             // Selecting or creating a contact from the sidebar opens the card
             // as a full page (never the browse-page modal).
-            setContactModalOpen(false);
+            closeContactModal();
             setView("contact");
             if (!pinned) setDrawerOpen(false);
           }}
           view={view}
           onShowArchive={() => {
-            setContactModalOpen(false);
+            closeContactModal();
             setView("archive");
             if (!pinned) setDrawerOpen(false);
           }}
           onShowList={() => {
-            setContactModalOpen(false);
+            closeContactModal();
             setView("list");
             if (!pinned) setDrawerOpen(false);
           }}
           onShowFavorites={() => {
-            setContactModalOpen(false);
+            closeContactModal();
             setView("favorites");
             if (!pinned) setDrawerOpen(false);
           }}
@@ -524,7 +536,7 @@ export function App() {
           underneath. */}
       <Modal
         open={contactModalOpen && !!store.activeContact}
-        onClose={() => setContactModalOpen(false)}
+        onClose={closeContactModal}
         labelledBy="contact-modal-title"
         closeLabel={t("common.close")}
       >
@@ -700,7 +712,7 @@ export function App() {
         store={store}
         onNavigate={() => {
           // A search hit opens the card as a full page, like a sidebar pick.
-          setContactModalOpen(false);
+          closeContactModal();
           setView("contact");
           if (!pinned) setDrawerOpen(false);
         }}
