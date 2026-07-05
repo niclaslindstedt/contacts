@@ -63,6 +63,7 @@ import { useNamespaces } from "./app/useNamespaces.ts";
 import { useSyncEngine } from "./app/useSyncEngine.ts";
 import { cacheIdForBase } from "./app/pwa.ts";
 import { displayName } from "./app/types.ts";
+import { parsePastedContact } from "./app/pasteContact.ts";
 
 // A local-first contacts PWA built from the framework's shared surface. The
 // framework `Sidebar` frames the navigation (docked on wide screens, a
@@ -381,6 +382,53 @@ export function App() {
       setSearchOpen(true);
     },
   });
+
+  // Paste-to-create: on a desktop keyboard, pasting a copied "Name <email>" —
+  // the mailbox form address books and mail clients hand out — anywhere that
+  // isn't a text field files a new card with that name and address and opens it
+  // full-page in read mode (a non-empty card lands in read mode; see
+  // `ContactScreen`). The one-undo `applyImport` also raises the undo banner, so
+  // a stray paste is a single tap to reverse. Gated to wide screens (a bare
+  // paste is a hardware-keyboard gesture) and skipped while focus is in an input
+  // / textarea / select / contenteditable, so pasting into the search field or
+  // an edit form still pastes there. Mirrors the framework's quick-find gate.
+  useEffect(() => {
+    if (!pinned) return;
+    const handler = (e: ClipboardEvent) => {
+      if (e.defaultPrevented) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        target?.isContentEditable
+      ) {
+        return;
+      }
+      const parsed = parsePastedContact(e.clipboardData?.getData("text") ?? "");
+      if (!parsed) return;
+      e.preventDefault();
+      store.applyImport({
+        additions: [
+          {
+            firstName: parsed.firstName,
+            lastName: parsed.lastName,
+            phones: [],
+            emails: [{ value: parsed.email, label: "private" }],
+            addresses: [],
+            importantDates: [],
+          },
+        ],
+        merges: [],
+      });
+      closeContactModal();
+      setView("contact");
+      showUndoToast(t("toast.contactCreated"));
+    };
+    window.addEventListener("paste", handler);
+    return () => window.removeEventListener("paste", handler);
+  }, [pinned, store, closeContactModal, showUndoToast, t]);
 
   // Publish the docked sidebar's footprint as CSS variables so viewport-fixed
   // overlays (the `UpdateToast`) centre over the content band.
