@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { CONTACT_GLYPH_PATHS } from "../src/app/contactGlyphs.ts";
-import { buildDemoData } from "../src/app/dev/demoData.ts";
+import { buildDemoData, loadDemoPhotos } from "../src/app/dev/demoData.ts";
 import { createDemoBackend } from "../src/app/dev/seedBackend.ts";
 import { displayName } from "../src/app/types.ts";
+
+// The portraits live in a lazy chunk (kept out of the app's main bundle);
+// load them once so built documents carry their photos, as they do in the
+// app after `setDevDataMode("demo")` resolves.
+beforeAll(() => loadDemoPhotos());
 
 describe("buildDemoData", () => {
   it("returns a fresh, deterministic document each call", () => {
@@ -46,6 +51,7 @@ describe("buildDemoData", () => {
         ...c.addresses,
         ...c.importantDates,
         ...(c.attachments ?? []),
+        ...(c.photos ?? []),
       ]) {
         add(row.id);
       }
@@ -198,6 +204,25 @@ describe("buildDemoData", () => {
       expect(c.color).toMatch(/^#[0-9a-f]{6}$/);
     }
     expect(glyphs).toBeGreaterThanOrEqual(20);
+  });
+
+  it("wears real portrait photos on most cards", () => {
+    const { contacts } = buildDemoData();
+    const withPhoto = contacts.filter((c) => (c.photos?.length ?? 0) > 0);
+    // Most of the book is cast with a portrait — but, like a real address
+    // book, not every card has one.
+    expect(withPhoto.length).toBeGreaterThanOrEqual(60);
+    expect(withPhoto.length).toBeLessThan(contacts.length);
+    const prefix = "data:image/jpeg;base64,";
+    for (const c of withPhoto) {
+      const p = c.photos![0]!;
+      expect(p.photo?.startsWith(prefix)).toBe(true);
+      const bytes = Buffer.from(p.photo!.slice(prefix.length), "base64");
+      // A real JPEG (SOI marker), kept small — these ship in the bundle.
+      expect(bytes[0]).toBe(0xff);
+      expect(bytes[1]).toBe(0xd8);
+      expect(bytes.length).toBeLessThan(8192);
+    }
   });
 
   it("attaches real PDF documents with matching byte sizes", () => {

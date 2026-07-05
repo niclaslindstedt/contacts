@@ -26,6 +26,7 @@
 
 import { useEffect, useState } from "react";
 
+import { loadDemoPhotos } from "./demoData.ts";
 import {
   parseSeedEnv,
   type DevDataMode,
@@ -37,7 +38,10 @@ import {
 // starts "off" and `size` is the harmless default.
 const initial = parseSeedEnv(import.meta.env.VITE_SEED as string | undefined);
 
-let mode: DevDataMode = initial.mode;
+// Demo mode starts "off" even when `VITE_SEED=demo` asked for it: the portrait
+// chunk has to arrive first (see `setDevDataMode`), and the kick-off at the
+// bottom of this module flips the mode on as soon as it has.
+let mode: DevDataMode = initial.mode === "demo" ? "off" : initial.mode;
 // The fake-data size is fixed by the env for the whole session: the manual
 // toggle reuses whatever `VITE_SEED` asked for (or the curated sample when
 // it's unset), so turning the switch off and on again rebuilds the same
@@ -56,12 +60,34 @@ function notify(): void {
   }
 }
 
-/** Switch the in-memory dataset mode. Nothing is persisted. */
+// Monotonic token so a slow demo-photo load can't overwrite a newer choice:
+// each call claims the sequence, and a stale async flip aborts.
+let seq = 0;
+
+/** Switch the in-memory dataset mode. Nothing is persisted. Flipping into
+ *  demo mode is asynchronous under the hood: the portrait photos live in
+ *  their own lazy chunk (kept out of the main bundle — ~290 KB of JPEG that
+ *  production users shouldn't parse on boot), so the mode flips once that
+ *  chunk has loaded and the demo document can seed complete with faces. */
 export function setDevDataMode(next: DevDataMode): void {
+  const token = ++seq;
   if (mode === next) return;
+  if (next === "demo") {
+    void loadDemoPhotos().then(() => {
+      // A later call (toggled away while loading) wins over this one.
+      if (token !== seq) return;
+      mode = "demo";
+      notify();
+    });
+    return;
+  }
   mode = next;
   notify();
 }
+
+// The `VITE_SEED=demo` boot path: request the deferred flip now, so the dev
+// server lands on the demo book as soon as the portrait chunk is in.
+if (initial.mode === "demo") setDevDataMode("demo");
 
 export function useDevSeed(): {
   mode: DevDataMode;
