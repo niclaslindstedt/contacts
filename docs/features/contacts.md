@@ -12,9 +12,13 @@ marked as a **company** rather than a person.
   text. Only the parts a card actually carries are shown.
 - **List overview.** The **List** button in the sidebar's action grid opens a
   full-page overview of every contact in the namespace, **grouped under the
-  folder** each belongs to. Every folder that holds a contact is a section you
-  can collapse or expand (all start expanded); a folder with no contacts is left
-  out of the list. Each row shows a larger avatar or glyph beside the name — a
+  folder** each belongs to. Each folder heads a **collapsible separator band** —
+  a tinted divider with the folder's name and member count, not a foldery row —
+  that you can collapse or expand (all start expanded); a folder with no contacts
+  is left out of the list. The header carries a **collapse / expand all** button
+  next to **Select** that folds every section shut in one tap (and expands them
+  all again once they're collapsed). Each row shows a larger avatar or glyph
+  beside the name — a
   long name **wraps onto as many lines as it needs** rather than being cut off —
   with the contact's phone numbers under it as **pills** (tap one to call) and,
   optionally, their emails (tap to write). Every number pill leads with a small
@@ -69,8 +73,10 @@ marked as a **company** rather than a person.
   swiping the folder left on touch); the subfolder shows indented under its
   parent, and collapsing a folder folds its whole subtree away with it. **Drag**
   a folder onto another to nest it inside, or onto empty space to lift it back to
-  the top level (in manual folder-sort, dropping near a sibling's top or bottom
-  edge still reorders them) — or use the folder's **Move to folder** right-click
+  the top level. In **manual** folder-sort, dropping a folder near a sibling's
+  top or bottom (a generous zone — the top or bottom 40% of the row) **reorders**
+  it there instead, showing an insertion line; only the middle of a row nests the
+  folder in. You can also use the folder's **Move to folder** right-click
   action to nest it from a dropdown instead. A contact row's right-click menu
   carries the same **Move to folder** action. Archiving, deleting, or moving a folder to another
   namespace carries the whole subtree along — **archiving** or **deleting** a

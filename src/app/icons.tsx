@@ -97,6 +97,38 @@ export function CheckSquareIcon({ className }: IconProps) {
   );
 }
 
+/** A fold / unfold-vertical glyph — the "collapse all / expand all sections"
+ *  affordance on the list view's header. Chevron-based (never the folder mark)
+ *  so it reads as "fold these rows together", matching the list's separator
+ *  styling rather than the sidebar's folder icons. `collapsed` shows the
+ *  outward (unfold) arrows when everything is already folded — one tap expands
+ *  them all again — and the inward (fold) arrows otherwise. */
+export function SectionsToggleIcon({
+  className,
+  collapsed,
+}: IconProps & { collapsed?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable={false}
+      className={className}
+    >
+      <path d="M12 22v-6M12 8V2M4 12H2M10 12H8M16 12h-2M22 12h-2" />
+      {collapsed ? (
+        <path d="m15 19-3 3-3-3M15 5l-3-3-3 3" />
+      ) : (
+        <path d="m15 19-3-3-3 3M15 5l-3 3-3-3" />
+      )}
+    </svg>
+  );
+}
+
 /** A heart — the favorite affordance. Outline when a card isn't starred, a
  *  solid fill when it is, so the toggle reads its state at a glance. The
  *  Favorites page and the List / card toggles all draw this one mark, and the

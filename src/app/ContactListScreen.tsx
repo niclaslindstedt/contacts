@@ -5,7 +5,6 @@ import {
   CheckboxGlyph,
   ChevronDownIcon,
   ChevronRightIcon,
-  FolderIcon,
   FolderOpenIcon,
   GripIcon,
   RowActionMenu,
@@ -23,6 +22,7 @@ import {
   FavoriteIcon,
   ListIcon,
   PersonIcon,
+  SectionsToggleIcon,
 } from "./icons.tsx";
 import { MoveToFolderMenu } from "./MoveToFolderMenu.tsx";
 import { SelectToast } from "./SelectToast.tsx";
@@ -136,6 +136,22 @@ export function ContactListScreen({
     }
     return false;
   };
+  // The section keys the header's collapse-all button folds (and unfolds) in one
+  // tap — every group that shows a heading (a folder, plus the ungrouped group
+  // when it isn't the whole list). `allCollapsed` flips the button to "expand
+  // all" once they're all shut, mirroring the sidebar's folder toggle.
+  const collapsibleKeys = useMemo(
+    () =>
+      groups
+        .filter((g) => g.folder !== null || groups.length > 1)
+        .map((g) => g.folder?.id ?? UNGROUPED),
+    [groups],
+  );
+  const allCollapsed =
+    collapsibleKeys.length > 0 &&
+    collapsibleKeys.every((key) => collapsed.has(key));
+  const setAllCollapsed = (collapse: boolean) =>
+    setCollapsed(collapse ? new Set(collapsibleKeys) : new Set());
 
   // Select mode: off shows tap-to-open rows; on shows checkboxes and the batch
   // copy / export toolbar. Leaving select mode clears the selection.
@@ -256,6 +272,25 @@ export function ContactListScreen({
         <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-wide text-fg-bright">
           {favoritesOnly ? t("favorites.title") : t("list.title")}
         </h1>
+        {!selecting && collapsibleKeys.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setAllCollapsed(!allCollapsed)}
+            aria-label={
+              allCollapsed
+                ? t("menu.expandAllFolders")
+                : t("menu.collapseAllFolders")
+            }
+            title={
+              allCollapsed
+                ? t("menu.expandAllFolders")
+                : t("menu.collapseAllFolders")
+            }
+            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-line text-muted hover:bg-surface-2 hover:text-fg"
+          >
+            <SectionsToggleIcon className="h-5 w-5" collapsed={allCollapsed} />
+          </button>
+        )}
         {total > 0 && !selecting && (
           <button
             type="button"
@@ -615,9 +650,12 @@ function ReorderGrip({
   );
 }
 
-// A collapsible folder / ungrouped heading — a disclosure caret, the folder
-// glyph, its name, and the member count. While a card is dragged over its
-// section, `dropOver` lights the header up so it reads as the landing folder.
+// A collapsible section heading — deliberately unfoldery: a tinted separator
+// band (its own surface colour, set apart from the white contact rows) with a
+// disclosure caret and an uppercase label, so it reads as a collapsible divider
+// between groups rather than a folder. No folder glyph. While a card is dragged
+// over its section, `dropOver` washes the band in the accent so it reads as the
+// landing group.
 function SectionHeader({
   name,
   count,
@@ -636,30 +674,23 @@ function SectionHeader({
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className={`flex w-full cursor-pointer items-center gap-2 border-b px-1 py-2 text-left text-fg hover:text-fg-bright ${
+      className={`mb-0.5 flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${
         dropOver
-          ? "rounded-md border-accent bg-accent/10 text-fg-bright"
-          : "border-line"
+          ? "bg-accent/15 text-fg-bright ring-1 ring-accent/50"
+          : "bg-surface-2 text-muted hover:bg-surface-3 hover:text-fg"
       }`}
     >
-      <span className="shrink-0 text-muted">
+      <span className="shrink-0">
         {expanded ? (
           <ChevronDownIcon className="h-4 w-4" />
         ) : (
           <ChevronRightIcon className="h-4 w-4" />
         )}
       </span>
-      <span className={`shrink-0 ${expanded ? "text-accent" : "text-muted"}`}>
-        {expanded ? (
-          <FolderOpenIcon className="h-5 w-5" />
-        ) : (
-          <FolderIcon className="h-5 w-5" />
-        )}
-      </span>
-      <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-wide">
+      <span className="min-w-0 flex-1 truncate text-xs font-semibold tracking-wide uppercase">
         {name}
       </span>
-      <span className="shrink-0 text-xs text-muted tabular-nums">{count}</span>
+      <span className="shrink-0 text-xs tabular-nums opacity-70">{count}</span>
     </button>
   );
 }

@@ -533,12 +533,13 @@ export function SideMenuContent({
       kind: "folder",
       id: folder.id,
     });
-    // What a folder dragged over this one does, picked from the pointer's third
-    // of the row: the middle **nests** into the folder (a "file into"
-    // highlight), the top / bottom edges **reorder** it before / after among its
-    // siblings (a thin insertion line). Reordering only applies in manual sort
-    // and only between siblings — otherwise the whole row nests. The pointer's
-    // position is mirrored into the drop ref that `onDrop` reads.
+    // What a folder dragged over this one does, picked from where the pointer
+    // sits down the row: the top / bottom 40% **reorder** it before / after
+    // among its siblings (a thin insertion line), so the "drop between two
+    // folders" zone is generous and easy to hit; only the middle fifth **nests**
+    // into the folder (a "file into" highlight). Reordering only applies in
+    // manual sort and only between siblings — otherwise the whole row nests. The
+    // pointer's position is mirrored into the drop ref that `onDrop` reads.
     const draggingFolderId =
       dnd.dragging?.kind === "folder" ? dnd.dragging.id : null;
     let showFolderLine = false;
@@ -558,8 +559,8 @@ export function SideMenuContent({
         const canReorder = manualFolders && sameParent;
         const frac = (dnd.pointer.y - rect.top) / rect.height;
         let place: "before" | "into" | "after" = "into";
-        if (canReorder && frac < 0.25) place = "before";
-        else if (canReorder && frac > 0.75) place = "after";
+        if (canReorder && frac < 0.4) place = "before";
+        else if (canReorder && frac > 0.6) place = "after";
         if (place === "into") {
           nestHighlight = canNestFolder(
             visibleFolders,
