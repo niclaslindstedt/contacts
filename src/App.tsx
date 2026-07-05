@@ -67,6 +67,18 @@ export function App() {
   const [appearance, setAppearance] = useState<ThemeAppearance>(APP_LOOK);
   useApplyTheme(appearance);
 
+  // Mirror the active density preset onto `<html>` as a discrete attribute. The
+  // framework's theme engine publishes density only as the `--density-row-py` /
+  // `--density-row-px` CSS variables (which the row components consume); the
+  // attribute lets app-owned CSS key off the three levels by name to tighten
+  // the settings cards, the sidebar island, and the footer rail to match.
+  useEffect(() => {
+    document.documentElement.setAttribute(
+      "data-density",
+      appearance.ui.density,
+    );
+  }, [appearance.ui.density]);
+
   // Namespaces (workspaces). The registry + active pointer live in the app
   // (`useNamespaces`, the framework's "store stays in the app" seam); the
   // document store keys off the active slug, so switching a namespace swaps

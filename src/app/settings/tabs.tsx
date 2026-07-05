@@ -100,6 +100,9 @@ export function AppearanceTab({
   update: Update;
 }) {
   const t = useT();
+  // The Colours section only renders for the Custom theme; the reorder that
+  // drops it below the backdrop section keys off this (see styles.css).
+  const isCustom = appearance.theme === "custom";
 
   useEffect(() => {
     applyBackdropVars(draft);
@@ -129,43 +132,50 @@ export function AppearanceTab({
   ];
 
   return (
-    <div>
+    <div
+      className={`appearance-tab ${isCustom ? "appearance-tab--custom" : ""}`}
+    >
       <AppearancePicker appearance={appearance} onChange={setAppearance} />
-      <Section title={t("settings.appearance.backdropTitle")}>
-        <p className="text-xs text-muted">
-          {t("settings.appearance.backdropIntro")}
-        </p>
-        <div className="flex flex-col gap-1">
-          <span className="text-sm text-fg-bright">
-            {t("settings.appearance.darknessLabel")}
-          </span>
-          <SegmentedControl<BackdropDarkness>
-            value={draft.modalBackdropDarkness}
-            options={darknessOptions}
-            onChange={(next) => update("modalBackdropDarkness", next)}
-            fullWidth
-            ariaLabel={t("settings.appearance.darknessLabel")}
-          />
+      {/* `mt-3` restores the inter-section gap the framework `Section` gave
+          itself before it was wrapped (the wrapper makes it a `:first-child`,
+          so its own `first:mt-0` now zeroes the top edge). */}
+      <div className="appearance-backdrop mt-3">
+        <Section title={t("settings.appearance.backdropTitle")}>
           <p className="text-xs text-muted">
-            {t("settings.appearance.darknessHint")}
+            {t("settings.appearance.backdropIntro")}
           </p>
-        </div>
-        <div className="flex flex-col gap-1">
-          <span className="text-sm text-fg-bright">
-            {t("settings.appearance.blurLabel")}
-          </span>
-          <SegmentedControl<BackdropBlur>
-            value={draft.modalBackdropBlur}
-            options={blurOptions}
-            onChange={(next) => update("modalBackdropBlur", next)}
-            fullWidth
-            ariaLabel={t("settings.appearance.blurLabel")}
-          />
-          <p className="text-xs text-muted">
-            {t("settings.appearance.blurHint")}
-          </p>
-        </div>
-      </Section>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-fg-bright">
+              {t("settings.appearance.darknessLabel")}
+            </span>
+            <SegmentedControl<BackdropDarkness>
+              value={draft.modalBackdropDarkness}
+              options={darknessOptions}
+              onChange={(next) => update("modalBackdropDarkness", next)}
+              fullWidth
+              ariaLabel={t("settings.appearance.darknessLabel")}
+            />
+            <p className="text-xs text-muted">
+              {t("settings.appearance.darknessHint")}
+            </p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-fg-bright">
+              {t("settings.appearance.blurLabel")}
+            </span>
+            <SegmentedControl<BackdropBlur>
+              value={draft.modalBackdropBlur}
+              options={blurOptions}
+              onChange={(next) => update("modalBackdropBlur", next)}
+              fullWidth
+              ariaLabel={t("settings.appearance.blurLabel")}
+            />
+            <p className="text-xs text-muted">
+              {t("settings.appearance.blurHint")}
+            </p>
+          </div>
+        </Section>
+      </div>
     </div>
   );
 }
