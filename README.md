@@ -121,7 +121,9 @@ Enter — and start filling in the card.
   Settings → Storage (all contacts as `.vcf`, CSV, or JSON).
 - **Import** — drag a `.vcf` (or CSV / JSON backup) straight onto the contact
   screen — handy for dropping a card shared out of the iOS Contacts app — or
-  pick a file from Settings → Storage. See [`docs/export.md`](docs/export.md).
+  pick a file from Settings → Storage. Duplicates merge instead of piling up: a
+  card sharing a phone/email merges silently, a matching name asks first, and a
+  merge only fills in what's missing. See [`docs/export.md`](docs/export.md).
 - **Backups** — Settings → Storage → Backups: download the whole address book as
   a dated, compressed `.zip` (photos and attachments included) or restore one
   from disk. Connect a local folder or cloud drive to browse, take, and restore

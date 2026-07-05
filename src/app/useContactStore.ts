@@ -6,6 +6,7 @@ import { DEFAULT_NAMESPACE_SLUG } from "@niclaslindstedt/oss-framework/namespace
 import { dueContacts, isoDate } from "./autoArchive.ts";
 import { canNestFolder, subtreeFolderIds } from "./contactList.ts";
 import type { ImportedContact } from "./import.ts";
+import { mergeContactDraft, type ImportMerge } from "./importMerge.ts";
 import { parseDoc, serializeDoc } from "./migrations.ts";
 import { starterDoc } from "./seed.ts";
 import type { AppData, Contact, Folder } from "./types.ts";
@@ -153,6 +154,40 @@ export const localDocBackend: DocBackend = {
     }
   },
 };
+
+/** Mint a stored {@link Contact} from an imported draft: a fresh id for the
+ *  card and for every one of its rows, filed to the root (the importer doesn't
+ *  know the document's folders). */
+function mintImported(d: ImportedContact): Contact {
+  return {
+    id: freshId("contact"),
+    firstName: d.firstName,
+    lastName: d.lastName,
+    ...(d.company ? { company: d.company } : {}),
+    ...(d.isCompany ? { isCompany: true } : {}),
+    ...(d.homepage ? { homepage: d.homepage } : {}),
+    phones: d.phones.map((p) => ({ ...p, id: freshId("phone") })),
+    emails: d.emails.map((e) => ({ ...e, id: freshId("email") })),
+    addresses: d.addresses.map((a) => ({ ...a, id: freshId("address") })),
+    ...(d.birthday ? { birthday: d.birthday } : {}),
+    importantDates: d.importantDates.map((x) => ({
+      ...x,
+      id: freshId("date"),
+    })),
+    ...(d.notes ? { notes: d.notes } : {}),
+    ...(d.photo ? { photos: [{ id: freshId("photo"), photo: d.photo }] } : {}),
+    ...(d.attachments && d.attachments.length > 0
+      ? {
+          attachments: d.attachments.map((a) => ({
+            ...a,
+            id: freshId("attach"),
+          })),
+        }
+      : {}),
+    ...(d.ice ? { ice: true } : {}),
+    folderId: null,
+  };
+}
 
 /** Pick the active contact after a delete/archive: keep the current one if
  *  it's still visible, otherwise fall to the first un-archived card — so
@@ -326,51 +361,48 @@ export function useContactStore(
     [commit, data],
   );
 
-  // File a batch of parsed cards (a vCard / JSON / CSV drop or file pick) into
-  // the document. Every card and every one of its rows gets a fresh id, so an
-  // import never collides with an id already on disk; the whole batch lands as
-  // one undoable step, and the first imported card is opened. Returns how many
-  // cards were filed so the caller can report it. Filed to the root — the
-  // importer doesn't know the document's folders.
-  const importContacts = useCallback(
-    (drafts: readonly ImportedContact[]): number => {
-      if (drafts.length === 0) return 0;
-      const contacts: Contact[] = drafts.map((d) => ({
-        id: freshId("contact"),
-        firstName: d.firstName,
-        lastName: d.lastName,
-        ...(d.company ? { company: d.company } : {}),
-        ...(d.isCompany ? { isCompany: true } : {}),
-        ...(d.homepage ? { homepage: d.homepage } : {}),
-        phones: d.phones.map((p) => ({ ...p, id: freshId("phone") })),
-        emails: d.emails.map((e) => ({ ...e, id: freshId("email") })),
-        addresses: d.addresses.map((a) => ({ ...a, id: freshId("address") })),
-        ...(d.birthday ? { birthday: d.birthday } : {}),
-        importantDates: d.importantDates.map((x) => ({
-          ...x,
-          id: freshId("date"),
-        })),
-        ...(d.notes ? { notes: d.notes } : {}),
-        ...(d.photo
-          ? { photos: [{ id: freshId("photo"), photo: d.photo }] }
-          : {}),
-        ...(d.attachments && d.attachments.length > 0
-          ? {
-              attachments: d.attachments.map((a) => ({
-                ...a,
-                id: freshId("attach"),
-              })),
-            }
-          : {}),
-        ...(d.ice ? { ice: true } : {}),
-        folderId: null,
-      }));
+  // File a triaged import batch (a vCard / JSON / CSV drop or file pick, after
+  // `planImport` and any user-confirmed conflicts — see `useImportFlow`) into
+  // the document. `additions` land as new cards with fresh ids; each merge
+  // folds its draft into the existing target card, adding only what's missing
+  // (see `mergeContactDraft`). The whole batch is one undoable step, and the
+  // first new (or merged) card is opened. Returns the counts so the caller can
+  // report them. A merge whose target has meanwhile vanished files as a new
+  // card rather than being dropped.
+  const applyImport = useCallback(
+    (plan: {
+      additions: readonly ImportedContact[];
+      merges: readonly ImportMerge[];
+    }): { added: number; merged: number } => {
+      const { additions, merges } = plan;
+      if (additions.length === 0 && merges.length === 0) {
+        return { added: 0, merged: 0 };
+      }
+      const byId = new Map(data.contacts.map((c) => [c.id, c] as const));
+      const orphaned: ImportedContact[] = [];
+      let merged = 0;
+      let firstMergedId: string | null = null;
+      for (const m of merges) {
+        const target = byId.get(m.targetId);
+        if (!target) {
+          orphaned.push(m.draft);
+          continue;
+        }
+        byId.set(m.targetId, mergeContactDraft(target, m.draft, freshId));
+        merged += 1;
+        firstMergedId ??= m.targetId;
+      }
+      const minted = [...additions, ...orphaned].map(mintImported);
+      const contacts = [
+        ...data.contacts.map((c) => byId.get(c.id)!),
+        ...minted,
+      ];
       commit({
         ...data,
-        contacts: [...data.contacts, ...contacts],
-        activeContactId: contacts[0]!.id,
+        contacts,
+        activeContactId: minted[0]?.id ?? firstMergedId ?? data.activeContactId,
       });
-      return contacts.length;
+      return { added: minted.length, merged };
     },
     [commit, data],
   );
@@ -797,7 +829,7 @@ export function useContactStore(
     version,
     setActive,
     addContact,
-    importContacts,
+    applyImport,
     updateContact,
     deleteContact,
     archiveContact,

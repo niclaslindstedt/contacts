@@ -33,7 +33,12 @@ import { log, logStore } from "../log.ts";
 import { useDevSeed } from "../dev/useDevSeed.ts";
 import { useT } from "../i18n/index.ts";
 import { contactsToCsv, contactsToVCards } from "../export.ts";
-import { IMPORT_ACCEPT, readImportedContacts } from "../importFiles.ts";
+import { IMPORT_ACCEPT } from "../importFiles.ts";
+import {
+  importResultText,
+  useImportFlow,
+  type ImportRunResult,
+} from "../useImportFlow.tsx";
 import { serializeDoc } from "../migrations.ts";
 import {
   backupFileName,
@@ -628,20 +633,24 @@ export function StorageTab({
     log.info(`export: downloaded contacts.${kind}`);
   };
 
-  const runImport = async (files: FileList | null) => {
+  // The file-picker path into the shared import flow (the same triage +
+  // duplicate-confirm dialog the drag-and-drop overlay uses).
+  const { importFiles, conflictDialog } = useImportFlow(
+    store,
+    (r: ImportRunResult) => {
+      setImportMsg(importResultText(t, r));
+      if (r.total === 0) {
+        log.warn("import: no contacts found in picked file(s)");
+      } else {
+        log.info(
+          `import: filed ${r.added} new contact(s), merged ${r.merged} into existing`,
+        );
+      }
+    },
+  );
+  const runImport = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const { contacts } = await readImportedContacts(Array.from(files));
-    if (contacts.length === 0) {
-      setImportMsg(t("import.none"));
-      log.warn("import: no contacts found in picked file(s)");
-      return;
-    }
-    const n = store.importContacts(contacts);
-    if (n > 0) unlockTrophy("importer");
-    setImportMsg(
-      n === 1 ? t("import.doneOne") : t("import.done", { n: String(n) }),
-    );
-    log.info(`import: filed ${n} contact(s) from picked file(s)`);
+    void importFiles(Array.from(files));
   };
 
   // Export the whole document as a dated `.zip` straight to disk — a backup
@@ -893,7 +902,7 @@ export function StorageTab({
           multiple
           className="hidden"
           onChange={(e) => {
-            void runImport(e.target.files);
+            runImport(e.target.files);
             // Reset so re-picking the same file fires `change` again.
             e.target.value = "";
           }}
@@ -909,6 +918,7 @@ export function StorageTab({
             <span className="text-sm text-success">{importMsg}</span>
           )}
         </div>
+        {conflictDialog}
       </Section>
 
       <Section title={t("settings.storage.exportTitle")}>
