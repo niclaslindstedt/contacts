@@ -585,7 +585,7 @@ function MethodValueRow({
   const [draft, setDraft] = useState(initial);
   const [draftKind, setDraftKind] = useState(kind);
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       {showKind && (
         <KindToggle
           kind={onKindChange ? kind : draftKind}

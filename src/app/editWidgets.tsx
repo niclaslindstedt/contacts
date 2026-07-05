@@ -2,7 +2,6 @@
 import { useId, useState, type ReactNode } from "react";
 
 import {
-  SegmentedControl,
   TrashIcon,
   type IconProps,
 } from "@niclaslindstedt/oss-framework/components";
@@ -136,14 +135,16 @@ export function LabeledTextarea({
   );
 }
 
-// The private / work type toggle shared by phone and email rows — the
-// framework `SegmentedControl` with a glyph per option (a person for private, a
-// briefcase for work) in place of a dropdown. The wrapper captures the pointer
-// press and cancels its default so tapping a glyph keeps an open value input
-// focused: without it the mousedown would blur the field first — committing
-// (and, for a fresh draft row, removing) it — before the click lands, forcing a
-// defocus-then-click. Cancelling the focus shift lets a tap on the glyph flip
-// the kind while the user is still typing.
+// The private / work type toggle shared by phone and email rows. A method is
+// one or the other, never both, so this is a single button that swaps between
+// the two glyphs (a person for private, a briefcase for work) on each tap
+// rather than a two-segment control that spends row width showing the option
+// you're *not* on. The current kind tints the button (work in accent) and the
+// swap animates via `transition-colors`. The wrapper captures the pointer press
+// and cancels its default so tapping keeps an open value input focused: without
+// it the mousedown would blur the field first — committing (and, for a fresh
+// draft row, removing) it — before the click lands. Cancelling the focus shift
+// lets a tap flip the kind while the user is still typing.
 export function KindToggle({
   kind,
   ariaLabel,
@@ -154,30 +155,28 @@ export function KindToggle({
   onChange: (next: ContactMethodKind) => void;
 }) {
   const t = useT();
-  const glyph = (
-    Icon: (p: { className?: string }) => ReactNode,
-    text: string,
-  ) => (
-    <span className="flex h-4 items-center">
-      <Icon className="h-4 w-4" />
-      <span className="sr-only">{text}</span>
-    </span>
-  );
+  const isWork = kind === "work";
+  const Icon = isWork ? BuildingIcon : PersonIcon;
+  // The accessible name pairs the control's purpose with its current value, so a
+  // screen reader announces e.g. "Number type: Work"; the tap flips it to the
+  // other kind.
+  const label = `${ariaLabel}: ${isWork ? t("contact.kindWork") : t("contact.kindPrivate")}`;
   return (
-    <div className="shrink-0" onMouseDownCapture={(e) => e.preventDefault()}>
-      <SegmentedControl<ContactMethodKind>
-        value={kind}
-        ariaLabel={ariaLabel}
-        onChange={onChange}
-        options={[
-          {
-            value: "private",
-            label: glyph(PersonIcon, t("contact.kindPrivate")),
-          },
-          { value: "work", label: glyph(BuildingIcon, t("contact.kindWork")) },
-        ]}
-      />
-    </div>
+    <span className="shrink-0" onMouseDownCapture={(e) => e.preventDefault()}>
+      <button
+        type="button"
+        onClick={() => onChange(isWork ? "private" : "work")}
+        aria-label={label}
+        title={label}
+        className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border transition-colors hover:border-accent ${
+          isWork
+            ? "border-accent/40 bg-accent/10 text-accent"
+            : "border-line bg-surface-2 text-muted hover:text-fg"
+        }`}
+      >
+        <Icon className="h-4 w-4" />
+      </button>
+    </span>
   );
 }
 
@@ -195,7 +194,7 @@ export function RemoveButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded text-muted hover:bg-danger/10 hover:text-danger"
+      className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded text-muted hover:bg-danger/10 hover:text-danger"
     >
       <TrashIcon className="h-4 w-4" />
     </button>
