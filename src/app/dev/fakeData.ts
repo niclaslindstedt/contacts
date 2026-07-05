@@ -38,9 +38,14 @@ import type {
  *  `"large"` a named shorthand for a stress-test count. */
 export type FakeSeedSize = "sample" | number;
 
+/** Which in-memory dataset (if any) has taken over storage: the edge-case
+ *  **fake** data, the presentation-grade **demo** data (`demoData.ts`), or
+ *  neither. One mode for both toggles so they stay mutually exclusive. */
+export type DevDataMode = "off" | "fake" | "demo";
+
 /** The parsed intent of the `VITE_SEED` build-time variable. */
 export type FakeSeedConfig = {
-  active: boolean;
+  mode: DevDataMode;
   size: FakeSeedSize;
 };
 
@@ -654,23 +659,27 @@ function generatedContact(i: number): Contact {
   return contact;
 }
 
-/** Normalise a raw `VITE_SEED` value into an intent. Absent / falsy → inactive;
- *  `large`/`xl`/`stress` → the big stress count; a number > 1 → that many
- *  cards; anything else truthy (`1`, `true`, `on`, `sample`) → the curated set. */
+/** Normalise a raw `VITE_SEED` value into an intent. Absent / falsy → off;
+ *  `demo` → the presentation-grade demo document; `large`/`xl`/`stress` → the
+ *  big fake stress count; a number > 1 → that many fake cards; anything else
+ *  truthy (`1`, `true`, `on`, `sample`) → the curated fake set. */
 export function parseSeedEnv(raw: string | undefined | null): FakeSeedConfig {
   const v = (raw ?? "").trim().toLowerCase();
   if (v === "" || v === "0" || v === "false" || v === "off" || v === "no") {
-    return { active: false, size: "sample" };
+    return { mode: "off", size: "sample" };
+  }
+  if (v === "demo") {
+    return { mode: "demo", size: "sample" };
   }
   if (v === "large" || v === "xl" || v === "stress" || v === "max") {
-    return { active: true, size: LARGE_SEED_COUNT };
+    return { mode: "fake", size: LARGE_SEED_COUNT };
   }
   const n = Number(v);
   if (Number.isFinite(n) && n > 1) {
-    return { active: true, size: Math.floor(n) };
+    return { mode: "fake", size: Math.floor(n) };
   }
   // "1", "true", "on", "yes", "sample", or any other truthy token.
-  return { active: true, size: "sample" };
+  return { mode: "fake", size: "sample" };
 }
 
 /** Build a fresh fake-data document. `"sample"` returns just the curated

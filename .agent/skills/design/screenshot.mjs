@@ -169,20 +169,18 @@ export async function enterEditMode(page) {
 
 // Ensure the side menu is reachable: on wide screens it is docked, so
 // this is a no-op; on phones it opens the drawer via the floating
-// "Open sidebar" button.
+// "Open sidebar" button. Keyed off that button (not the drawer's "New
+// contact" button, which an *empty* address book shadows with a contact
+// row of the same accessible name — the starter draft displays as "New
+// contact" — making the old guard think the drawer was already open).
 export async function openSidebar(page) {
-  const newContact = page
-    .getByRole("button", { name: /^New contact$/ })
-    .first();
-  if (await newContact.isVisible().catch(() => false)) return;
   const open = page.getByRole("button", { name: /^Open sidebar$/ }).first();
-  if (await open.count()) {
-    await open.click();
-    await page
-      .getByRole("button", { name: /^New contact$/ })
-      .first()
-      .waitFor();
-  }
+  if (!(await open.isVisible().catch(() => false))) return;
+  await open.click();
+  await page
+    .getByRole("button", { name: /^Settings$/ })
+    .first()
+    .waitFor();
 }
 
 // Open the overview List page (all active contacts, grouped by folder)

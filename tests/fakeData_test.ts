@@ -10,34 +10,40 @@ import { createSeedBackend } from "../src/app/dev/seedBackend.ts";
 import { displayName } from "../src/app/types.ts";
 
 describe("parseSeedEnv", () => {
-  it("treats absent / falsy values as inactive", () => {
+  it("treats absent / falsy values as off", () => {
     for (const raw of [undefined, null, "", "0", "false", "off", "no", "  "]) {
-      expect(parseSeedEnv(raw)).toEqual({ active: false, size: "sample" });
+      expect(parseSeedEnv(raw)).toEqual({ mode: "off", size: "sample" });
     }
   });
 
-  it("treats plain truthy tokens as the curated sample", () => {
+  it("treats plain truthy tokens as the curated fake sample", () => {
     for (const raw of ["1", "true", "on", "yes", "sample", "SAMPLE", "wat"]) {
-      expect(parseSeedEnv(raw)).toEqual({ active: true, size: "sample" });
+      expect(parseSeedEnv(raw)).toEqual({ mode: "fake", size: "sample" });
     }
   });
 
   it("expands the large / stress aliases to the stress count", () => {
     for (const raw of ["large", "LARGE", "xl", "stress", "max"]) {
       expect(parseSeedEnv(raw)).toEqual({
-        active: true,
+        mode: "fake",
         size: LARGE_SEED_COUNT,
       });
     }
   });
 
   it("reads a number as an explicit contact count", () => {
-    expect(parseSeedEnv("250")).toEqual({ active: true, size: 250 });
-    expect(parseSeedEnv("42")).toEqual({ active: true, size: 42 });
+    expect(parseSeedEnv("250")).toEqual({ mode: "fake", size: 250 });
+    expect(parseSeedEnv("42")).toEqual({ mode: "fake", size: 42 });
     // A bare "1" is the sample, not a one-contact count.
-    expect(parseSeedEnv("1")).toEqual({ active: true, size: "sample" });
+    expect(parseSeedEnv("1")).toEqual({ mode: "fake", size: "sample" });
     // Fractions floor to whole cards.
-    expect(parseSeedEnv("9.9")).toEqual({ active: true, size: 9 });
+    expect(parseSeedEnv("9.9")).toEqual({ mode: "fake", size: 9 });
+  });
+
+  it("reads the demo token as demo mode", () => {
+    for (const raw of ["demo", "DEMO", " demo "]) {
+      expect(parseSeedEnv(raw)).toEqual({ mode: "demo", size: "sample" });
+    }
   });
 });
 

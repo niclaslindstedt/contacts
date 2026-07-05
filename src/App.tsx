@@ -56,7 +56,7 @@ import { status } from "./output.ts";
 import { useAchievements } from "./app/useAchievements.ts";
 import { applyBackdropVars, useAppSettings } from "./app/useAppSettings.ts";
 import { useDevSeed } from "./app/dev/useDevSeed.ts";
-import { createSeedBackend } from "./app/dev/seedBackend.ts";
+import { createDemoBackend, createSeedBackend } from "./app/dev/seedBackend.ts";
 import { localDocBackend, useContactStore } from "./app/useContactStore.ts";
 import { toastStore, UNDO_TOAST_MS } from "./app/toast.ts";
 import { useNamespaces } from "./app/useNamespaces.ts";
@@ -91,15 +91,17 @@ export function App() {
   // document store keys off the active slug, so switching a namespace swaps
   // the whole address book and its undo history.
   const ns = useNamespaces();
-  // Developer "Fake data" takeover: when active (via the Developer tab toggle or
-  // the `VITE_SEED` build var), an in-memory backend seeded with sample data
-  // replaces the real localStorage backend for the session — nothing on disk is
-  // touched, and a reload restores the real address book (see `useDevSeed`).
+  // Developer "Fake data" / "Demo data" takeover: when a mode is active (via
+  // the Developer tab toggles or the `VITE_SEED` build var), an in-memory
+  // backend seeded with sample data replaces the real localStorage backend for
+  // the session — nothing on disk is touched, and a reload restores the real
+  // address book (see `useDevSeed`).
   const devSeed = useDevSeed();
-  const backend = useMemo(
-    () => (devSeed.active ? createSeedBackend(devSeed.size) : localDocBackend),
-    [devSeed.active, devSeed.size],
-  );
+  const backend = useMemo(() => {
+    if (devSeed.mode === "fake") return createSeedBackend(devSeed.size);
+    if (devSeed.mode === "demo") return createDemoBackend();
+    return localDocBackend;
+  }, [devSeed.mode, devSeed.size]);
   const store = useContactStore(ns.activeSlug, backend);
   const [namespacesOpen, setNamespacesOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -141,7 +143,12 @@ export function App() {
   // copy lives only in this in-memory ref; the framework's encryption wrapper
   // reads it fresh on every operation and stores it nowhere.
   const passwordRef = useRef<string | null>(null);
-  const sync = useSyncEngine(store, ns.activeSlug, passwordRef, devSeed.active);
+  const sync = useSyncEngine(
+    store,
+    ns.activeSlug,
+    passwordRef,
+    devSeed.mode !== "off",
+  );
   const [syncDetailsOpen, setSyncDetailsOpen] = useState(false);
   // Applying an update (skip-waiting → the new service worker takes control →
   // the page reloads) has a visible gap. Flip a flag on the tap so the toast
