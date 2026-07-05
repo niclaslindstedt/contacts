@@ -109,9 +109,10 @@ marked as a **company** rather than a person.
   the Format tab — the stored digits and code don't change when you switch
   formats.
 - **Private / work types.** Each phone number and email address carries a type —
-  Private or Work — flipped with a small two-glyph toggle in edit mode (a person
-  for Private, a briefcase for Work); tapping a glyph flips the type without the
-  field losing focus, so you can type a number and set its type in one go. New
+  Private or Work — flipped with a small single-glyph button in edit mode (a
+  person for Private, a briefcase for Work) that swaps between the two on each
+  tap; tapping it flips the type without the field losing focus, so you can type
+  a number and set its type in one go. New
   numbers and addresses default to Work. The type is shown as the row's label in
   read mode and maps onto the standard vCard TYPE on export. A **company** card
   hides this toggle — its numbers and emails are all the organisation's, with no

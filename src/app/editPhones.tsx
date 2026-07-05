@@ -60,7 +60,10 @@ function countryOptions(
 }
 
 // The compact trigger: the country's flag (a globe when the code is unknown)
-// over its `+code`. Kept narrow so the value field keeps the row's width.
+// beside its `+code`. On the narrow mobile layout the `+code` is dropped so the
+// trigger shrinks to just the flag, leaving more of the row for the value field
+// — the open dropdown still spells out flag + name + code for every option. On
+// `sm:` and wider there's room, so the `+code` rides alongside the flag.
 const COUNTRY_TRIGGER =
   "flex cursor-pointer items-center gap-1 rounded-md border border-line " +
   "bg-surface-2 px-2 py-1.5 text-left text-sm text-fg hover:border-accent " +
@@ -89,7 +92,7 @@ function CountrySelect({
         renderValue={() => (
           <span className="flex items-center gap-1 tabular-nums">
             <span aria-hidden>{flag}</span>
-            <span>+{code}</span>
+            <span className="sr-only sm:not-sr-only">+{code}</span>
           </span>
         )}
       />
@@ -98,7 +101,8 @@ function CountrySelect({
 }
 
 // One editable phone row: the private/work toggle (person cards only), the
-// country dropdown, the digits-only value field, and the trash. A persisted row
+// primary star (multi-number cards only), the country dropdown, the digits-only
+// value field, and the trash. A persisted row
 // commits its country and kind straight through; the draft row holds them
 // locally until its value first commits, so an abandoned empty row never lands.
 function PhoneValueRow({
@@ -139,7 +143,7 @@ function PhoneValueRow({
   const activeKind = onKindChange ? kind : draftKind;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       {showKind && (
         <KindToggle
           kind={activeKind}
@@ -149,6 +153,9 @@ function PhoneValueRow({
             else setDraftKind(k);
           }}
         />
+      )}
+      {showPrimary && onTogglePrimary && (
+        <PrimaryToggle primary={primary} onToggle={onTogglePrimary} />
       )}
       <CountrySelect
         code={activeCode}
@@ -172,9 +179,6 @@ function PhoneValueRow({
         }}
         className={inputClass}
       />
-      {showPrimary && onTogglePrimary && (
-        <PrimaryToggle primary={primary} onToggle={onTogglePrimary} />
-      )}
       <RemoveButton label={t("contact.removeRow")} onClick={onRemove} />
     </div>
   );
@@ -204,7 +208,7 @@ function PrimaryToggle({
         aria-pressed={primary}
         aria-label={label}
         title={label}
-        className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors ${
+        className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded transition-colors ${
           primary
             ? "text-accent hover:bg-accent/10"
             : "text-muted hover:bg-surface-2 hover:text-fg"
