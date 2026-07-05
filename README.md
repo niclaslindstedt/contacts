@@ -22,9 +22,10 @@ vCard/CSV for Outlook, iOS, and Android.
 - **Never locked in.** One tap exports vCard 3.0 (imports straight into
   Outlook, iOS, and Android/Google Contacts), Outlook-compatible CSV, or a
   versioned JSON backup.
-- **Organised like you think.** Folders, drag-and-drop, archive instead of
-  delete, undo/redo everywhere, and namespaces — whole separate address books
-  for work and life.
+- **Organised like you think.** Folders that nest into subfolders,
+  drag-and-drop, archive instead of delete (or auto-archive on a date),
+  undo/redo everywhere, and namespaces — whole separate address books for work
+  and life.
 - **Pleasant to live in.** Photos, themes, full-text search, achievements, and
   an English/Swedish UI, all from the shared framework surface.
 
@@ -68,9 +69,17 @@ Enter — and start filling in the card.
 
 - **New contact / folder** — the action grid at the foot of the sidebar; type
   the name inline to create.
+- **List** — the app opens on the **List**, a full-page overview of every
+  contact grouped by folder, with rows sized **Compact** or **Spacious** (and a
+  preferred Private/Work number) from Settings → List. Collapse or expand every
+  folder from the header, or **Select** to copy or export a batch at once.
 - **Organise** — drag a contact into a folder, onto another namespace, or onto
-  Archive. Swipe right on a row to archive, left to delete. Everything is one
-  Undo away (Ctrl/Cmd-Z).
+  Archive; nest folders into subfolders to any depth by dragging one onto
+  another. Swipe right on a row to archive, left to delete — the same gestures
+  ride the List, Favorites, and side-menu rows, with a desktop right-click menu
+  for Move to folder / Archive / Delete. Everything is one Undo away
+  (Ctrl/Cmd-Z). A card can even **auto-archive itself** — shelved or deleted —
+  on a date you pick, handy for a contact you only need for a while.
 - **In case of emergency** — flip the emergency switch at the bottom of a card's
   edit view (or use a row's menu) to pin it to an **In case of emergency**
   section at the top of the sidebar, in reach no matter which folder it lives in.
@@ -95,6 +104,8 @@ Enter — and start filling in the card.
 - **Favorites** — tap the heart on a contact's card (or on any List row) to star
   it; the **Favorites** button in the action grid opens a flat shortlist of just
   the starred contacts that you **drag to reorder** (grab the grip on a row).
+  Mark one of a contact's numbers as their **primary** and Favorites shows just
+  that number, so a starred contact reads as a single tap-to-call.
 - **Website & company** — add a homepage in edit mode (it becomes a tap-to-open
   link and exports as the vCard `URL`), and flip **Company contact** to turn a
   card into an organisation — one company name, a building icon, exported so it
@@ -116,15 +127,20 @@ Enter — and start filling in the card.
   dated snapshots kept off-device in a `backups/` folder.
 - **Sync** — Settings → Storage: pick a local folder or connect Dropbox or
   Google Drive; the sync glyph in the card header shows the save state and opens
-  the sync command centre. Connecting a backend that already holds contacts asks
-  whether to keep the synced copy or replace it with this device.
+  the sync command centre, where an **Open in {provider}** button jumps straight
+  to your synced files on the drive's own web UI. Connecting a backend that
+  already holds contacts asks whether to keep the synced copy or replace it with
+  this device.
 
 ### Install as an app
 
 The deployed site is an installable PWA: use your browser's _Install app_
 affordance (or on iOS, Safari → Share → _Add to Home Screen_). The installed
 app works fully offline and surfaces new deploys through an in-app update
-prompt — check manually from the sidebar's _Check for updates_ row.
+prompt — check manually from the sidebar's _Check for updates_ row. The site
+also serves two no-login pages: a `/privacy` policy spelling out what's stored
+and when it leaves your device, and a `/home` showcase linked from the cloud
+providers' consent screens.
 
 ## Configuration
 
