@@ -22,6 +22,7 @@ import { ChangelogModal } from "@niclaslindstedt/oss-framework/changelog";
 import { LogViewer } from "@niclaslindstedt/oss-framework/logging";
 import {
   useMediaQuery,
+  useSearchShortcuts,
   useUndoRedoShortcuts,
 } from "@niclaslindstedt/oss-framework/hooks";
 import { glyphDataUri } from "@niclaslindstedt/oss-framework/glyphs";
@@ -102,6 +103,9 @@ export function App() {
   const store = useContactStore(ns.activeSlug, backend);
   const [namespacesOpen, setNamespacesOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  // What the search field opens onto: the typed character when quick find
+  // opened it by just starting to type, "" from the menu button / Cmd+K.
+  const [searchSeed, setSearchSeed] = useState("");
   // The top-level view the main area shows: the active contact, the overview
   // List page, the Favorites page, or the Archive page (all reached from the
   // side menu's action grid). The app opens on the **List** page — the overview
@@ -351,6 +355,17 @@ export function App() {
     enabled: pinned || !drawerOpen,
   });
 
+  // Quick find: Cmd/Ctrl+K from anywhere, or — with a hardware keyboard — just
+  // start typing while nothing editable has focus, and the search overlay
+  // opens with that keystroke already in the field (the seed rides through
+  // `SearchOverlay` into the framework modal's `initialQuery`).
+  useSearchShortcuts({
+    onOpen: (seed) => {
+      setSearchSeed(seed);
+      setSearchOpen(true);
+    },
+  });
+
   // Publish the docked sidebar's footprint as CSS variables so viewport-fixed
   // overlays (the `UpdateToast`) centre over the content band.
   useSidebarInset(pinned, position.side);
@@ -458,7 +473,10 @@ export function App() {
             setDrawerOpen(false);
             setSettingsOpen(true);
           }}
-          onOpenSearch={() => setSearchOpen(true)}
+          onOpenSearch={() => {
+            setSearchSeed("");
+            setSearchOpen(true);
+          }}
           onOpenChangelog={() => {
             setDrawerOpen(false);
             setChangelogOpen(true);
@@ -705,9 +723,12 @@ export function App() {
       />
 
       {/* Full-text search over the document — the framework `SearchModal` +
-          matcher, with the corpus (grouped per contact) owned by the app. */}
+          matcher, with the corpus (grouped per contact) owned by the app.
+          Opened from the side menu's search button, Cmd/Ctrl+K, or by just
+          starting to type (`useSearchShortcuts` above). */}
       <SearchOverlay
         open={searchOpen}
+        initialQuery={searchSeed}
         onClose={() => setSearchOpen(false)}
         store={store}
         onNavigate={() => {

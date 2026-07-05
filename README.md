@@ -115,8 +115,10 @@ Enter — and start filling in the card.
   card), each with an optional description. Images show as thumbnails you tap to
   expand; PDFs open in a tab, other files download. On a cloud drive they're
   filed under `attachments/` as real, previewable files.
-- **Search** — the magnifier in the action grid; matches names, numbers,
-  emails, addresses, and notes (`*`/`?` wildcards, `/regex/`).
+- **Search** — the magnifier in the action grid, **Ctrl/Cmd+K**, or (with a
+  keyboard) just start typing; matches everything on a card — names, numbers,
+  emails, addresses, homepage, dates, notes, and attachment names and
+  descriptions (`*`/`?` wildcards, `/regex/`).
 - **Export** — the download button in the card header (single vCard) or
   Settings → Storage (all contacts as `.vcf`, CSV, or JSON).
 - **Import** — drag a `.vcf` (or CSV / JSON backup) straight onto the contact

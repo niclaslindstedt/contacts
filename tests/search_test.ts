@@ -37,6 +37,16 @@ const data: AppData = {
       ],
       importantDates: [{ id: "d1", label: "Anniversary", date: "1835-07-08" }],
       notes: "Met at the difference engine meetup.",
+      homepage: "https://adalovelace.example",
+      birthday: "1815-12-10",
+      attachments: [
+        {
+          id: "att1",
+          name: "bernoulli-program.pdf",
+          mime: "application/pdf",
+          description: "Sketch of the engine notes, translated",
+        },
+      ],
     }),
     card({ id: "bo", firstName: "Bo", lastName: "Ek", archived: true }),
     card({ id: "co", company: "Babbage & Co" }),
@@ -71,6 +81,24 @@ describe("runSearch", () => {
     );
     expect(runSearch(data, "Anniversary").results[0]!.fields[0]!.key).toMatch(
       /^date-/,
+    );
+  });
+
+  it("matches the homepage and the birthday", () => {
+    expect(
+      runSearch(data, "adalovelace.example").results[0]!.fields[0]!.key,
+    ).toBe("homepage");
+    expect(runSearch(data, "1815-12").results[0]!.fields[0]!.key).toBe(
+      "birthday",
+    );
+  });
+
+  it("matches an attachment's file name and description", () => {
+    expect(runSearch(data, "bernoulli").results[0]!.fields[0]!.key).toBe(
+      "attachment-att1",
+    );
+    expect(runSearch(data, "translated").results[0]!.fields[0]!.key).toBe(
+      "attachment-desc-att1",
     );
   });
 
