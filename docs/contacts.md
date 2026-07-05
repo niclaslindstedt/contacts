@@ -37,13 +37,16 @@ marked as a **company** rather than a person.
 - **Organise from the List.** The List page files contacts, too. **Drag** a
   contact row onto a folder section to move it there — the section lights up as
   you hover, and the list auto-scrolls when you drag near its top or bottom edge
-  so a card low in a long list can be lifted into a folder above. Every row also
-  carries the same gestures the side menu's rows do: **swipe a row left** to
-  bare a **Delete** button, **swipe it right** to **archive** it, and — on a
-  desktop pointer — **right-click** for the full menu (**Move to folder**,
-  **Archive**, **Delete**). Move to folder picks the destination from a folder
-  dropdown (the whole tree, indented, plus **No folder** to un-group). The same
-  swipe actions and right-click menu ride along on the **Favorites** page rows.
+  so a card low in a long list can be lifted into a folder above. Every row
+  swipes: **swipe a row left** to bare a **Delete** button, **swipe it right** to
+  **archive** it, and — on a desktop pointer — **right-click** for the full menu
+  (**Move to folder**, **Archive**, **Delete**). A **folder heading** swipes too
+  — left to **delete** the folder, right to **archive** it — so archiving and
+  deleting live on the List page (the side menu's rows no longer swipe). Move to
+  folder picks the destination from a folder dropdown (the whole tree, indented,
+  plus **No folder** to un-group). An archive or delete raises a brief **Undo**
+  toast to reverse a mistap. The same swipe actions and right-click menu ride
+  along on the **Favorites** page rows.
 - **Select mode.** The **Select** button turns the list into a multi-select:
   tick as many contacts as you like — or **Ctrl / Cmd-click** any row to jump
   straight into select mode with it ticked. The Select button stays in the
@@ -176,8 +179,9 @@ marked as a **company** rather than a person.
   flagged row wears a small red siren badge wherever it appears. The flag stays in the app — it
   isn't written to a vCard or CSV — but it's kept in the JSON backup, so a
   restore brings your emergency contacts back pinned.
-- **Archive, don't lose.** Swipe a contact right in the side menu (or drag it
-  onto Archive) to shelve it. The Archive page restores or deletes for good.
+- **Archive, don't lose.** Swipe a contact right on the List page (or drag it
+  onto Archive in the side menu) to shelve it — a brief **Undo** toast reverses a
+  mistap. The Archive page restores or deletes for good.
 - **Auto-archive.** At the very bottom of the edit view, the **Auto-archive**
   section lets a card file itself away on a date you pick — flip the **Time
   limited contact** switch, choose the date (it starts two weeks out), and choose

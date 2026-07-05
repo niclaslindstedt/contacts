@@ -16,14 +16,20 @@ The List page files contacts, too:
 
 - **Drag** a row onto a folder section to move it there — the section lights up,
   and the list auto-scrolls when you drag near its edges.
-- **Swipe** a row — left bares a **Delete** button, right archives the contact —
-  the same gestures the side menu's rows carry.
-- **Right-click** a row (on a desktop pointer) for its full menu: **Move to
-  folder**, **Archive**, and **Delete**. Move to folder picks the destination
-  from a folder dropdown (the whole tree, plus **No folder** to un-group).
+- **Swipe** a row — left bares a **Delete** button, right archives the contact.
+  This is the home for archiving and deleting on touch: the side menu's rows no
+  longer swipe.
+- **Swipe a folder heading**, too — left to **delete** the folder, right to
+  **archive** it (deleting promotes its contacts up rather than losing them).
+- **Right-click** a row or a folder heading (on a desktop pointer) for its full
+  menu: a contact's is **Move to folder**, **Archive**, and **Delete**; a
+  folder's is **Archive** and **Delete folder**. Move to folder picks the
+  destination from a folder dropdown (the whole tree, plus **No folder** to
+  un-group).
 
-The same swipe actions and right-click menu ride along on the
-[Favorites](feature:favorites) page rows.
+Archiving or deleting a contact or folder raises a brief **Undo** toast, so an
+action taken by mistake is one tap to reverse. The same swipe actions and
+right-click menu ride along on the [Favorites](feature:favorites) page rows.
 
 ## Select mode
 

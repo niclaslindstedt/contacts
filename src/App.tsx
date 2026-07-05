@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   useApplyTheme,
@@ -34,6 +34,7 @@ import {
   useAchievementWatcher,
 } from "@niclaslindstedt/oss-framework/achievements";
 
+import { ActionToast } from "./app/ActionToast.tsx";
 import { ArchiveScreen } from "./app/ArchiveScreen.tsx";
 import { CloudSetupModal } from "./app/CloudSetupModal.tsx";
 import { ContactListScreen } from "./app/ContactListScreen.tsx";
@@ -219,6 +220,58 @@ export function App() {
     unlock("timeTraveler");
   };
 
+  // The hovering "archived / deleted — undo?" banner. An archive or a delete
+  // (from the List page, the sidebar's right-click menu, a drag onto Archive, or
+  // the archive screen) raises it with its outcome; it auto-dismisses on a timer.
+  const [undoToast, setUndoToast] = useState<string | null>(null);
+  const undoToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showUndoToast = useCallback((message: string) => {
+    setUndoToast(message);
+    if (undoToastTimer.current) clearTimeout(undoToastTimer.current);
+    undoToastTimer.current = setTimeout(() => setUndoToast(null), 6000);
+  }, []);
+  const dismissUndoToast = useCallback(() => {
+    if (undoToastTimer.current) clearTimeout(undoToastTimer.current);
+    setUndoToast(null);
+  }, []);
+  useEffect(
+    () => () => {
+      if (undoToastTimer.current) clearTimeout(undoToastTimer.current);
+    },
+    [],
+  );
+
+  // The store the screens act through: archive / delete of a contact or folder
+  // raise the undo toast, and undo carries the trophy. Everything else passes
+  // straight through. The screens read the wrapped methods; `store` itself stays
+  // the source for the app-level reads (active card, sweep, sync).
+  const screenStore = useMemo(
+    () => ({
+      ...store,
+      undo: () => {
+        store.undo();
+        unlock("timeTraveler");
+      },
+      archiveContact: (id: string) => {
+        store.archiveContact(id);
+        showUndoToast(t("toast.contactArchived"));
+      },
+      deleteContact: (id: string) => {
+        store.deleteContact(id);
+        showUndoToast(t("toast.contactDeleted"));
+      },
+      archiveFolder: (id: string) => {
+        store.archiveFolder(id);
+        showUndoToast(t("toast.folderArchived"));
+      },
+      deleteFolder: (id: string) => {
+        store.deleteFolder(id);
+        showUndoToast(t("toast.folderDeleted"));
+      },
+    }),
+    [store, showUndoToast, t],
+  );
+
   // Run the framework watcher: derive unlocks from each document transition
   // and drain the manual bus. The app loads synchronously, so it's `loaded`
   // from the first render (the watcher baselines that render, so pre-existing
@@ -375,7 +428,7 @@ export function App() {
         }}
       >
         <SideMenuContent
-          store={{ ...store, undo: undoWithTrophy }}
+          store={screenStore}
           onDraggingChange={setSidebarDragging}
           activeNamespace={ns.activeNamespace}
           namespaces={ns.list}
@@ -427,10 +480,10 @@ export function App() {
             both views so a drop lands whether the card or the archive shows. */}
         <ImportDropZone store={store}>
           {view === "archive" ? (
-            <ArchiveScreen store={store} />
+            <ArchiveScreen store={screenStore} />
           ) : view === "list" || view === "favorites" ? (
             <ContactListScreen
-              store={store}
+              store={screenStore}
               settings={settings}
               variant={view === "favorites" ? "favorites" : "all"}
               // Tapping a row floats the card up in the swipe-down modal over
@@ -502,6 +555,19 @@ export function App() {
         pending={sync.pendingSetup}
         onResolve={sync.resolveSetup}
       />
+
+      {/* The hovering "archived / deleted — undo?" banner. Rendered above the
+          content band; its Undo rewinds the archive / delete that raised it. */}
+      {undoToast !== null && (
+        <ActionToast
+          message={undoToast}
+          undoLabel={t("toast.undo")}
+          onUndo={() => {
+            undoWithTrophy();
+            dismissUndoToast();
+          }}
+        />
+      )}
 
       {/* The framework's PWA "a new version is ready" prompt, fed from the
           real `usePwaUpdate()` state above. Once "Update" is tapped we swap the

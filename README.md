@@ -75,11 +75,12 @@ Enter — and start filling in the card.
   folder from the header, or **Select** to copy or export a batch at once.
 - **Organise** — drag a contact into a folder, onto another namespace, or onto
   Archive; nest folders into subfolders to any depth by dragging one onto
-  another. Swipe right on a row to archive, left to delete — the same gestures
-  ride the List, Favorites, and side-menu rows, with a desktop right-click menu
-  for Move to folder / Archive / Delete. Everything is one Undo away
-  (Ctrl/Cmd-Z). A card can even **auto-archive itself** — shelved or deleted —
-  on a date you pick, handy for a contact you only need for a while.
+  another. On the **List** and **Favorites** pages, swipe a row right to archive,
+  left to delete — folder headings swipe too — with a desktop right-click menu
+  for Move to folder / Archive / Delete. An archive or delete raises a brief
+  **Undo** toast, and everything is one Undo away (Ctrl/Cmd-Z) besides. A card
+  can even **auto-archive itself** — shelved or deleted — on a date you pick,
+  handy for a contact you only need for a while.
 - **In case of emergency** — flip the emergency switch at the bottom of a card's
   edit view (or use a row's menu) to pin it to an **In case of emergency**
   section at the top of the sidebar, in reach no matter which folder it lives in.

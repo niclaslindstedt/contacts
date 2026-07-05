@@ -22,6 +22,15 @@ export const en = {
     doneOne: "Imported 1 contact",
     none: "No contacts found in that file",
   },
+  toast: {
+    // The hovering "action taken — undo?" banner raised after an archive or a
+    // delete, mirroring the import result banner.
+    contactArchived: "Contact archived",
+    contactDeleted: "Contact deleted",
+    folderArchived: "Folder archived",
+    folderDeleted: "Folder deleted",
+    undo: "Undo",
+  },
   menu: {
     namespaces: "Namespaces",
     switchToNamespace: "Switch to {name}",

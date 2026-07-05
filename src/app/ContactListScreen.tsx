@@ -93,6 +93,8 @@ export function ContactListScreen({
     moveContactsToFolder,
     archiveContact,
     deleteContact,
+    archiveFolder,
+    deleteFolder,
   } = store;
   const favoritesOnly = variant === "favorites";
   // The folders a card can be filed into — the non-archived set, shared by the
@@ -455,15 +457,35 @@ export function ContactListScreen({
                     : undefined
                 }
               >
-                {showHeader && (
-                  <SectionHeader
-                    name={group.folder?.name ?? t("list.ungrouped")}
-                    count={group.contacts.length}
-                    expanded={expanded}
-                    onToggle={() => toggleSection(key)}
-                    dropOver={dropOver}
-                  />
-                )}
+                {showHeader &&
+                  (group.folder ? (
+                    // A real folder's header carries the folder's own actions —
+                    // swipe right to archive it, swipe left to delete it, or a
+                    // desktop right-click for the menu. This is where folder
+                    // archive / delete moved to once the side menu dropped swipe.
+                    <FolderSectionHeader
+                      name={group.folder.name}
+                      count={group.contacts.length}
+                      expanded={expanded}
+                      onToggle={() => toggleSection(key)}
+                      dropOver={dropOver}
+                      onArchive={() => archiveFolder(group.folder!.id)}
+                      onDelete={() => deleteFolder(group.folder!.id)}
+                      archiveLabel={t("menu.archive")}
+                      deleteLabel={t("menu.deleteFolder")}
+                      menuLabel={t("menu.folderActions")}
+                    />
+                  ) : (
+                    // The trailing "no folder" section is a grouping, not a
+                    // folder — nothing to archive or delete, so it stays plain.
+                    <SectionHeader
+                      name={t("list.ungrouped")}
+                      count={group.contacts.length}
+                      expanded={expanded}
+                      onToggle={() => toggleSection(key)}
+                      dropOver={dropOver}
+                    />
+                  ))}
                 {expanded && (
                   <ul className="m-0 list-none p-0">
                     {group.contacts.map((contact, i) => (
@@ -832,6 +854,73 @@ function SectionHeader({
       </span>
       <span className="shrink-0 text-xs tabular-nums opacity-70">{count}</span>
     </button>
+  );
+}
+
+// A folder's section header, wrapped with the folder's own actions the way the
+// contact rows are: a swipe right commits **Archive**, a swipe left reveals
+// **Delete**, and a desktop right-click opens the same two as a menu. Deleting a
+// folder here promotes its contacts up to the parent (see the store) rather than
+// removing them, and both are undoable via the hovering toast. This is the touch
+// home for folder archive / delete now that the side menu has dropped swipe.
+function FolderSectionHeader({
+  name,
+  count,
+  expanded,
+  onToggle,
+  dropOver,
+  onArchive,
+  onDelete,
+  archiveLabel,
+  deleteLabel,
+  menuLabel,
+}: {
+  name: string;
+  count: number;
+  expanded: boolean;
+  onToggle: () => void;
+  dropOver: boolean;
+  onArchive: () => void;
+  onDelete: () => void;
+  archiveLabel: string;
+  deleteLabel: string;
+  menuLabel: string;
+}) {
+  const archiveAction: RowAction = {
+    label: archiveLabel,
+    icon: <ArchiveIcon className="h-5 w-5" />,
+    onSelect: onArchive,
+  };
+  const deleteAction: RowAction = {
+    label: deleteLabel,
+    icon: <TrashIcon className="h-5 w-5" />,
+    danger: true,
+    onSelect: onDelete,
+  };
+  return (
+    <RowActionMenu
+      actions={[archiveAction, deleteAction]}
+      touchLongPress={false}
+      ariaLabel={menuLabel}
+    >
+      <SwipeableRow
+        actions={[deleteAction]}
+        leading={{
+          kind: "commit",
+          onCommit: onArchive,
+          label: archiveLabel,
+          icon: <ArchiveIcon className="h-5 w-5" />,
+        }}
+      >
+        <SectionHeader
+          name={name}
+          count={count}
+          expanded={expanded}
+          onToggle={onToggle}
+          dropOver={dropOver}
+        />
+      </SwipeableRow>
+    </RowActionMenu>
   );
 }
 
