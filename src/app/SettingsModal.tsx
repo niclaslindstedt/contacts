@@ -248,7 +248,7 @@ export function SettingsModal({
 
       {/* Reset (left) | Cancel + Save (right). The modal card is a flex
           column, so this footer pins under the scrolling tab body. */}
-      <footer className="flex shrink-0 items-center justify-between gap-2 border-t border-line bg-surface-3 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+      <footer className="flex shrink-0 items-center justify-between gap-2 border-t border-line bg-surface-3 px-4 py-3">
         <Button variant="secondary" onClick={reset}>
           {t("common.resetToDefaults")}
         </Button>

@@ -1095,13 +1095,6 @@ export function DeveloperTab({
           checked={settings.captureLogs}
           onChange={(next) => update("captureLogs", next)}
         />
-        <Button
-          variant="secondary"
-          className="self-start"
-          onClick={() => log.info("Test log line from the Developer tab")}
-        >
-          {t("settings.developer.writeTestLine")}
-        </Button>
       </Section>
       <Section title={t("settings.developer.buildTitle")}>
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
