@@ -538,6 +538,9 @@ export const sv: Catalog = {
     },
   },
   settings: {
+    title: "Inställningar",
+    chooseSection: "Välj en sektion",
+    sections: "Inställningssektioner",
     tabs: {
       general: "Allmänt",
       appearance: "Utseende",

@@ -276,14 +276,19 @@ export async function openSettings(page) {
 }
 
 // Open Settings and switch to a named tab (e.g. "Format", "Storage",
-// "Developer"). The tabs aren't a tab strip — the header title button
-// (`#settings-title`) opens a FloatingPanel menu of `menuitem`s. Target the
-// title button by id: a plain `[aria-haspopup="menu"]` also matches sidebar
-// controls sitting *behind* the modal backdrop, so the click gets intercepted.
+// "Developer"). Section selection is responsive: on desktop (`sm:` and up) a
+// vertical tab rail exposes each section as a `role="tab"`; on mobile the rail
+// collapses and the header burger opens the same sections as a FloatingPanel of
+// `menuitem`s. Try the desktop rail first, then fall back to the mobile menu.
 export async function openSettingsTab(page, tabName) {
   await openSettings(page);
-  await page.locator("#settings-title").click();
-  await page.getByRole("menuitem", { name: tabName }).click();
+  const railTab = page.getByRole("tab", { name: tabName });
+  if (await railTab.count()) {
+    await railTab.first().click();
+  } else {
+    await page.getByRole("button", { name: /^Choose a section$/ }).click();
+    await page.getByRole("menuitem", { name: tabName }).click();
+  }
   await page.waitForTimeout(150);
 }
 

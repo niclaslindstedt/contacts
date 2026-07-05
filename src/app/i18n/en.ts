@@ -560,6 +560,9 @@ export const en = {
     },
   },
   settings: {
+    title: "Settings",
+    chooseSection: "Choose a section",
+    sections: "Settings sections",
     tabs: {
       general: "General",
       appearance: "Appearance",
