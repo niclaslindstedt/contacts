@@ -13,7 +13,7 @@ import {
 } from "@niclaslindstedt/oss-framework/components";
 import type { DragHandleProps } from "@niclaslindstedt/oss-framework/sidebar";
 
-import { PersonIcon } from "./icons.tsx";
+import { PersonIcon, SectionsToggleIcon } from "./icons.tsx";
 
 // The side menu's presentational leaf rows — the dumb building blocks the
 // stateful `SideMenuContent` composes: section headings, folder / contact
@@ -69,9 +69,11 @@ export function SectionHeader({
 }
 
 // The glyph seated at the right of the "Contacts" header row: one click folds
-// every folder shut, the next unfolds them all. Its icon mirrors the folder
-// rows' own convention — an open folder means "there's something to collapse",
-// a closed one means "expand".
+// every folder shut, the next unfolds them all. It draws the same
+// chevron-based fold/unfold mark (`SectionsToggleIcon`) the list view's
+// collapse-all button wears, so the "collapse / expand everything" affordance
+// reads identically in the sidebar and on the list page — outward arrows when
+// everything is already collapsed (tap to expand), inward arrows otherwise.
 export function CollapseAllButton({
   collapsed,
   label,
@@ -89,11 +91,7 @@ export function CollapseAllButton({
       title={label}
       className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded text-muted hover:bg-surface-2 hover:text-fg-bright"
     >
-      {collapsed ? (
-        <FolderIcon className="h-4 w-4" />
-      ) : (
-        <FolderOpenIcon className="h-4 w-4" />
-      )}
+      <SectionsToggleIcon className="h-4 w-4" collapsed={collapsed} />
     </button>
   );
 }

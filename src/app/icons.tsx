@@ -97,12 +97,12 @@ export function CheckSquareIcon({ className }: IconProps) {
   );
 }
 
-/** A fold / unfold-vertical glyph — the "collapse all / expand all sections"
- *  affordance on the list view's header. Chevron-based (never the folder mark)
- *  so it reads as "fold these rows together", matching the list's separator
- *  styling rather than the sidebar's folder icons. `collapsed` shows the
- *  outward (unfold) arrows when everything is already folded — one tap expands
- *  them all again — and the inward (fold) arrows otherwise. */
+/** A fold / unfold-vertical glyph — the shared "collapse all / expand all"
+ *  affordance worn by both the list view's header button and the sidebar's
+ *  "Contacts" header button, so the two read identically. Chevron-based (never
+ *  the folder mark) so it reads as "fold these rows together". `collapsed`
+ *  shows the outward (unfold) arrows when everything is already folded — one
+ *  tap expands them all again — and the inward (fold) arrows otherwise. */
 export function SectionsToggleIcon({
   className,
   collapsed,
