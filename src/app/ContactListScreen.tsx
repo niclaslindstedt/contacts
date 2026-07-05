@@ -25,7 +25,7 @@ import {
   SectionsToggleIcon,
 } from "./icons.tsx";
 import { MoveToFolderMenu } from "./MoveToFolderMenu.tsx";
-import { SelectToast } from "./SelectToast.tsx";
+import { SelectActions, SelectCountBar } from "./SelectToast.tsx";
 import { useT } from "./i18n/index.ts";
 import { formatPhoneValue } from "./countries/index.ts";
 import { phoneOptions, type AppSettings } from "./useAppSettings.ts";
@@ -271,8 +271,10 @@ export function ContactListScreen({
 
   return (
     <div className="relative mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-[calc(1.25rem+env(safe-area-inset-top))]">
-      {/* The title stays put — select mode no longer replaces it. The count,
-          exit ✕, and batch actions live in the floating `SelectToast` below. */}
+      {/* The title stays put — select mode no longer replaces it. The batch
+          copy / export actions join the collapse and Select buttons in this top
+          menu while selecting; the running count lives in the floating
+          `SelectCountBar` below. */}
       <header className="mb-2 flex items-center gap-3 border-b border-line px-1 pb-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
           {favoritesOnly ? (
@@ -284,7 +286,8 @@ export function ContactListScreen({
         <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-wide text-fg-bright">
           {favoritesOnly ? t("favorites.title") : t("list.title")}
         </h1>
-        {!selecting && collapsibleKeys.length > 0 && (
+        {/* The collapse-all button stays in the top menu while selecting. */}
+        {collapsibleKeys.length > 0 && (
           <button
             type="button"
             onClick={() => setAllCollapsed(!allCollapsed)}
@@ -303,13 +306,20 @@ export function ContactListScreen({
             <SectionsToggleIcon className="h-5 w-5" collapsed={allCollapsed} />
           </button>
         )}
-        {total > 0 && !selecting && (
+        {/* Batch copy / export, shown only while a selection is being made. */}
+        {selecting && <SelectActions contacts={selectedContacts} />}
+        {total > 0 && (
           <button
             type="button"
-            onClick={enterSelect}
-            aria-label={t("list.select")}
-            title={t("list.select")}
-            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-line text-muted hover:bg-surface-2 hover:text-fg"
+            onClick={selecting ? exitSelect : enterSelect}
+            aria-pressed={selecting}
+            aria-label={selecting ? t("list.exitSelect") : t("list.select")}
+            title={selecting ? t("list.exitSelect") : t("list.select")}
+            className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border ${
+              selecting
+                ? "border-accent bg-accent/10 text-accent hover:bg-accent/15"
+                : "border-line text-muted hover:bg-surface-2 hover:text-fg"
+            }`}
           >
             <CheckSquareIcon className="h-5 w-5" />
           </button>
@@ -322,6 +332,11 @@ export function ContactListScreen({
           selecting ? "pb-24" : "pb-10"
         }`}
       >
+        {/* The select-all toggle rides at the very top of the list as its own
+            special row (rather than in the floating toolbar) while selecting. */}
+        {selecting && total > 0 && (
+          <SelectAllRow allSelected={allSelected} onToggle={toggleSelectAll} />
+        )}
         {total === 0 ? (
           <p className="px-2 py-10 text-center text-sm text-muted">
             {favoritesOnly ? t("favorites.empty") : t("list.empty")}
@@ -448,16 +463,8 @@ export function ContactListScreen({
         )}
       </div>
 
-      {/* The floating select toolbar — hovers at the bottom over the list. */}
-      {selecting && (
-        <SelectToast
-          count={selectedContacts.length}
-          allSelected={allSelected}
-          onToggleAll={toggleSelectAll}
-          onExit={exitSelect}
-          contacts={selectedContacts}
-        />
-      )}
+      {/* The floating count pill — hovers at the bottom over the list. */}
+      {selecting && <SelectCountBar count={selectedContacts.length} />}
 
       {/* The "Move to folder" right-click submenu. */}
       <MoveToFolderMenu
@@ -711,6 +718,39 @@ function SectionHeader({
         {name}
       </span>
       <span className="shrink-0 text-xs tabular-nums opacity-70">{count}</span>
+    </button>
+  );
+}
+
+// The select-all toggle, shown as the first row of the list while selecting. A
+// tinted band (set apart from the contact rows, like the section headers) that
+// leads with a checkbox reflecting whether every card is ticked and reads
+// "Select all"; tapping it ticks the whole list, or clears it when all are
+// already ticked. Its home is the top of the list rather than the floating
+// toolbar, so it sits with the cards it acts on.
+function SelectAllRow({
+  allSelected,
+  onToggle,
+}: {
+  allSelected: boolean;
+  onToggle: () => void;
+}) {
+  const t = useT();
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      role="checkbox"
+      aria-checked={allSelected}
+      aria-label={allSelected ? t("list.selectNone") : t("list.selectAll")}
+      className="mb-1 flex w-full cursor-pointer items-center gap-3 rounded-md bg-surface-2 px-2 py-2.5 text-left text-fg hover:bg-surface-3"
+    >
+      <span className="shrink-0" aria-hidden>
+        <CheckboxGlyph checked={allSelected} />
+      </span>
+      <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+        {t("list.selectAll")}
+      </span>
     </button>
   );
 }
