@@ -36,8 +36,13 @@ right-click menu ride along on the [Favorites](feature:favorites) page rows.
 The **Select** button turns the list into a multi-select — or **Ctrl / Cmd-click**
 any row to jump straight in with it ticked. A floating toolbar carries the count,
 a **Select all** toggle, and the batch **Copy** (one vCard block to the
-clipboard) and **Export** (to a vCard or CSV file) actions. With several
-selected, **dragging any one of them** moves the whole selection into a folder.
+clipboard), **Export** (to a vCard or CSV file), and **Delete** actions —
+deleting asks you to confirm before the selection goes, and one **Undo** brings
+it all back. With several selected, **dragging any one of them** moves the whole
+selection into a folder, and the **right-click menu** on any ticked row acts on
+all of them too: its labels turn into **Move 5 contacts to folder**, **Archive 5
+contacts**, and **Delete 5 contacts**, with the multi-card delete behind the
+same confirmation.
 
 Opening a contact from the List floats its card over the page — swipe it down
 (or press Escape, or tap outside) to dismiss it and drop back to where you left
