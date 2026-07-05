@@ -1,9 +1,6 @@
 ---
 type: Changed
-title: A cleaner Work / Private switch for phones and emails
+title: Cleaner Work / Private toggle
 ---
 
-The type picker on each phone number and email address is now a compact
-two-glyph toggle — a person for **Private**, a briefcase for **Work** — instead
-of a dropdown. You can type the number and tap the glyph without the field
-losing focus first. New numbers and addresses now default to **Work**.
+Each phone and email's type is now a compact two-glyph toggle — a person for Private, a briefcase for Work — that flips without the field losing focus.

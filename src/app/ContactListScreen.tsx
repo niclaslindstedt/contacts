@@ -136,6 +136,18 @@ export function ContactListScreen({
     }
     return false;
   };
+  // The key of the last section that still renders a header band (visible, not
+  // folded under a collapsed ancestor). Every section above it has a folder
+  // below, so its last row drops its bottom rule; the final section keeps it.
+  const lastVisibleSectionKey = (() => {
+    let key: string | null = null;
+    for (const g of groups) {
+      if (!isSectionHidden(g.folder?.id ?? null)) {
+        key = g.folder?.id ?? UNGROUPED;
+      }
+    }
+    return key;
+  })();
   // The section keys the header's collapse-all button folds (and unfolds) in one
   // tap — every group that shows a heading (a folder, plus the ungrouped group
   // when it isn't the whole list). `allCollapsed` flips the button to "expand
@@ -344,6 +356,9 @@ export function ContactListScreen({
             // the rows read as one flat list. Otherwise every section, the
             // ungrouped one included, gets a collapsible header.
             const showHeader = group.folder !== null || groups.length > 1;
+            // True while another folder section renders below this one, so this
+            // section's last row should drop its trailing rule.
+            const folderBelow = key !== lastVisibleSectionKey;
             // Each section is a drop zone — dropping a card (or the whole
             // selection) here files it into this folder, or un-groups it to the
             // root over the ungrouped section.
@@ -378,7 +393,7 @@ export function ContactListScreen({
                 )}
                 {expanded && (
                   <ul className="m-0 list-none p-0">
-                    {group.contacts.map((contact) => (
+                    {group.contacts.map((contact, i) => (
                       <li key={contact.id}>
                         <DraggableContactRow
                           dragHandle={dnd.dragHandle(contact.id)}
@@ -418,6 +433,9 @@ export function ContactListScreen({
                             onOpen={() => onOpenContact(contact.id)}
                             onToggleSelected={() => toggleSelected(contact.id)}
                             onToggleFavorite={() => toggleFavorite(contact)}
+                            last={
+                              folderBelow && i === group.contacts.length - 1
+                            }
                           />
                         </DraggableContactRow>
                       </li>
@@ -708,6 +726,7 @@ function ContactRow({
   onToggleSelected,
   onToggleFavorite,
   grip,
+  last = false,
 }: {
   contact: Contact;
   settings: AppSettings;
@@ -719,6 +738,10 @@ function ContactRow({
   // The drag handle shown at the row's leading edge on the reorderable
   // Favorites page. Absent everywhere else — the row reads exactly as before.
   grip?: ReactNode;
+  // The last row of a section that has another folder section below it drops
+  // its bottom rule, so a group reads as an enclosed block instead of drawing a
+  // divider straight into the following folder's header band.
+  last?: boolean;
 }) {
   const t = useT();
   const name = displayName(contact);
@@ -736,6 +759,10 @@ function ContactRow({
   const spacious = settings.listDensity === "spacious";
   const avatarSize = spacious ? "list-spacious" : "list-compact";
   const rowSpacing = spacious ? "gap-4 py-3" : "gap-3 py-2";
+  // Every row rules off from the next with a bottom border, except the last row
+  // of a section that has a folder below it — there the folder's own header band
+  // is the divider, so a trailing rule just doubles it up.
+  const borderClass = last ? "" : "border-b border-line";
 
   // Names wrap onto as many lines as they need rather than truncating, so a
   // long full name reads in full; `[overflow-wrap:anywhere]` also breaks a
@@ -760,7 +787,7 @@ function ContactRow({
         aria-label={t("list.selectContact", {
           name: name || t("contact.unnamed"),
         })}
-        className={`flex w-full cursor-pointer items-center border-b border-line px-1 text-left ${rowSpacing} ${
+        className={`flex w-full cursor-pointer items-center ${borderClass} px-1 text-left ${rowSpacing} ${
           selected ? "bg-accent/10" : "hover:bg-surface-2"
         }`}
       >
@@ -783,7 +810,7 @@ function ContactRow({
   const hasMethods = phones.length > 0 || emails.length > 0;
   return (
     <div
-      className={`flex items-center border-b border-line px-1 transition-colors hover:bg-surface-2 ${rowSpacing}`}
+      className={`flex items-center ${borderClass} px-1 transition-colors hover:bg-surface-2 ${rowSpacing}`}
     >
       {grip}
       <button

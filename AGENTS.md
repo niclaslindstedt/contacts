@@ -175,14 +175,63 @@ stale copy.
 | settings surface                    | `docs/getting-started.md`                                                                                 |
 | user-visible features               | a `.changes/unreleased/` changeset fragment + `docs/features/*.md` (the in-app "What's new" renders both) |
 
+## Changelog and feature docs
+
 Every user-visible change needs a **changeset fragment** at
-`.changes/unreleased/<unix-ts>-<slug>.md` — YAML front matter with a `type:`
-(`Added` / `Changed` / `Fixed` / …) and a one-line `title:`, then a short prose
-body. CI's `changeset` check fails a PR that ships user-visible behavior without
-one, and the Release workflow collates the fragments into the dated
-`CHANGELOG.md` sections (those released sections are generated — never
-hand-edit them). See `scripts/release/` and the existing fragments for the
-exact shape.
+`.changes/unreleased/<unix-ts>-<slug>.md`:
+
+```
+---
+type: Added         # Added | Changed | Fixed | Removed | Security | Deprecated
+title: Short title  # optional — a noun phrase bolded at the head of the bullet
+doc: formats        # optional — the slug of a docs/features/<slug>.md feature doc
+---
+
+One sentence users will read in the changelog.
+```
+
+CI's `changeset` check fails a PR that ships user-visible behavior without one,
+and the Release workflow collates the fragments into the dated `CHANGELOG.md`
+sections (those released sections are **generated — never hand-edit them**). The
+collator renders a bullet as
+`- **<title>** — <summary> [Learn more](feature:<doc>)`. Fragment parsing lives
+in `scripts/release/fragments.mjs`; see the existing fragments for the shape.
+
+**Keep the bullet to one sentence.** The title + one-sentence summary is what
+keeps the in-app "What's new" modal scannable — if you catch yourself writing a
+second or third clause, the depth belongs in a feature doc, not the bullet. A
+fix to a feature whose `Added` fragment is still unreleased folds into that
+fragment rather than adding a sibling `Fixed` entry.
+
+### Feature docs and "Learn more"
+
+A **feature doc** is a long-form markdown file at `docs/features/<slug>.md` — a
+`# Title` heading, then a multi-paragraph, plain second-person explanation of one
+feature (English-only, no implementation jargon). The build inlines every
+`docs/features/*.md` into the bundle (`src/app/changelog.ts`), and a changelog
+bullet carrying `[Learn more](feature:<slug>)` opens the matching doc **in
+place** inside the "What's new" modal. A feature doc exists only to back a
+changelog "Learn more" link — general product docs live elsewhere under `docs/`.
+
+**Reach for one sparingly — big features only.** Most fragments are just a
+`title:` + one sentence with **no** `doc:`. Add (or extend) a doc only when the
+feature genuinely can't be summarized in about two sentences — one whose honest
+explanation runs to several paragraphs or a real "how it works" walkthrough. A
+small setting, a visual tweak, a secondary facet of a larger feature, or a bug
+fix does **not** get one.
+
+This repo keeps a few **broad umbrella docs** — `contacts.md` (the contact
+card and everything on it), `export.md` (export / import / backups), `sync.md`
+(the storage backends, photo/attachment files, encryption), `namespaces.md`,
+and `formats.md` — and the family of changelog bullets about one of those areas
+all point their `[Learn more]` at that area's doc. When a big feature extends an
+already-documented area, fold a paragraph into that area's doc rather than
+spawning a new one; only a genuinely new big feature with no umbrella home earns
+a new file (`formats.md` did). When you add a `doc:` slug, **create or update
+`docs/features/<slug>.md` in the same PR** — a slug with no file renders an inert
+dead link — and delete a doc (and its links) when you retire the feature so no
+orphan doc or dead `feature:` link is left behind. `docs/` is in the changeset
+skip-list, so a docs-only feature-doc edit needs no fragment of its own.
 
 ## Parity / cross-cutting rules
 
