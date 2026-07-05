@@ -39,9 +39,11 @@ import {
   MailIcon,
   MapPinIcon,
   PhoneIcon,
+  StarIcon,
 } from "./icons.tsx";
 import { PhotoViewer } from "./PhotoViewer.tsx";
 import { displayUrl, normalizeUrl } from "./url.ts";
+import { primaryPhone } from "./primaryPhone.ts";
 import { useT } from "./i18n/index.ts";
 import { formatDate, phoneDialString } from "./format.ts";
 import { formatStoredPhone, formatPostalValue } from "./countries/index.ts";
@@ -77,6 +79,9 @@ export function ContactReadView({
 
   const phones = contact.phones.filter((p) => p.value.trim());
   const emails = contact.emails.filter((e) => e.value.trim());
+  // The number flagged primary, badged in the list below — but only worth
+  // pointing out when there's more than one to tell apart.
+  const primary = phones.length > 1 ? primaryPhone(phones) : undefined;
   // A company card is titled by its company name in the identity block above, so
   // don't repeat it as a detail row; a person still shows their company here.
   const company = contact.isCompany ? "" : contact.company?.trim();
@@ -129,6 +134,11 @@ export function ContactReadView({
                 href={`tel:${phoneDialString(phone) || phone.value}`}
                 icon={<PhoneIcon className="h-4 w-4" />}
                 label={kindLabel(phone.label, t)}
+                badge={
+                  primary && phone.id === primary.id ? (
+                    <PrimaryBadge label={t("contact.primaryLabel")} />
+                  ) : undefined
+                }
                 value={formatStoredPhone(
                   phone,
                   settings.country,
@@ -281,12 +291,16 @@ function ActionRow({
   icon,
   label,
   value,
+  badge,
   external = false,
 }: {
   href: string;
   icon: ReactNode;
   label: string;
   value: string;
+  // An optional marker shown beside the label — the "Primary" tag the primary
+  // phone number wears.
+  badge?: ReactNode;
   // A website link opens in a new tab; a tel:/mailto: stays in-page.
   external?: boolean;
 }) {
@@ -299,12 +313,27 @@ function ActionRow({
     >
       <IconBadge>{icon}</IconBadge>
       <span className="flex min-w-0 flex-col">
-        <span className="text-xs text-muted">{label}</span>
+        <span className="flex items-center gap-1.5 text-xs text-muted">
+          {label}
+          {badge}
+        </span>
         <span className="truncate text-sm text-accent group-hover:underline">
           {value}
         </span>
       </span>
     </a>
+  );
+}
+
+// The small "Primary" tag beside the primary number's type in the read view — a
+// filled star and the word, in the accent, so the designated number stands out
+// from the rest at a glance.
+function PrimaryBadge({ label }: { label: string }) {
+  return (
+    <span className="flex items-center gap-0.5 font-medium text-accent">
+      <StarIcon className="h-3 w-3" filled />
+      {label}
+    </span>
   );
 }
 

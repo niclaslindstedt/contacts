@@ -200,6 +200,12 @@ export const sv: Catalog = {
     kindWork: "Arbete",
     phoneKind: "Telefontyp",
     phoneCountry: "Landskod",
+    // Stjärnan på varje telefonrad (visas när ett kort har fler än ett nummer)
+    // som väljer det primära numret — det enda numret sidan Favoriter visar.
+    markPrimary: "Ange som primärt nummer",
+    clearPrimary: "Ta bort primärt nummer",
+    // Etiketten på det primära numret i läsvyn.
+    primaryLabel: "Primärt",
     emailKind: "E-posttyp",
     details: "Detaljer",
     firstName: "Förnamn",

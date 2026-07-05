@@ -6,6 +6,7 @@
 // `tests/contactList_test.ts`). It reads the same "archived things drop out of
 // the view but stay in the document" rule the side menu follows.
 
+import { primaryPhone } from "./primaryPhone.ts";
 import type { FolderSort, ListPhonePriority } from "./useAppSettings.ts";
 import type { AppData, Contact, Folder, Phone } from "./types.ts";
 import { compareContacts, methodKind } from "./types.ts";
@@ -283,4 +284,18 @@ export function prioritizePhones(
   if (priority === "both") return [...phones];
   const preferred = phones.filter((p) => methodKind(p.label) === priority);
   return preferred.length > 0 ? preferred : [...phones];
+}
+
+/** The phone numbers the **Favorites** page shows for a contact: just the one
+ *  flagged primary when it has one, otherwise the same set the List shows under
+ *  `priority`. So a starred card with a designated primary reads as a single
+ *  tap-to-call, while one that never picked a primary keeps the fuller list.
+ *  The caller has already dropped empty values (so the primary lookup only ever
+ *  finds a number worth showing). */
+export function favoritePhones(
+  phones: readonly Phone[],
+  priority: ListPhonePriority,
+): Phone[] {
+  const primary = primaryPhone(phones);
+  return primary ? [primary] : prioritizePhones(phones, priority);
 }

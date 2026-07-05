@@ -7,6 +7,7 @@ import {
   descendantFolderIds,
   emergencyContacts,
   favoriteContacts,
+  favoritePhones,
   groupContactsByFolder,
   listedContacts,
   orderedFolderTree,
@@ -410,6 +411,30 @@ describe("prioritizePhones", () => {
     expect(prioritizePhones(workOnly, "private").map((p) => p.id)).toEqual([
       "w",
     ]);
+  });
+});
+
+describe("favoritePhones", () => {
+  const phones: Phone[] = [
+    { id: "h", value: "111", label: "private" },
+    { id: "w", value: "222", label: "work", primary: true },
+    { id: "h2", value: "333" },
+  ];
+
+  it("shows only the primary number when one is flagged", () => {
+    expect(favoritePhones(phones, "both").map((p) => p.id)).toEqual(["w"]);
+    // The primary wins over the kind priority too — a private-priority list
+    // still narrows to the flagged work number.
+    expect(favoritePhones(phones, "private").map((p) => p.id)).toEqual(["w"]);
+  });
+
+  it("falls back to the prioritized list when no number is primary", () => {
+    const none: Phone[] = [
+      { id: "h", value: "111", label: "private" },
+      { id: "w", value: "222", label: "work" },
+    ];
+    expect(favoritePhones(none, "both").map((p) => p.id)).toEqual(["h", "w"]);
+    expect(favoritePhones(none, "work").map((p) => p.id)).toEqual(["w"]);
   });
 });
 

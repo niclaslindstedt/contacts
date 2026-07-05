@@ -35,6 +35,7 @@ import { formatPhoneValue } from "./countries/index.ts";
 import { phoneOptions, type AppSettings } from "./useAppSettings.ts";
 import {
   favoriteContacts,
+  favoritePhones,
   groupContactsByFolder,
   listedContacts,
   prioritizePhones,
@@ -740,6 +741,7 @@ function FavoritesReorderList({
                 settings={settings}
                 selecting={selecting}
                 selected={selected.has(contact.id)}
+                favoritesOnly
                 onOpen={() => onOpenContact(contact.id)}
                 onToggleSelected={() => onToggleSelected(contact.id)}
                 onToggleFavorite={() => onToggleFavorite(contact)}
@@ -882,6 +884,7 @@ function ContactRow({
   onToggleSelected,
   onToggleFavorite,
   grip,
+  favoritesOnly = false,
   last = false,
 }: {
   contact: Contact;
@@ -894,6 +897,10 @@ function ContactRow({
   // The drag handle shown at the row's leading edge on the reorderable
   // Favorites page. Absent everywhere else — the row reads exactly as before.
   grip?: ReactNode;
+  // On the Favorites page a card with a designated primary number shows only
+  // that one number, not its whole list — so a starred contact reads as a single
+  // tap-to-call. The full List page always shows the prioritized set.
+  favoritesOnly?: boolean;
   // The last row of a section that has another folder section below it drops
   // its bottom rule, so a group reads as an enclosed block instead of drawing a
   // divider straight into the following folder's header band.
@@ -901,11 +908,11 @@ function ContactRow({
 }) {
   const t = useT();
   const name = displayName(contact);
+  const visiblePhones = contact.phones.filter((p) => p.value.trim());
   const phones = settings.listShowPhone
-    ? prioritizePhones(
-        contact.phones.filter((p) => p.value.trim()),
-        settings.listPhonePriority,
-      )
+    ? favoritesOnly
+      ? favoritePhones(visiblePhones, settings.listPhonePriority)
+      : prioritizePhones(visiblePhones, settings.listPhonePriority)
     : [];
   const emails = settings.listShowEmail
     ? contact.emails.filter((e) => e.value.trim())
