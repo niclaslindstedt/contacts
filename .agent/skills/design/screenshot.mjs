@@ -286,6 +286,43 @@ export async function scrollSettingsToBottom(page) {
   await page.waitForTimeout(150);
 }
 
+// Swipe horizontally across an element with a real synthesized touch drag
+// (CDP `Input.dispatchTouchEvent`), so Chromium emits genuine pointer events —
+// the framework's `useRowSwipe` calls `setPointerCapture`, which throws on
+// hand-dispatched synthetic PointerEvents, so `elementHandle.dispatchEvent`
+// can't drive it. Negative `distance` swipes left (reveals trailing actions),
+// positive swipes right (leading side). Requires a `hasTouch` viewport
+// (mobile / tablet); the swipe stays latched open after the gesture, ready to
+// screenshot. Waits out the 200ms settle animation before returning.
+export async function swipeRow(page, locator, distance = -100) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error("swipeRow: element has no layout box");
+  const y = box.y + box.height / 2;
+  const startX =
+    distance < 0 ? box.x + box.width * 0.85 : box.x + box.width * 0.15;
+  const client = await page.context().newCDPSession(page);
+  try {
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: startX, y }],
+    });
+    const steps = 12;
+    for (let i = 1; i <= steps; i++) {
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x: startX + (distance * i) / steps, y }],
+      });
+    }
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+  } finally {
+    await client.detach().catch(() => {});
+  }
+  await page.waitForTimeout(300);
+}
+
 // Pop the local `npm run dev` Vite server, or fall back to the built
 // preview server if dev is silent. The skill prefers dev for HMR speed.
 async function resolveBaseUrl(explicit) {
@@ -332,13 +369,13 @@ function parseArgs(argv) {
 // breakpoint (e.g. only exercise a mobile-only control).
 
 async function recipe(page) {
-  // Default: the seeded contact card with the appearance popover open,
-  // so its Photos / Colour / Icon layout is on screen. Swap for
-  // `openPhotoCropper(page)` to design the cropper, `openApp(page)` to
-  // shoot the read-mode card, `openList(page)` / `openFavorites(page)` for
-  // the overview pages, or `openSettings(page)` for the settings dialog.
+  // Default: the screen the seeded app boots to (the List overview). Build
+  // on it per iteration: click a contact row then `openAppearancePopover` /
+  // `openPhotoCropper` for the card surfaces, `openFavorites(page)` for the
+  // other overview page, or `openSettings(page)` for the settings dialog.
+  // To shoot a swipe reveal, latch a row open with `swipeRow` (needs a
+  // `hasTouch` viewport): `await swipeRow(page, rowLocator, -100)`.
   await openApp(page);
-  await openAppearancePopover(page);
   await page.waitForTimeout(200);
 }
 
