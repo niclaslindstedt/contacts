@@ -144,6 +144,16 @@ export async function openApp(page) {
     .waitFor();
 }
 
+// Flip a ToggleRow / checkbox by its accessible name ("Company contact",
+// "Emergency contact", …). The framework checkbox hides its real <input>
+// as sr-only behind the painted glyph, so a normal click is intercepted —
+// force the click through to the input.
+export async function toggleRow(page, name) {
+  const sw = page.getByRole("switch", { name });
+  if (await sw.count()) return sw.first().click();
+  await page.getByRole("checkbox", { name }).first().click({ force: true });
+}
+
 // Put the open contact card into edit mode (a no-op if it already is).
 // Edit mode is where the appearance popover and the field form live.
 export async function enterEditMode(page) {

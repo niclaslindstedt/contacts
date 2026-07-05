@@ -223,7 +223,7 @@ export const sv: Catalog = {
     cardType: "Korttyp",
     companyToggle: "Företagskontakt",
     companyToggleHint:
-      "Kortet identifieras med ett företagsnamn och visas med en byggnadsikon.",
+      "Kortet identifieras med ett företagsnamn och visas med en byggnadsikon. Personfälten — namnet, födelsedagen och viktiga datum — tas bort.",
     homepage: "Webbplats",
     homepagePlaceholder: "https://exempel.se",
     address: "Adress",
