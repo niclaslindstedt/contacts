@@ -14,6 +14,68 @@ doc. Do not hand-edit the released sections.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-05
+
+### Added
+
+- **Emergency contacts pinned to the top** — Flag a person as **in case of emergency** from a switch in its edit view and it's pinned to a dedicated section at the top of the side menu, badged with a siren wherever it appears and kept in the JSON backup.
+- **Favorites** — Star the contacts you reach for most with the heart on a card or list row, and they gather on their own Favorites page beside List in the sidebar's action grid. [Learn more](feature:favorites)
+- **Open in Dropbox / Google Drive** — The Sync command centre gained an Open in {provider} button that jumps to the drive's own web UI, straight onto your synced files.
+- **Reorder favorites by dragging** — The Favorites page is a hand-orderable shortlist — drag a row by its grip handle to set the order, with an insertion line showing where it will land.
+- **Configurable cloud app-folder names** — The Dropbox and Google Drive folder names are now settable at build time via `VITE_DROPBOX_APP_FOLDER` and `VITE_GDRIVE_APP_FOLDER`, defaulting to `Contacts`.
+- **Website field and company cards** — Cards gained a Website field (exported as the vCard `URL`) and a Company contact switch that names the card by a single organisation, hides the person-only fields, and exports it as a company.
+- **Attach files to a contact** — Clip files to a contact — images show as tap-to-expand thumbnails, other files as rows — kept in the JSON backup and filed out as real files on a connected drive. [Learn more](feature:attachments)
+- **Privacy policy and about pages** — Two no-login pages ship with the app — a `/privacy` policy spelling out what's stored and when it leaves your device, and a `/home` showcase page linked from the cloud providers' consent screens.
+- **Sort folders alphabetically or by hand** — Folders gained a sort order under Settings → General → Folders — keep them in name order, or arrange them yourself by dragging one onto another in the sidebar.
+- **Collapse or expand every folder** — The Contacts header carries a folder glyph that folds every folder shut in one click, then expands them all again.
+- **Sync to a local folder** — A new Local folder backend syncs your address book to a directory you pick on this computer — no account, no network — with photos and attachments filed beside the document as real files. [Learn more](feature:local-folder)
+- **Fold the side-menu footer away** — A chevron rail above the side-menu footer folds the Donate, trophy, About, and Settings rows away, handing their space to the contact list.
+- **Dated backups** — Take timestamped `.zip` snapshots of your whole address book from Settings → Storage → Backups — download, restore, or browse them on a connected drive. [Learn more](feature:backups)
+- **Nest folders into subfolders** — Folders now nest to any depth — drag one onto another to nest it, and archiving, deleting, or moving a folder carries its whole subtree along. [Learn more](feature:subfolders)
+- **Spinners on connect, update, and backup** — Connecting a backend, applying an update, and taking a backup now show a spinner while they run instead of a button that looks inert.
+- **Find lost photos and adopt dropped ones** — The app re-reads the drive's deterministically-named photo files on open, re-attaching any the document lost and adopting images you drop into the `photos/` folder yourself. [Learn more](feature:photo-files)
+- **Organise contacts from the List page** — Drag a contact row onto a folder to file it there, multi-select to move a batch at once, or use the new Move to folder right-click action. [Learn more](feature:list)
+- **Reindex photos button** — Settings → Developer → Photos gained a Reindex photos button that rescans the drive and reconnects any unlinked photo file on demand.
+- **A searchable country picker with thirty developed countries** — Pick your country for phone and postal formatting from a type-ahead list of the thirty most developed countries — each with its flag, its own grouping rules, and defaulting to Sweden. [Learn more](feature:formats)
+- **Swipe and right-click actions on the List and Favorites rows** — List and Favorites rows now carry the side menu's row gestures — swipe left to delete, swipe right to archive, and a desktop right-click menu with Move to folder, Archive, and Delete. [Learn more](feature:list)
+- **Primary phone number** — Mark one of a contact's numbers as their primary and the Favorites page shows just that number instead of the whole list. [Learn more](feature:favorites)
+
+### Changed
+
+- **Archive button in the action-grid corner** — The Archive button moved to the lower-right corner of the side-menu action grid, so the bottom row now reads Undo · Redo · Search · Archive.
+- **Matching collapse / expand glyph in the sidebar** — The side menu's collapse-all / expand-all button now wears the same fold/unfold chevron mark as the list page's, so the affordance reads identically in both places.
+- **Formatting on by default** — Phone numbers and postal codes now render in your country's convention out of the box, with a Format-tab toggle to show them exactly as typed instead.
+- **Editing stays on when you switch contacts** — Opening another contact while editing now keeps you in edit mode and saves the card you were on first, so an in-progress edit isn't lost.
+- **Cleaner Work / Private toggle** — Each phone and email's type is now a compact two-glyph toggle — a person for Private, a briefcase for Work — that flips without the field losing focus.
+- **Redesigned cloud-setup prompt** — The prompt for choosing which copy to keep when connecting a cloud drive is now a compact centred dialog, each choice a full-width button carrying its contact and folder counts.
+- **Open on the List page** — The app now opens on the List overview of your whole address book instead of a single card, with a back button once you open a contact.
+- **Phone numbers as Private / Work pills** — Phone numbers on the List and Favorites pages now read as pills led by a type glyph — a person for Private, a briefcase for Work — so the two are easy to tell apart.
+- **Clearer contact edit view** — The edit view got a polish pass — glyph section titles, plainer switch labels, auto-archive moved to the bottom, and shorter option hints.
+- **Drop the test-log button** — The Developer tab's throwaway "Write a test log line" button is gone, leaving just the Capture logs toggle.
+- **Easier folder reordering** — The drop-between zone when dragging a folder now covers the top and bottom 40% of a row, so a folder slots above or below a sibling instead of accidentally nesting inside it.
+- **List folder sections as separators** — A folder's heading on the List page is now a tinted separator band with an uppercase label and count, plus a collapse / expand all button next to Select.
+- **Density shapes the whole chrome** — The Appearance → Density knob now tightens the settings cards, side menu, and action island too, not just the contact list.
+- **Tap anywhere on a list row to open it** — The whole contact row now opens the card when tapped, not just its avatar and name — only the phone, email, and favorite controls act on their own.
+- **Roomier phone pill on spacious rows** — A spacious list row with a single phone number now shows a larger pill set lower beneath the name, so it fills the taller photo's height instead of leaving dead space.
+- **Select controls in the List's top menu** — Select mode's copy, export, and collapse actions now sit in the List header's top menu beside a highlighted Select toggle you tap to leave, Select all moves to a checkbox row at the top of the contacts, and the copy and export buttons stay disabled until you tick a contact. [Learn more](feature:contacts)
+- **Phone numbers stored as clean digits** — Phone numbers now keep just their national digits with the country code on a separate dropdown that defaults to your home country, and existing numbers are converted automatically. [Learn more](feature:contact-cards)
+- **Contacts open in a swipe-to-dismiss card** — Tapping a contact on the List or Favorites page now opens it in a card that floats over the page and slides away with a swipe down, so the back button is gone — picking a contact from the sidebar still opens the full page.
+- **Roomier phone rows on mobile** — The phone country picker now shows just the flag on mobile so the number field gets more room, while the calling code stays visible on wider screens and in the open dropdown.
+- **Compact private/work toggle** — The private/work picker on phone and email rows is now a single tap-to-switch button, and the row's icon controls are tighter, leaving more room for the value.
+
+### Fixed
+
+- **Switches no longer jump the page** — Flipping a switch near the bottom of a card's edit view no longer yanks the card off-screen on desktop.
+- **Symmetric Donate heart** — The Donate link now wears the same clean, symmetric heart the app draws for favorites.
+- **Hover states on list rows** — Contact rows on the List, Favorites, and Archive pages now highlight on hover and show the pointer cursor, matching the side menu.
+- **Working border, radius, and dialog backdrop controls** — The Border width and Corner radius knobs now reshape the whole UI, and Appearance gains dialog backdrop dimming and blur controls that preview live.
+- **Updates no longer wipe the on-device copy** — An app update can no longer blank the on-device contacts copy — an unreadable stored document is now left untouched rather than overwritten with a blank one.
+- **Bigger footer-collapse control** — The footer-collapse rail is now a taller tap target, and folding the footer reclaims its bottom inset for the contact list instead of leaving a gap.
+- **No dead space under the footer and modal buttons** — The side-menu footer and modal button rows now sit snug against the bottom instead of floating above a redundant safe-area gap in the installed PWA.
+- **What's new header clear of the notch** — The What's new dialog and its Learn more pages now carry the top safe-area inset, so their close button no longer hides under a notch.
+- **Cleaner folder breaks in the List** — The last contact in a folder no longer draws a divider line straight into the next folder's header on the List page, so each group reads as an enclosed block.
+  </content>
+
 ## [0.4.0] - 2026-07-04
 
 ### Added
