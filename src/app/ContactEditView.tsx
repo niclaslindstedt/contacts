@@ -4,8 +4,12 @@ import { useRef, useState, type ReactNode } from "react";
 import {
   ArchiveIcon,
   Button,
+  LABELED_FIELD_CLASS,
+  LabeledInput,
+  LabeledTextarea,
   NoteIcon,
   PlusIcon,
+  Section,
   SegmentedControl,
   ToggleRow,
 } from "@niclaslindstedt/oss-framework/components";
@@ -20,14 +24,7 @@ import {
 } from "./attachments.ts";
 import { autoArchiveAction, defaultAutoArchiveDate } from "./autoArchive.ts";
 import { filesToAttachments } from "./attachmentIntake.ts";
-import {
-  IconSection,
-  inputClass,
-  KindToggle,
-  LabeledInput,
-  LabeledTextarea,
-  RemoveButton,
-} from "./editWidgets.tsx";
+import { KindToggle, RemoveButton } from "./editWidgets.tsx";
 import { PhoneRows } from "./editPhones.tsx";
 import {
   BuildingIcon,
@@ -80,16 +77,22 @@ export function ContactEditView({
   const showKind = !contact.isCompany;
   return (
     <div className="flex flex-col">
-      <IconSection icon={PhoneIcon} title={t("contact.phones")}>
+      <Section
+        icon={<PhoneIcon className="h-3.5 w-3.5" />}
+        title={t("contact.phones")}
+      >
         <PhoneRows
           rows={contact.phones}
           showKind={showKind}
           home={home}
           onCommit={(phones) => updateContact(contact.id, { phones })}
         />
-      </IconSection>
+      </Section>
 
-      <IconSection icon={MailIcon} title={t("contact.emails")}>
+      <Section
+        icon={<MailIcon className="h-3.5 w-3.5" />}
+        title={t("contact.emails")}
+      >
         <MethodRows<Email>
           rows={contact.emails}
           placeholder={t("contact.emailPlaceholder")}
@@ -105,16 +108,22 @@ export function ContactEditView({
             label: kind,
           })}
         />
-      </IconSection>
+      </Section>
 
-      <IconSection icon={MapPinIcon} title={t("contact.addresses")}>
+      <Section
+        icon={<MapPinIcon className="h-3.5 w-3.5" />}
+        title={t("contact.addresses")}
+      >
         <AddressRows
           rows={contact.addresses}
           onCommit={(addresses) => updateContact(contact.id, { addresses })}
         />
-      </IconSection>
+      </Section>
 
-      <IconSection icon={InfoIcon} title={t("contact.details")}>
+      <Section
+        icon={<InfoIcon className="h-3.5 w-3.5" />}
+        title={t("contact.details")}
+      >
         {/* The name lives in the identity block above (tap it to rename), so
             the details grid opens straight at company and birthday rather than
             repeating first / last name here. The company switch itself now sits
@@ -147,22 +156,28 @@ export function ContactEditView({
             />
           )}
         </div>
-      </IconSection>
+      </Section>
 
       {/* Extra important dates are a person's affair (name days, anniversaries)
           — a company card hides the section, like the birthday above. */}
       {!contact.isCompany && (
-        <IconSection icon={GiftIcon} title={t("contact.importantDates")}>
+        <Section
+          icon={<GiftIcon className="h-3.5 w-3.5" />}
+          title={t("contact.importantDates")}
+        >
           <ImportantDateRows
             rows={contact.importantDates}
             onCommit={(importantDates) =>
               updateContact(contact.id, { importantDates })
             }
           />
-        </IconSection>
+        </Section>
       )}
 
-      <IconSection icon={NoteIcon} title={t("contact.notes")}>
+      <Section
+        icon={<NoteIcon className="h-3.5 w-3.5" />}
+        title={t("contact.notes")}
+      >
         <LabeledTextarea
           label={t("contact.notes")}
           hideLabel
@@ -171,11 +186,14 @@ export function ContactEditView({
           placeholder={t("contact.notesPlaceholder")}
           onCommit={(notes) => updateContact(contact.id, { notes })}
         />
-      </IconSection>
+      </Section>
 
-      <IconSection icon={PaperclipIcon} title={t("contact.attachments")}>
+      <Section
+        icon={<PaperclipIcon className="h-3.5 w-3.5" />}
+        title={t("contact.attachments")}
+      >
         <AttachmentRows contact={contact} updateContact={updateContact} />
-      </IconSection>
+      </Section>
 
       {/* The in-case-of-emergency flag lives here near the bottom of edit mode —
           set once and out of the way — rather than always on show in the card
@@ -183,34 +201,43 @@ export function ContactEditView({
           emergency contact is a person you reach in a crisis, so the flag drops
           out for a company card, like the person-only fields above. */}
       {!contact.isCompany && (
-        <IconSection icon={IceIcon} title={t("menu.emergency")}>
+        <Section
+          icon={<IceIcon className="h-3.5 w-3.5" />}
+          title={t("menu.emergency")}
+        >
           <ToggleRow
             label={t("contact.iceToggle")}
             hint={t("contact.iceToggleHint")}
             checked={!!contact.ice}
             onChange={(on) => updateContact(contact.id, { ice: on })}
           />
-        </IconSection>
+        </Section>
       )}
 
       {/* Person ↔ company is a set-once choice, so it lives near the bottom
           beside the emergency flag rather than up in the details grid. Turning
           it on folds away the person-only fields (birthday, important dates)
           and edits the single company name in the identity block above. */}
-      <IconSection icon={BuildingIcon} title={t("contact.cardType")}>
+      <Section
+        icon={<BuildingIcon className="h-3.5 w-3.5" />}
+        title={t("contact.cardType")}
+      >
         <ToggleRow
           label={t("contact.companyToggle")}
           hint={t("contact.companyToggleHint")}
           checked={!!contact.isCompany}
           onChange={(on) => toggleCompany(contact, on, updateContact)}
         />
-      </IconSection>
+      </Section>
 
       {/* Auto-archive sits at the very bottom of the card — a set-and-forget
           schedule tucked below the person/company and emergency switches. */}
-      <IconSection icon={ArchiveIcon} title={t("contact.autoArchive")}>
+      <Section
+        icon={<ArchiveIcon className="h-3.5 w-3.5" />}
+        title={t("contact.autoArchive")}
+      >
         <AutoArchiveRow contact={contact} updateContact={updateContact} />
-      </IconSection>
+      </Section>
     </div>
   );
 }
@@ -615,7 +642,7 @@ function MethodValueRow({
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
           if (e.key === "Escape") onRemove();
         }}
-        className={inputClass}
+        className={LABELED_FIELD_CLASS}
       />
       <RemoveButton label={removeLabel} onClick={onRemove} />
     </div>

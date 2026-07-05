@@ -49,25 +49,3 @@ export async function readImportedContacts(
   }
   return { contacts, usedFiles, emptyFiles };
 }
-
-/** Pull the `File`s off a drop's `DataTransfer`. Prefers the typed `files`
- *  list; falls back to walking `items` (some browsers only populate one). */
-export function filesFromDataTransfer(dt: DataTransfer | null): File[] {
-  if (!dt) return [];
-  if (dt.files && dt.files.length > 0) return Array.from(dt.files);
-  const out: File[] = [];
-  for (const item of Array.from(dt.items ?? [])) {
-    if (item.kind === "file") {
-      const f = item.getAsFile();
-      if (f) out.push(f);
-    }
-  }
-  return out;
-}
-
-/** Whether a drag carries files (rather than text or an element) — the signal
- *  that decides if the import overlay should show. */
-export function dragHasFiles(dt: DataTransfer | null): boolean {
-  if (!dt) return false;
-  return Array.from(dt.types ?? []).includes("Files");
-}

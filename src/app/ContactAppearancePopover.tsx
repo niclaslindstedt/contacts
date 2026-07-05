@@ -9,9 +9,15 @@ import {
 import {
   ColorPalette,
   GLYPH_COLORS,
+  GlyphPicker,
 } from "@niclaslindstedt/oss-framework/glyphs";
+import {
+  ImageCropper,
+  readImageSource,
+} from "@niclaslindstedt/oss-framework/viewer";
 
 import { Avatar } from "./Avatar.tsx";
+import { CONTACT_GLYPH_NAMES, CONTACT_GLYPH_PATHS } from "./contactGlyphs.ts";
 import {
   activePhoto,
   photoList,
@@ -20,11 +26,9 @@ import {
   withPhotoAdjusted,
   withPhotoRemoved,
 } from "./contactPhotos.ts";
-import { ContactGlyphPicker } from "./ContactGlyph.tsx";
 import { CropIcon, ImageUpIcon, PersonIcon } from "./icons.tsx";
 import { log } from "./log.ts";
-import { PhotoCropper } from "./PhotoCropper.tsx";
-import { DEFAULT_TRANSFORM, fileToPhotoSource } from "./photo.ts";
+import { fromViewTransform, toViewTransform } from "./photo.ts";
 import { freshId } from "./useContactStore.ts";
 import { useT } from "./i18n/index.ts";
 import type { Contact, ContactPhoto, PhotoTransform } from "./types.ts";
@@ -33,11 +37,12 @@ import type { Contact, ContactPhoto, PhotoTransform } from "./types.ts";
 // initials) that opens a popover with a **Photos** gallery, then the framework's
 // colour and glyph pickers. The gallery is a strip of thumbnails — the current
 // face ringed, tap another to swap to it without re-uploading — plus an add tile
-// that opens the circle cropper (`PhotoCropper`) on a fresh upload, and Adjust /
-// Remove actions on the current photo. The app owns the trigger, the popover
-// chrome, and *where the choice is stored* (the contact store, via the pure
-// `contactPhotos` mutators); the framework owns the catalogue, the renderer, and
-// the two pickers.
+// that opens the circle cropper (the framework's `ImageCropper`) on a fresh
+// upload, and Adjust / Remove actions on the current photo. The app owns the
+// trigger, the popover chrome, and *where the choice is stored* (the contact
+// store, via the pure `contactPhotos` mutators); the framework owns the
+// renderer, the two pickers, and the cropper — the glyph vocabulary itself
+// stays app-side (`contactGlyphs.ts`).
 
 type Props = {
   contact: Contact;
@@ -73,13 +78,14 @@ export function ContactAppearancePopover({
   async function onPickFile(file: File | undefined) {
     if (!file) return;
     try {
-      const source = await fileToPhotoSource(file);
-      // A fresh upload opens the cropper centred, ready to frame. Close the
-      // popover first so its dismiss backdrop doesn't sit over the cropper.
+      const source = await readImageSource(file);
+      // A fresh upload opens the cropper centred, ready to frame (a null
+      // framing is the cropper's cover-fit default). Close the popover first
+      // so its dismiss backdrop doesn't sit over the cropper.
       setOpen(false);
       setCropping({
         source,
-        initial: DEFAULT_TRANSFORM,
+        initial: null,
         target: { mode: "add" },
       });
     } catch (err) {
@@ -233,7 +239,9 @@ export function ContactAppearancePopover({
         <p className="mt-3 mb-1.5 text-xs font-semibold tracking-wide text-muted uppercase">
           {t("contact.icon")}
         </p>
-        <ContactGlyphPicker
+        <GlyphPicker
+          glyphs={CONTACT_GLYPH_NAMES}
+          paths={CONTACT_GLYPH_PATHS}
           value={contact.glyph ?? null}
           onChange={(glyph) => onChange({ glyph })}
           tintColor={contact.color}
@@ -244,11 +252,22 @@ export function ContactAppearancePopover({
       </FloatingPanel>
 
       {cropping && (
-        <PhotoCropper
+        <ImageCropper
           source={cropping.source}
-          initial={cropping.initial}
+          initialTransform={
+            cropping.initial ? toViewTransform(cropping.initial) : null
+          }
           onCancel={() => setCropping(null)}
-          onSave={({ photo, transform }) => onCropSaved(photo, transform)}
+          onApply={({ dataUrl, transform }) =>
+            onCropSaved(dataUrl, fromViewTransform(transform))
+          }
+          labels={{
+            title: t("contact.cropTitle"),
+            hint: t("contact.cropHint"),
+            apply: t("contact.savePhoto"),
+            cancel: t("common.cancel"),
+            zoom: t("contact.zoom"),
+          }}
         />
       )}
     </>

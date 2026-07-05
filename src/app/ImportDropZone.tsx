@@ -2,27 +2,25 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
 
 import { unlock } from "@niclaslindstedt/oss-framework/achievements";
+import { useFileDrop } from "@niclaslindstedt/oss-framework/hooks";
 
 import { UploadIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
-import {
-  dragHasFiles,
-  filesFromDataTransfer,
-  readImportedContacts,
-} from "./importFiles.ts";
+import { readImportedContacts } from "./importFiles.ts";
 import { info, warn } from "../output.ts";
 import type { ContactStore } from "./useContactStore.ts";
 
 // Drag-and-drop contact import. Wraps the main content area and, whenever a
-// file drag enters the window, raises a full-area overlay inviting the drop.
-// Dropping a `.vcf` (the format iOS/Android/Outlook Contacts hand out), the
-// app's own JSON backup, or an Outlook CSV parses the cards and files them into
-// the address book (see `import.ts` / `useContactStore.importContacts`). A
-// short banner reports how many contacts landed.
+// file drag enters it, raises a full-area overlay inviting the drop. Dropping
+// a `.vcf` (the format iOS/Android/Outlook Contacts hand out), the app's own
+// JSON backup, or an Outlook CSV parses the cards and files them into the
+// address book (see `import.ts` / `useContactStore.importContacts`). A short
+// banner reports how many contacts landed.
 //
-// The overlay is driven by an enter/leave counter: `dragenter` and `dragleave`
-// fire for every child element the pointer crosses, so a bare boolean would
-// flicker. Counting keeps the overlay up until the drag truly leaves.
+// The framework's `useFileDrop` owns the drag mechanics — including the
+// enter/leave depth counting that keeps the overlay from flickering as the
+// pointer crosses child elements. The nested `ContactPhotoDropZone` claims
+// image drags away from this zone, so only importable files raise it.
 
 type Banner = { kind: "ok" | "empty"; text: string };
 
@@ -34,9 +32,8 @@ export function ImportDropZone({
   children: ReactNode;
 }) {
   const t = useT();
-  const [dragging, setDragging] = useState(false);
   const [banner, setBanner] = useState<Banner | null>(null);
-  const depth = useRef(0);
+  const zoneRef = useRef<HTMLDivElement>(null);
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showBanner = useCallback((next: Banner) => {
@@ -69,48 +66,16 @@ export function ImportDropZone({
     [store, showBanner, t],
   );
 
-  const onDragEnter = useCallback((e: React.DragEvent) => {
-    if (!dragHasFiles(e.dataTransfer)) return;
-    e.preventDefault();
-    depth.current += 1;
-    setDragging(true);
-  }, []);
-
-  const onDragOver = useCallback((e: React.DragEvent) => {
-    if (!dragHasFiles(e.dataTransfer)) return;
-    // Signal we accept the drop (without this, the browser opens the file).
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "copy";
-  }, []);
-
-  const onDragLeave = useCallback((e: React.DragEvent) => {
-    if (!dragHasFiles(e.dataTransfer)) return;
-    depth.current = Math.max(0, depth.current - 1);
-    if (depth.current === 0) setDragging(false);
-  }, []);
-
-  const onDrop = useCallback(
-    (e: React.DragEvent) => {
-      if (!dragHasFiles(e.dataTransfer)) return;
-      e.preventDefault();
-      depth.current = 0;
-      setDragging(false);
-      void runImport(filesFromDataTransfer(e.dataTransfer));
-    },
-    [runImport],
-  );
+  const { active } = useFileDrop({
+    targetRef: zoneRef,
+    onDrop: (files) => void runImport(files),
+  });
 
   return (
-    <div
-      className="relative flex min-h-0 flex-1 flex-col"
-      onDragEnter={onDragEnter}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-    >
+    <div ref={zoneRef} className="relative flex min-h-0 flex-1 flex-col">
       {children}
 
-      {dragging && (
+      {active && (
         <div
           className="pointer-events-none absolute inset-2 z-40 flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-accent bg-page-bg/85 text-center backdrop-blur-sm"
           aria-hidden

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 // Opening a contact attachment from the read view. A viewable file (a PDF) opens
 // in a new browser tab; anything else is saved to disk. Images aren't handled
-// here — they open in the in-app lightbox (the same `PhotoViewer` the profile
+// here — they open in the in-app lightbox (the framework `Lightbox` the profile
 // photos use). The framework helpers turn the stored `data:` URL into a real
 // Blob first so the browser gets a genuine PDF/octet-stream rather than a giant
 // `data:` URL, which some browsers refuse to navigate to; these shims only

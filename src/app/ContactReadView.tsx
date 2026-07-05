@@ -14,6 +14,7 @@ import {
   yearsSince,
 } from "@niclaslindstedt/oss-framework/calendar";
 import { downloadText, MIME_ICS } from "@niclaslindstedt/oss-framework/files";
+import { Lightbox } from "@niclaslindstedt/oss-framework/viewer";
 import {
   displayUrl,
   normalizeUrl,
@@ -48,7 +49,6 @@ import {
   PhoneIcon,
   StarIcon,
 } from "./icons.tsx";
-import { PhotoViewer } from "./PhotoViewer.tsx";
 import { primaryPhone } from "./primaryPhone.ts";
 import { useT } from "./i18n/index.ts";
 import { formatDate, phoneDialString } from "./format.ts";
@@ -620,10 +620,28 @@ function AttachmentsSection({ attachments }: { attachments: Attachment[] }) {
       )}
 
       {viewerAt !== null && imageSrcs.length > 0 && (
-        <PhotoViewer
-          photos={imageSrcs}
-          startIndex={viewerAt}
+        <Lightbox
+          items={imageSrcs.map((src) => ({
+            render: () => (
+              <img
+                src={src}
+                alt=""
+                draggable={false}
+                className="max-h-full max-w-full rounded-[var(--radius)] object-contain shadow-2xl"
+              />
+            ),
+          }))}
+          initialIndex={viewerAt}
           onClose={() => setViewerAt(null)}
+          labels={{
+            title: t("contact.viewPhoto"),
+            close: t("common.close"),
+            previous: t("contact.previousPhoto"),
+            next: t("contact.nextPhoto"),
+            counter: (n, m) =>
+              t("contact.photoPosition", { n: String(n), m: String(m) }),
+            goTo: (n) => t("contact.showPhotoNumber", { n: String(n) }),
+          }}
         />
       )}
     </div>

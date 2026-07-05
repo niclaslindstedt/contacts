@@ -2,6 +2,12 @@
 import { useCallback } from "react";
 
 import { useLocalStorageState } from "@niclaslindstedt/oss-framework/hooks";
+import {
+  BACKDROP_BLUR_PX,
+  BACKDROP_DARKNESS,
+  type BackdropBlurPreset,
+  type BackdropDarknessPreset,
+} from "@niclaslindstedt/oss-framework/theme";
 import type { DateFormat } from "./format.ts";
 import {
   DEFAULT_COUNTRY,
@@ -41,29 +47,14 @@ export type ListPhonePriority = "private" | "work" | "both";
 export type FolderSort = "alphabetical" | "manual";
 
 /** How far the page behind an open dialog is dimmed. `none` leaves it in full
- *  view; the rest fade it toward black in increasing steps. */
-export type BackdropDarkness = "none" | "subtle" | "medium" | "dark";
+ *  view; the rest fade it toward black in increasing steps. The presets (and
+ *  their alpha values) are the framework theme engine's. */
+export type BackdropDarkness = BackdropDarknessPreset;
 
 /** How far the page behind an open dialog is blurred. `none` keeps it crisp
- *  (the default); the rest soften it in increasing steps. */
-export type BackdropBlur = "none" | "subtle" | "medium" | "strong";
-
-/** The black-alpha each darkness step dims the modal backdrop to. `medium`
- *  matches the framework's original `bg-black/50` scrim. */
-export const BACKDROP_DARKNESS: Record<BackdropDarkness, number> = {
-  none: 0,
-  subtle: 0.35,
-  medium: 0.5,
-  dark: 0.75,
-};
-
-/** The blur radius (px) each step applies behind an open dialog. */
-export const BACKDROP_BLUR_PX: Record<BackdropBlur, number> = {
-  none: 0,
-  subtle: 2,
-  medium: 4,
-  strong: 8,
-};
+ *  (the default); the rest soften it in increasing steps. The presets (and
+ *  their radii) are the framework theme engine's. */
+export type BackdropBlur = BackdropBlurPreset;
 
 export type AppSettings = {
   menuMode: MenuMode;
@@ -221,22 +212,23 @@ export function postalOptions(s: AppSettings): PostalOptions {
 }
 
 // --- Settings → modal backdrop projection ------------------------------------
-// The dialog backdrop's darkness and blur are app-owned look knobs (the
-// framework's `ThemeAppearance` doesn't model them). Project them onto `<html>`
-// as CSS variables the scrim rule in `styles.css` consumes — mirroring how the
-// framework's theme engine writes its own UI-style variables. Called from the
-// app root for the persisted settings, and live from the Appearance tab so the
-// open dialog previews the change against itself.
+// The dialog backdrop's darkness and blur live in the app's own settings blob
+// (not the framework's `ThemeAppearance`), so the app projects them onto
+// `<html>` itself — but the preset names, their values, and the CSS variables
+// are the framework theme engine's (`BACKDROP_DARKNESS` / `BACKDROP_BLUR_PX`),
+// so the scrim rule in `styles.css` reads exactly what `applyUiStyle` would
+// write. Called from the app root for the persisted settings, and live from
+// the Appearance tab so the open dialog previews the change against itself.
 export function applyBackdropVars(
   s: AppSettings,
   el: HTMLElement = document.documentElement,
 ): void {
   el.style.setProperty(
     "--modal-backdrop-darkness",
-    String(BACKDROP_DARKNESS[s.modalBackdropDarkness]),
+    BACKDROP_DARKNESS[s.modalBackdropDarkness],
   );
   el.style.setProperty(
     "--modal-backdrop-blur",
-    `${BACKDROP_BLUR_PX[s.modalBackdropBlur]}px`,
+    BACKDROP_BLUR_PX[s.modalBackdropBlur],
   );
 }
