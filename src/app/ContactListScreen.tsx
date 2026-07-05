@@ -37,6 +37,7 @@ import {
   groupContactsByFolder,
   listedContacts,
   prioritizePhones,
+  rangeBetween,
   reorderIds,
 } from "./contactList.ts";
 import type { ContactStore } from "./useContactStore.ts";
@@ -194,6 +195,10 @@ export function ContactListScreen({
       else next.add(id);
       return next;
     });
+  // The anchor a Shift-click ranges from — the last row ticked with a plain
+  // click (or the card select mode was entered on). Local view state, kept in a
+  // ref so updating it never re-renders the list.
+  const anchorRef = useRef<string | null>(null);
 
   const allContacts = useMemo(
     () => (favoritesOnly ? favorites : listedContacts(groups)),
@@ -203,10 +208,30 @@ export function ContactListScreen({
   const selectedContacts = allContacts.filter((c) => selected.has(c.id));
   const allSelected = total > 0 && selectedContacts.length === total;
 
+  // The contacts actually on screen, in reading order — every card whose section
+  // is neither collapsed nor folded away under a collapsed ancestor. This is the
+  // run a Shift-click ranges over: it flattens the folders, so a Shift-click
+  // spanning two sections sweeps every visible row between them and skips the
+  // ones tucked inside a shut folder. The Favorites page has no sections, so its
+  // whole list is visible.
+  const visibleContacts = useMemo(() => {
+    if (favoritesOnly) return favorites;
+    return groups
+      .filter(
+        (g) =>
+          !isSectionHidden(g.folder?.id ?? null) &&
+          !collapsed.has(g.folder?.id ?? UNGROUPED),
+      )
+      .flatMap((g) => g.contacts);
+    // `isSectionHidden` reads `collapsed`/`foldersById`, both in the dep list.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [favoritesOnly, favorites, groups, collapsed, foldersById]);
+
   const enterSelect = () => setSelecting(true);
   const exitSelect = () => {
     setSelecting(false);
     setSelected(new Set());
+    anchorRef.current = null;
   };
   // Leave select mode when the view switches between List and Favorites — the
   // screen stays mounted across that swap (only `favoritesOnly` flips), so the
@@ -215,6 +240,7 @@ export function ContactListScreen({
   useEffect(() => {
     setSelecting(false);
     setSelected(new Set());
+    anchorRef.current = null;
   }, [favoritesOnly]);
   const toggleSelectAll = () =>
     setSelected(
@@ -222,11 +248,46 @@ export function ContactListScreen({
     );
   // Ctrl / Cmd-clicking a row (out of select mode) enters select mode with just
   // that card ticked — the quick way into a multi-select without reaching for
-  // the toolbar button first.
+  // the toolbar button first. That card also seeds the Shift-click anchor.
   const enterSelectWith = (id: string) => {
     setSelecting(true);
     setSelected(new Set([id]));
+    anchorRef.current = id;
   };
+
+  // A click on a select-mode row. A plain click toggles just that card and moves
+  // the anchor to it; a Shift-click ticks every visible card between the anchor
+  // and this one (folders and all), leaving the anchor put so the range can be
+  // grown or redrawn from the same start. Falls back to a plain toggle when
+  // there's no anchor yet or it has scrolled out of the visible run.
+  const selectRow = (id: string, extend: boolean) => {
+    const anchor = anchorRef.current;
+    if (extend && anchor && anchor !== id) {
+      const range = rangeBetween(
+        visibleContacts.map((c) => c.id),
+        anchor,
+        id,
+      );
+      if (range.length > 0) {
+        setSelected((prev) => new Set([...prev, ...range]));
+        return;
+      }
+    }
+    toggleSelected(id);
+    anchorRef.current = id;
+  };
+  // Tick (or clear) every contact directly under one folder's heading in one
+  // tap — the folder-level checkbox shown beside each section header while
+  // selecting. Selecting a folder doesn't disturb the Shift-click anchor.
+  const toggleGroupSelected = (ids: readonly string[], allOn: boolean) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (allOn) next.delete(id);
+        else next.add(id);
+      }
+      return next;
+    });
 
   // The ids a drag / move acts on: the whole selection when the grabbed card is
   // part of it, otherwise just that one card. Lets a single drag file every
@@ -451,7 +512,7 @@ export function ContactListScreen({
               movePos.current = { x, y };
             }}
             onOpenContact={onOpenContact}
-            onToggleSelected={toggleSelected}
+            onToggleSelected={selectRow}
             onToggleFavorite={toggleFavorite}
             onReorder={(dragId, targetId, place) =>
               reorderFavorites(
@@ -487,6 +548,27 @@ export function ContactListScreen({
                 : { kind: "root" },
             );
             const dropOver = zone.isOver && dragging;
+            // The folder-level checkbox shown beside the heading while selecting
+            // — one tap ticks (or clears) every contact directly under this
+            // folder. Checked once they're all in; a fresh tap on a full folder
+            // clears just its rows.
+            const groupIds = group.contacts.map((c) => c.id);
+            const groupAllSelected =
+              groupIds.length > 0 && groupIds.every((id) => selected.has(id));
+            const selectCheckbox =
+              selecting && groupIds.length > 0 ? (
+                <SectionSelectCheckbox
+                  checked={groupAllSelected}
+                  label={
+                    group.folder
+                      ? t("list.selectFolder", { name: group.folder.name })
+                      : t("list.selectUngrouped")
+                  }
+                  onToggle={() =>
+                    toggleGroupSelected(groupIds, groupAllSelected)
+                  }
+                />
+              ) : undefined;
             // Subfolder sections step to the right so the nesting reads at a
             // glance (Family, then Family ▸ Spouse indented under it).
             return (
@@ -517,6 +599,7 @@ export function ContactListScreen({
                       archiveLabel={t("menu.archive")}
                       deleteLabel={t("menu.deleteFolder")}
                       menuLabel={t("menu.folderActions")}
+                      selectCheckbox={selectCheckbox}
                     />
                   ) : (
                     // The trailing "no folder" section is a grouping, not a
@@ -527,6 +610,7 @@ export function ContactListScreen({
                       expanded={expanded}
                       onToggle={() => toggleSection(key)}
                       dropOver={dropOver}
+                      leading={selectCheckbox}
                     />
                   ))}
                 {expanded && (
@@ -553,7 +637,9 @@ export function ContactListScreen({
                             selecting={selecting}
                             selected={selected.has(contact.id)}
                             onOpen={() => onOpenContact(contact.id)}
-                            onToggleSelected={() => toggleSelected(contact.id)}
+                            onToggleSelected={(extend) =>
+                              selectRow(contact.id, extend)
+                            }
                             onToggleFavorite={() => toggleFavorite(contact)}
                             last={
                               folderBelow && i === group.contacts.length - 1
@@ -744,7 +830,7 @@ function FavoritesReorderList({
   // at the pointer.
   onCapturePos: (x: number, y: number) => void;
   onOpenContact: (id: string) => void;
-  onToggleSelected: (id: string) => void;
+  onToggleSelected: (id: string, extend: boolean) => void;
   onToggleFavorite: (contact: Contact) => void;
   onReorder: (
     dragId: string,
@@ -832,7 +918,9 @@ function FavoritesReorderList({
                 selected={selected.has(contact.id)}
                 favoritesOnly
                 onOpen={() => onOpenContact(contact.id)}
-                onToggleSelected={() => onToggleSelected(contact.id)}
+                onToggleSelected={(extend) =>
+                  onToggleSelected(contact.id, extend)
+                }
                 onToggleFavorite={() => onToggleFavorite(contact)}
                 grip={
                   selecting ? undefined : (
@@ -892,6 +980,7 @@ function SectionHeader({
   onToggle,
   dropOver = false,
   flush = false,
+  leading,
 }: {
   name: string;
   count: number;
@@ -903,13 +992,19 @@ function SectionHeader({
   // paint the wrapper's full box (`inset-0`), so a margin left inside it
   // renders as a strip of action colour taller than the visible band.
   flush?: boolean;
+  // An interactive control shown at the band's leading edge, before the caret —
+  // the select-mode folder checkbox. It sits *beside* the collapse button (a
+  // button can't nest inside another), so when it's present the band becomes a
+  // flex row of [control][collapse button] and the bottom gap moves out to that
+  // row so the two align on one band.
+  leading?: ReactNode;
 }) {
-  return (
+  const button = (
     <button
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className={`${flush ? "" : "mb-0.5"} flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${
+      className={`${flush || leading ? "" : "mb-0.5"} flex ${leading ? "flex-1" : "w-full"} cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${
         dropOver
           ? "bg-accent/15 text-fg-bright ring-1 ring-accent/50"
           : "bg-surface-2 text-muted hover:bg-surface-3 hover:text-fg"
@@ -927,6 +1022,13 @@ function SectionHeader({
       </span>
       <span className="shrink-0 text-xs tabular-nums opacity-70">{count}</span>
     </button>
+  );
+  if (!leading) return button;
+  return (
+    <div className={`${flush ? "" : "mb-0.5"} flex items-center gap-1`}>
+      {leading}
+      {button}
+    </div>
   );
 }
 
@@ -947,6 +1049,7 @@ function FolderSectionHeader({
   archiveLabel,
   deleteLabel,
   menuLabel,
+  selectCheckbox,
 }: {
   name: string;
   count: number;
@@ -958,6 +1061,9 @@ function FolderSectionHeader({
   archiveLabel: string;
   deleteLabel: string;
   menuLabel: string;
+  // The select-mode folder checkbox, shown at the heading's leading edge while
+  // a selection is being made — ticks or clears every contact in the folder.
+  selectCheckbox?: ReactNode;
 }) {
   const archiveAction: RowAction = {
     label: archiveLabel,
@@ -998,9 +1104,44 @@ function FolderSectionHeader({
           onToggle={onToggle}
           dropOver={dropOver}
           flush
+          leading={selectCheckbox}
         />
       </SwipeableRow>
     </RowActionMenu>
+  );
+}
+
+// The folder-level checkbox that rides the leading edge of a section heading
+// while selecting. Reflects whether every contact directly under the folder is
+// ticked; a tap ticks the whole folder, or clears it when it's already full. It
+// sits beside the collapse caret (not inside it), so ticking a folder never also
+// folds it — and its own click stops there rather than reaching any swipe /
+// drop machinery the heading is wrapped in.
+function SectionSelectCheckbox({
+  checked,
+  label,
+  onToggle,
+}: {
+  checked: boolean;
+  label: string;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-drawer-swipe-ignore
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+      role="checkbox"
+      aria-checked={checked}
+      aria-label={label}
+      title={label}
+      className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted hover:bg-surface-2 hover:text-fg"
+    >
+      <CheckboxGlyph checked={checked} />
+    </button>
   );
 }
 
@@ -1061,7 +1202,9 @@ function ContactRow({
   selecting: boolean;
   selected: boolean;
   onOpen: () => void;
-  onToggleSelected: () => void;
+  // Called when the row is tapped in select mode. `extend` is true for a
+  // Shift-click (range-select from the anchor), false for a plain toggle.
+  onToggleSelected: (extend: boolean) => void;
   onToggleFavorite: () => void;
   // The drag handle shown at the row's leading edge on the reorderable
   // Favorites page. Absent everywhere else — the row reads exactly as before.
@@ -1119,7 +1262,9 @@ function ContactRow({
     return (
       <button
         type="button"
-        onClick={onToggleSelected}
+        // Shift-click extends the selection from the anchor row; a plain click
+        // toggles just this one. `onToggleSelected` reads which from the event.
+        onClick={(e) => onToggleSelected(e.shiftKey)}
         aria-pressed={selected}
         aria-label={t("list.selectContact", {
           name: name || t("contact.unnamed"),

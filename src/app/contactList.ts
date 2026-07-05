@@ -217,6 +217,27 @@ export function listedContacts(groups: readonly ContactGroup[]): Contact[] {
   return groups.flatMap((g) => g.contacts);
 }
 
+/** The inclusive run of ids between `anchor` and `target` in `ids` order — the
+ *  cards a Shift-click sweeps into the selection. `ids` is the list in visible
+ *  reading order (folders flattened away), so a range spanning two folder
+ *  sections picks up every visible row between the two clicks regardless of
+ *  which folder each sits in. Order-agnostic: the anchor may sit above or below
+ *  the target. Returns just `[target]` when the anchor is missing from `ids`
+ *  (e.g. it scrolled into a collapsed folder), so a Shift-click still ticks at
+ *  least the clicked card; empty when the target itself isn't present. */
+export function rangeBetween(
+  ids: readonly string[],
+  anchor: string,
+  target: string,
+): string[] {
+  const to = ids.indexOf(target);
+  if (to === -1) return [];
+  const from = ids.indexOf(anchor);
+  if (from === -1) return [target];
+  const [lo, hi] = from <= to ? [from, to] : [to, from];
+  return ids.slice(lo, hi + 1);
+}
+
 /** The Favorites page's shortlist: every active, starred contact as one flat
  *  list in the user's hand-picked order (see `favoriteOrder`). A card that has
  *  been placed sorts by its saved position; one that never has sorts after the
