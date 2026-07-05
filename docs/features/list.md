@@ -33,5 +33,6 @@ a **Select all** toggle, and the batch **Copy** (one vCard block to the
 clipboard) and **Export** (to a vCard or CSV file) actions. With several
 selected, **dragging any one of them** moves the whole selection into a folder.
 
-Opening a contact from the List shows a **back button** in its header that
-returns you to where you left off.
+Opening a contact from the List floats its card over the page — swipe it down
+(or press Escape, or tap outside) to dismiss it and drop back to where you left
+off.

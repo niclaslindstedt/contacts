@@ -11,7 +11,7 @@ import {
   usePersistentMenuPosition,
   useSidebarInset,
 } from "@niclaslindstedt/oss-framework/sidebar";
-import { SpinnerIcon } from "@niclaslindstedt/oss-framework/components";
+import { Modal, SpinnerIcon } from "@niclaslindstedt/oss-framework/components";
 import { UpdateToast, usePwaUpdate } from "@niclaslindstedt/oss-framework/pwa";
 import { SyncDetailsModal } from "@niclaslindstedt/oss-framework/sync";
 import { ChangelogModal } from "@niclaslindstedt/oss-framework/changelog";
@@ -56,6 +56,7 @@ import { localDocBackend, useContactStore } from "./app/useContactStore.ts";
 import { useNamespaces } from "./app/useNamespaces.ts";
 import { useSyncEngine } from "./app/useSyncEngine.ts";
 import { cacheIdForBase } from "./app/pwa.ts";
+import { displayName } from "./app/types.ts";
 
 // A local-first contacts PWA built from the framework's shared surface. The
 // framework `Sidebar` frames the navigation (docked on wide screens, a
@@ -104,12 +105,12 @@ export function App() {
   const [view, setView] = useState<
     "contact" | "archive" | "list" | "favorites"
   >("list");
-  // Which browse page the current card was opened from, so its header offers a
-  // back button to that exact page. `null` for any other way into a card (a
-  // sidebar pick, a search hit, a fresh contact).
-  const [openedFrom, setOpenedFrom] = useState<"list" | "favorites" | null>(
-    null,
-  );
+  // A card opened by tapping a row on the List or Favorites page rides in a
+  // swipe-down-to-dismiss modal that floats over that page — closing it drops
+  // straight back to the browse list underneath. A card reached from the
+  // sidebar or a search hit takes over the main area as a full page (`view ===
+  // "contact"`) instead, so those two paths never set this.
+  const [contactModalOpen, setContactModalOpen] = useState(false);
   // The "What's new" dialog, opened from the side menu's About dropdown.
   const [changelogOpen, setChangelogOpen] = useState(false);
   const { settings, setSettings } = useAppSettings();
@@ -309,22 +310,25 @@ export function App() {
             setChangelogOpen(true);
           }}
           onNavigate={() => {
-            // Selecting or creating a contact always lands on the card view —
-            // not via a browse page, so no back button.
-            setOpenedFrom(null);
+            // Selecting or creating a contact from the sidebar opens the card
+            // as a full page (never the browse-page modal).
+            setContactModalOpen(false);
             setView("contact");
             if (!pinned) setDrawerOpen(false);
           }}
           view={view}
           onShowArchive={() => {
+            setContactModalOpen(false);
             setView("archive");
             if (!pinned) setDrawerOpen(false);
           }}
           onShowList={() => {
+            setContactModalOpen(false);
             setView("list");
             if (!pinned) setDrawerOpen(false);
           }}
           onShowFavorites={() => {
+            setContactModalOpen(false);
             setView("favorites");
             if (!pinned) setDrawerOpen(false);
           }}
@@ -348,10 +352,12 @@ export function App() {
               store={store}
               settings={settings}
               variant={view === "favorites" ? "favorites" : "all"}
+              // Tapping a row floats the card up in the swipe-down modal over
+              // the browse page, rather than replacing it — closing returns
+              // here with the scroll position intact.
               onOpenContact={(id) => {
                 store.setActive(id);
-                setOpenedFrom(view === "favorites" ? "favorites" : "list");
-                setView("contact");
+                setContactModalOpen(true);
                 if (!pinned) setDrawerOpen(false);
               }}
             />
@@ -361,8 +367,6 @@ export function App() {
               sync={sync}
               settings={settings}
               onOpenSyncDetails={() => setSyncDetailsOpen(true)}
-              // A card opened from a browse page carries a back button to it.
-              onBack={openedFrom ? () => setView(openedFrom) : undefined}
               // Suppress pull-to-refresh while a sidebar drag owns the pointer,
               // and while the phone drawer covers the screen.
               pullEnabled={!sidebarDragging && (pinned || !drawerOpen)}
@@ -370,6 +374,32 @@ export function App() {
           )}
         </ImportDropZone>
       </main>
+
+      {/* The card as a swipe-down modal — the way in from the List / Favorites
+          pages. The framework `Modal` (non-centered) carries the drag-to-
+          dismiss gesture itself; pull-to-refresh is off inside it so the two
+          downward gestures don't fight. Closing lands back on the browse page
+          underneath. */}
+      <Modal
+        open={contactModalOpen && !!store.activeContact}
+        onClose={() => setContactModalOpen(false)}
+        labelledBy="contact-modal-title"
+        closeLabel={t("common.close")}
+      >
+        <h2 id="contact-modal-title" className="sr-only">
+          {store.activeContact
+            ? displayName(store.activeContact) || t("contact.unnamed")
+            : ""}
+        </h2>
+        <ContactScreen
+          store={store}
+          sync={sync}
+          settings={settings}
+          onOpenSyncDetails={() => setSyncDetailsOpen(true)}
+          pullEnabled={false}
+          inModal
+        />
+      </Modal>
 
       <SettingsModal
         open={settingsOpen}
@@ -517,7 +547,8 @@ export function App() {
         onClose={() => setSearchOpen(false)}
         store={store}
         onNavigate={() => {
-          setOpenedFrom(null);
+          // A search hit opens the card as a full page, like a sidebar pick.
+          setContactModalOpen(false);
           setView("contact");
           if (!pinned) setDrawerOpen(false);
         }}

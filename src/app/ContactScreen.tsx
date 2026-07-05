@@ -2,7 +2,6 @@
 import { useCallback, useRef, useState } from "react";
 
 import {
-  ArrowLeftIcon,
   CheckIcon,
   CopyButton,
   PencilIcon,
@@ -40,8 +39,8 @@ export function ContactScreen({
   sync,
   settings,
   onOpenSyncDetails,
-  onBack,
   pullEnabled = true,
+  inModal = false,
 }: {
   store: ContactStore;
   // The app's sync engine — drives the header `SyncStatus` glyph.
@@ -50,12 +49,16 @@ export function ContactScreen({
   settings: AppSettings;
   // Open the framework `SyncDetailsModal` (mounted by the app shell).
   onOpenSyncDetails: () => void;
-  // Return to the List page — set only when this card was opened from it, which
-  // is the sole case the header shows a back button.
-  onBack?: () => void;
   // Gate the pull-to-refresh gesture. The shell drops this to false while a
-  // sidebar drag owns the pointer or the phone drawer covers the screen.
+  // sidebar drag owns the pointer or the phone drawer covers the screen — and
+  // whenever the card rides inside the swipe-to-dismiss modal, whose own
+  // downward gesture would otherwise fight pull-to-refresh.
   pullEnabled?: boolean;
+  // True when this card is shown inside the framework `Modal` (opened from the
+  // List / Favorites pages). The modal supplies the top safe-area inset and a
+  // swipe-down-to-dismiss gesture, so the card drops its own top inset padding
+  // and shows a grab handle instead of a back button.
+  inModal?: boolean;
 }) {
   const { activeContact, updateContact, reload } = store;
 
@@ -93,8 +96,19 @@ export function ContactScreen({
     <ContactPhotoDropZone
       contact={activeContact}
       updateContact={updateContact}
-      className="relative mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-[calc(1.25rem+env(safe-area-inset-top))]"
+      className={`relative mx-auto flex h-full w-full max-w-2xl flex-col px-4 ${
+        inModal ? "pt-3" : "pt-[calc(1.25rem+env(safe-area-inset-top))]"
+      }`}
     >
+      {/* Grab handle — the swipe-down-to-dismiss affordance the modal offers on
+          phones. The modal already supplies the desktop backdrop / Escape exit,
+          so this is mobile-only. */}
+      {inModal && (
+        <div
+          aria-hidden="true"
+          className="mx-auto mb-2 h-1.5 w-10 shrink-0 rounded-full bg-line sm:hidden"
+        />
+      )}
       <PullToRefreshIndicator
         state={pull.state}
         pullDistance={pull.pullDistance}
@@ -111,7 +125,6 @@ export function ContactScreen({
         sync={sync}
         settings={settings}
         onOpenSyncDetails={onOpenSyncDetails}
-        onBack={onBack}
       />
     </ContactPhotoDropZone>
   );
@@ -128,7 +141,6 @@ function ContactCard({
   sync,
   settings,
   onOpenSyncDetails,
-  onBack,
 }: {
   contact: Contact;
   editing: boolean;
@@ -137,7 +149,6 @@ function ContactCard({
   sync: SyncEngine;
   settings: AppSettings;
   onOpenSyncDetails: () => void;
-  onBack?: () => void;
 }) {
   const t = useT();
 
@@ -153,18 +164,6 @@ function ContactCard({
   return (
     <>
       <header className="mb-2 flex items-center gap-2 border-b border-line px-1 pb-3">
-        {/* Back to the List page — shown only when the card was opened from it. */}
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            title={t("contact.backToList")}
-            aria-label={t("contact.backToList")}
-            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-line text-muted hover:bg-surface-2 hover:text-fg"
-          >
-            <ArrowLeftIcon className="h-4 w-4" />
-          </button>
-        )}
         {/* The read/edit switch. The pencil enters edit mode; the check
             settles the card back to read mode. */}
         <button

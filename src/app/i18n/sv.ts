@@ -147,7 +147,6 @@ export const sv: Catalog = {
     fullNamePlaceholder: "För- och efternamn",
     editContact: "Redigera kontakt",
     doneEditing: "Klar",
-    backToList: "Tillbaka till listan",
     addFavorite: "Lägg till i favoriter",
     removeFavorite: "Ta bort från favoriter",
     reachTitle: "Kom i kontakt",

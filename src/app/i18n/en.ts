@@ -152,7 +152,6 @@ export const en = {
     fullNamePlaceholder: "First and last name",
     editContact: "Edit contact",
     doneEditing: "Done",
-    backToList: "Back to list",
     addFavorite: "Add to favorites",
     removeFavorite: "Remove from favorites",
     reachTitle: "Get in touch",
