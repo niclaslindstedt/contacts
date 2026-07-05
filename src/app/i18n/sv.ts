@@ -544,7 +544,6 @@ export const sv: Catalog = {
       captureLogs: "Fånga loggar",
       captureLogsHint:
         "Spela in diagnostikrader så att Loggar-fliken kan visa dem.",
-      writeTestLine: "Skriv en testloggrad",
       buildTitle: "Bygge",
       buildLabel: "bygge",
       commitLabel: "commit",

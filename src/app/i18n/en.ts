@@ -552,7 +552,6 @@ export const en = {
       captureLogs: "Capture logs",
       captureLogsHint:
         "Record diagnostic log lines so the Logs tab can show them.",
-      writeTestLine: "Write a test log line",
       buildTitle: "Build",
       buildLabel: "build",
       commitLabel: "commit",

@@ -675,19 +675,13 @@ export function SideMenuContent({
     data.contacts.filter((c) => c.archived).length;
 
   return (
-    // The framework panel reserves a bottom inset as padding so its last child
-    // clears the home indicator. When the footer is folded away that inset is
-    // stranded as dead space below the thin collapse rail, so in the collapsed
-    // state we grow past the panel's content box to reclaim exactly that inset
-    // and hand it to the scrolling list. The expanded state keeps `h-full`, so
-    // the footer still sits above the panel's padding as before.
-    <div
-      className={`flex flex-col select-none ${
-        footerCollapsed
-          ? "shrink-0 [height:calc(100%+max(env(safe-area-inset-bottom),calc(1.25rem-var(--density-row-py))))]"
-          : "h-full"
-      }`}
-    >
+    // The framework panel reserves a bottom safe-area inset as padding so its
+    // last child clears the home indicator — but this PWA is embedded above the
+    // safe area, so that inset is just dead space below whatever sits last (the
+    // collapse rail when folded, the footer when not). We grow past the panel's
+    // content box to reclaim that inset and hand it to the scrolling list, then
+    // let the footer / rail carry their own (inset-free) bottom breathing room.
+    <div className="flex shrink-0 flex-col select-none [height:calc(100%+max(env(safe-area-inset-bottom),calc(1.25rem-var(--density-row-py))))]">
       {/* Namespace switcher — fixed. The framework component owns the
           collapsible section, the switchable rows, and the per-row drop
           targets (a contact or folder dragged onto another workspace's row
@@ -873,7 +867,7 @@ export function SideMenuContent({
           dropdown, the framework's "check for updates" row, and Settings
           pinned last under the thumb. Foldable away via the rail above. */}
       {!footerHidden && (
-        <div className="flex shrink-0 flex-col border-t border-line [padding-top:calc(1.25rem-var(--density-row-py))]">
+        <div className="flex shrink-0 flex-col border-t border-line [padding-top:calc(1.25rem-var(--density-row-py))] [padding-bottom:calc(1.25rem-var(--density-row-py))]">
           <FooterLink
             icon={<FavoriteIcon filled className="h-5 w-5 text-danger" />}
             href={DONATE_URL}
