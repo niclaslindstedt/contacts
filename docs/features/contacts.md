@@ -68,7 +68,7 @@ marked as a **company** rather than a person.
   lost. The List page mirrors the same indented nesting.
 - **Website & company.** A card can carry a **Website** — add a homepage in edit
   mode and it shows as a tap-to-open link in read mode (and exports as the vCard
-  `URL`). A **This is a company** switch — at the bottom of the edit view, beside
+  `URL`). A **Company contact** switch — near the bottom of the edit view, beside
   the emergency flag — turns the card into a **company**: it's identified by a
   single company name instead of a first and last name, shows a building icon in
   place of a monogram, and exports with its name as the organisation (`ORG`) so
@@ -79,7 +79,9 @@ marked as a **company** rather than a person.
   for Private, a briefcase for Work); tapping a glyph flips the type without the
   field losing focus, so you can type a number and set its type in one go. New
   numbers and addresses default to Work. The type is shown as the row's label in
-  read mode and maps onto the standard vCard TYPE on export.
+  read mode and maps onto the standard vCard TYPE on export. A **company** card
+  hides this toggle — its numbers and emails are all the organisation's, with no
+  private/work person behind them.
 - **Several titled addresses.** A card can hold more than one postal address — a
   home, a cabin, a workplace. Each has a free-text **Title** (defaulting to the
   "Home" placeholder) over the street / postal code / city fields. In read mode
@@ -141,11 +143,12 @@ marked as a **company** rather than a person.
   restore brings your emergency contacts back pinned.
 - **Archive, don't lose.** Swipe a contact right in the side menu (or drag it
   onto Archive) to shelve it. The Archive page restores or deletes for good.
-- **Auto-archive.** In edit mode, the **Auto-archive** section lets a card file
-  itself away on a date you pick — flip the switch, choose the date (it starts
-  two weeks out), and choose what happens then: **Archive** (shelve it, the
-  default) or **Delete** (drop it for good). Handy for a place you only need for
-  a while — the pizzeria you added for a holiday — that should tidy itself away
+- **Auto-archive.** At the very bottom of the edit view, the **Auto-archive**
+  section lets a card file itself away on a date you pick — flip the **Time
+  limited contact** switch, choose the date (it starts two weeks out), and choose
+  what happens then: **Archive** (shelve it, the default) or **Delete** (drop it
+  for good). Handy for a place you only need for a while — the pizzeria you added
+  for a holiday — that should tidy itself away
   when the trip's over. The schedule shows in read mode ("Archives itself on
   …"), and the sweep runs whenever you open the app, so a card scheduled while
   the app was closed catches up on your next visit. Archiving a card this way
