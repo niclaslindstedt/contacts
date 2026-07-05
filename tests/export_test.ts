@@ -36,11 +36,12 @@ describe("contactToVCard", () => {
     const v = contactToVCard(
       card({
         phones: [
-          { id: "p1", value: "+46701234567" },
-          { id: "p2", value: "+4681234567", label: "work" },
+          { id: "p1", value: "701234567", countryCode: "46" },
+          { id: "p2", value: "81234567", countryCode: "46", label: "work" },
         ],
       }),
     );
+    // The stored national digits export with their calling code re-attached.
     expect(v).toContain("TEL;TYPE=CELL:+46701234567");
     expect(v).toContain("TEL;TYPE=WORK:+4681234567");
   });

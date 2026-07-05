@@ -77,7 +77,10 @@ Enter — and start filling in the card.
 - **Read & edit** — a contact opens in read mode, laid out to scan; the pencil
   in the toolbar flips it into edit mode (and the check flips it back). Tappable
   phone and email rows — each typed Private or Work — call and compose straight
-  from read mode. A card holds several titled addresses (home, cabin, work) and,
+  from read mode. Phone numbers are entered as plain national digits with the
+  country code on a per-row dropdown (defaulting to your home country), so the
+  stored number stays clean. A card holds several titled addresses (home, cabin,
+  work) and,
   beyond the birthday, any number of important dates (name day, anniversary) that
   can be a full date or day-and-month-only; tapping one drops a yearly calendar
   reminder titled with the occasion and the contact's name.

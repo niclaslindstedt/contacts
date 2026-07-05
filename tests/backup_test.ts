@@ -43,7 +43,7 @@ describe("backup archives", () => {
     const zip = await createBackupZip(data, AT);
     const text = await readBackupDoc(zip);
     const parsed = JSON.parse(text) as AppData & { version: number };
-    expect(parsed.version).toBe(4);
+    expect(parsed.version).toBe(5);
     expect(parsed.contacts).toHaveLength(1);
     expect(parsed.contacts[0]!.firstName).toBe("Ada");
   });

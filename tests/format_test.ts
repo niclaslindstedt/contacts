@@ -7,6 +7,8 @@ import {
   groupDigits,
   groupPairsLeadingTriple,
   parsePhone,
+  phoneDialString,
+  toStoredPhone,
 } from "../src/app/format.ts";
 
 describe("formatDate", () => {
@@ -58,6 +60,51 @@ describe("parsePhone", () => {
   it("reports an empty / digitless input as invalid", () => {
     expect(parsePhone("").valid).toBe(false);
     expect(parsePhone("  no digits  ").valid).toBe(false);
+  });
+});
+
+describe("toStoredPhone", () => {
+  it("strips separators and peels the calling code off an international number", () => {
+    expect(toStoredPhone("+46 (0)70-123 45 67")).toEqual({
+      value: "0701234567",
+      countryCode: "46",
+    });
+    expect(toStoredPhone("0046 8 12 34 56")).toEqual({
+      value: "8123456",
+      countryCode: "46",
+    });
+  });
+
+  it("keeps a bare local number as pure national digits with no code", () => {
+    expect(toStoredPhone("(555) 123-4567")).toEqual({ value: "5551234567" });
+    expect(toStoredPhone("08-123 45 67")).toEqual({ value: "081234567" });
+  });
+
+  it("drops a trailing extension, leaving only the national digits", () => {
+    expect(toStoredPhone("+1 202 555 0100 ext. 42")).toEqual({
+      value: "2025550100",
+      countryCode: "1",
+    });
+  });
+
+  it("yields an empty value for a digitless input", () => {
+    expect(toStoredPhone("n/a")).toEqual({ value: "" });
+  });
+});
+
+describe("phoneDialString", () => {
+  it("re-attaches the calling code to the national digits", () => {
+    expect(phoneDialString({ value: "701234567", countryCode: "46" })).toBe(
+      "+46701234567",
+    );
+  });
+
+  it("returns bare national digits when there is no code", () => {
+    expect(phoneDialString({ value: "0812345678" })).toBe("0812345678");
+  });
+
+  it("is empty when there are no digits", () => {
+    expect(phoneDialString({ value: "" })).toBe("");
   });
 });
 

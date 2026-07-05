@@ -22,6 +22,7 @@
 // deterministic (no `Math.random`, no clock) so the same seed always builds
 // the same document — reproducible bug reports, stable tests.
 
+import { toStoredPhone } from "../format.ts";
 import type {
   Address,
   AppData,
@@ -183,9 +184,12 @@ function curatedContacts(): Contact[] {
   const em = sequencer("seed-em");
   const ad = sequencer("seed-ad");
   const dt = sequencer("seed-dt");
+  // The sample numbers are written the way a person would type them; fold each
+  // down to the app's stored shape (national digits + calling code) so the seed
+  // mirrors a real, migrated document.
   const phone = (value: string, label?: string): Phone => ({
     id: ph(),
-    value,
+    ...toStoredPhone(value),
     ...(label ? { label } : {}),
   });
   const email = (value: string, label?: string): Email => ({
@@ -574,7 +578,7 @@ function generatedContact(i: number): Contact {
       : [
           {
             id: `seed-gph-${seq}`,
-            value: `+1 555-${seq}`,
+            ...toStoredPhone(`+1 555-${seq}`),
             label: i % 3 === 0 ? "work" : "private",
           },
         ];

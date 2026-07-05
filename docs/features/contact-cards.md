@@ -15,6 +15,12 @@ field commits when you leave it, and each committed edit is one undo step.
 
 ## The fields on a card
 
+- **Phone numbers.** A number is entered — and stored — as **plain national
+  digits**, with no spaces, hyphens, or country code baked in. Its **country
+  code** sits on a per-row **dropdown** (a flag and a `+46`) that starts on your
+  home country from **Settings → Format**; paste a number that already begins
+  with `+46` / `00…` and the code jumps into the dropdown while the rest is
+  stripped to bare digits. Existing numbers convert to this shape automatically.
 - **Private / Work types.** Each phone number and email carries a type — a
   person glyph for **Private**, a briefcase for **Work** — flipped with a small
   toggle that doesn't steal focus, so you can type a number and set its type in

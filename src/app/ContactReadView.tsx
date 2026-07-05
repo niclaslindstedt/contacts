@@ -43,8 +43,8 @@ import {
 import { PhotoViewer } from "./PhotoViewer.tsx";
 import { displayUrl, normalizeUrl } from "./url.ts";
 import { useT } from "./i18n/index.ts";
-import { formatDate } from "./format.ts";
-import { formatPhoneValue, formatPostalValue } from "./countries/index.ts";
+import { formatDate, phoneDialString } from "./format.ts";
+import { formatStoredPhone, formatPostalValue } from "./countries/index.ts";
 import {
   phoneOptions,
   postalOptions,
@@ -126,11 +126,11 @@ export function ContactReadView({
             {phones.map((phone) => (
               <ActionRow
                 key={phone.id}
-                href={`tel:${phone.value.replace(/\s+/g, "")}`}
+                href={`tel:${phoneDialString(phone) || phone.value}`}
                 icon={<PhoneIcon className="h-4 w-4" />}
                 label={kindLabel(phone.label, t)}
-                value={formatPhoneValue(
-                  phone.value,
+                value={formatStoredPhone(
+                  phone,
                   settings.country,
                   phoneOptions(settings),
                 )}

@@ -199,6 +199,7 @@ export const sv: Catalog = {
     kindPrivate: "Privat",
     kindWork: "Arbete",
     phoneKind: "Telefontyp",
+    phoneCountry: "Landskod",
     emailKind: "E-posttyp",
     details: "Detaljer",
     firstName: "Förnamn",

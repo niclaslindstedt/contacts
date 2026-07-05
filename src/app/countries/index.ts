@@ -76,6 +76,20 @@ export function formatPhoneValue(
   return country.formatPhone(parsed, opts);
 }
 
+/** Format a *stored* phone (structured national digits + optional calling code)
+ *  for display. Re-attaches the code and defers to {@link formatPhoneValue} so
+ *  the country dispatch and grouping rules stay in one place; a number with no
+ *  code follows the home country. */
+export function formatStoredPhone(
+  phone: { value: string; countryCode?: string | null },
+  home: CountryCode,
+  opts: PhoneOptions,
+): string {
+  const input =
+    (phone.countryCode ? `+${phone.countryCode}` : "") + phone.value;
+  return formatPhoneValue(input, home, opts);
+}
+
 /** Format a postal / ZIP code for display, always in the home country's
  *  convention (a bare postal code carries no country of its own). */
 export function formatPostalValue(

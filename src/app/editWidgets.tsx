@@ -2,9 +2,14 @@
 import { useId, useState, type ReactNode } from "react";
 
 import {
+  SegmentedControl,
   TrashIcon,
   type IconProps,
 } from "@niclaslindstedt/oss-framework/components";
+
+import { BuildingIcon, PersonIcon } from "./icons.tsx";
+import { useT } from "./i18n/index.ts";
+import type { ContactMethodKind } from "./types.ts";
 
 // The shared building blocks of the edit form, lifted out of `ContactEditView`
 // so that file stays under the source-size cap: the labelled inputs every
@@ -128,6 +133,51 @@ export function LabeledTextarea({
         className={`${inputClass} resize-y`}
       />
     </label>
+  );
+}
+
+// The private / work type toggle shared by phone and email rows — the
+// framework `SegmentedControl` with a glyph per option (a person for private, a
+// briefcase for work) in place of a dropdown. The wrapper captures the pointer
+// press and cancels its default so tapping a glyph keeps an open value input
+// focused: without it the mousedown would blur the field first — committing
+// (and, for a fresh draft row, removing) it — before the click lands, forcing a
+// defocus-then-click. Cancelling the focus shift lets a tap on the glyph flip
+// the kind while the user is still typing.
+export function KindToggle({
+  kind,
+  ariaLabel,
+  onChange,
+}: {
+  kind: ContactMethodKind;
+  ariaLabel: string;
+  onChange: (next: ContactMethodKind) => void;
+}) {
+  const t = useT();
+  const glyph = (
+    Icon: (p: { className?: string }) => ReactNode,
+    text: string,
+  ) => (
+    <span className="flex h-4 items-center">
+      <Icon className="h-4 w-4" />
+      <span className="sr-only">{text}</span>
+    </span>
+  );
+  return (
+    <div className="shrink-0" onMouseDownCapture={(e) => e.preventDefault()}>
+      <SegmentedControl<ContactMethodKind>
+        value={kind}
+        ariaLabel={ariaLabel}
+        onChange={onChange}
+        options={[
+          {
+            value: "private",
+            label: glyph(PersonIcon, t("contact.kindPrivate")),
+          },
+          { value: "work", label: glyph(BuildingIcon, t("contact.kindWork")) },
+        ]}
+      />
+    </div>
   );
 }
 

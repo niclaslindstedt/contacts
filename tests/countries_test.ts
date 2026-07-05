@@ -6,6 +6,7 @@ import {
   DEFAULT_COUNTRY,
   formatPhoneValue,
   formatPostalValue,
+  formatStoredPhone,
   getCountry,
   getCountryByCallingCode,
   type PhoneOptions,
@@ -135,6 +136,24 @@ describe("dispatch by embedded country code", () => {
 
   it("uses the home country for a bare number", () => {
     expect(formatPhoneValue("768181337", "SE", phone())).toBe(
+      "+46 (0)76-818 13 37",
+    );
+  });
+});
+
+describe("formatStoredPhone", () => {
+  it("formats a stored phone by its own calling code", () => {
+    expect(
+      formatStoredPhone(
+        { value: "768181337", countryCode: "46" },
+        "US",
+        phone(),
+      ),
+    ).toBe("+46 (0)76-818 13 37");
+  });
+
+  it("formats a code-less stored phone for the home country", () => {
+    expect(formatStoredPhone({ value: "768181337" }, "SE", phone())).toBe(
       "+46 (0)76-818 13 37",
     );
   });

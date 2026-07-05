@@ -176,6 +176,41 @@ export function digitsOnly(input: string): string {
   return input.replace(/\D/g, "");
 }
 
+// --- Structured storage ------------------------------------------------------
+// A phone is stored *structured*: national digits (no separators, no country
+// code) plus its E.164 calling code. These two pure helpers are the single
+// conversion between a free-typed string and that stored shape — used by the
+// edit form (on commit), the document migration (existing numbers), and the
+// importers (foreign cards).
+
+/** The stored shape a free-typed phone number folds down to: national digits
+ *  only, plus the E.164 calling code when the input carried an explicit
+ *  international prefix (`+…` / `00…`). Separators and any trailing extension
+ *  are dropped — the value is left as bare national digits. `countryCode` is
+ *  omitted (not `null`) when the number carried no code, so it can be spread
+ *  straight onto a {@link Phone}. */
+export function toStoredPhone(input: string): {
+  value: string;
+  countryCode?: string;
+} {
+  const parsed = parsePhone(input);
+  return parsed.countryCode
+    ? { value: parsed.national, countryCode: parsed.countryCode }
+    : { value: parsed.national };
+}
+
+/** The full dialable string for a stored phone — `+<code><national>` when it
+ *  carries a calling code, else the bare national digits. What a `tel:` link
+ *  and the vCard / CSV export write. Empty when there are no national digits. */
+export function phoneDialString(phone: {
+  value: string;
+  countryCode?: string | null;
+}): string {
+  const national = digitsOnly(phone.value);
+  if (!national) return "";
+  return phone.countryCode ? `+${phone.countryCode}${national}` : national;
+}
+
 /** Group a run of digits into fixed-size chunks joined by `sep` (spaces by
  *  default). The trailing chunk keeps whatever digits remain. */
 export function groupDigits(digits: string, size = 3, sep = " "): string {

@@ -14,6 +14,7 @@
 import { hasAddress } from "./address.ts";
 import { attachmentList } from "./attachments.ts";
 import { activePhoto } from "./contactPhotos.ts";
+import { toStoredPhone } from "./format.ts";
 import { parseDoc } from "./migrations.ts";
 import type { Attachment, Contact } from "./types.ts";
 import { splitFullName } from "./types.ts";
@@ -30,7 +31,9 @@ export type ImportedContact = {
   isCompany?: boolean;
   /** The contact's website, from a vCard `URL` line or the JSON backup. */
   homepage?: string;
-  phones: { value: string; label?: string }[];
+  /** Phone numbers in the app's stored shape — national digits plus an
+   *  optional E.164 calling code (see {@link toStoredPhone}). */
+  phones: { value: string; countryCode?: string; label?: string }[];
   emails: { value: string; label?: string }[];
   addresses: { label?: string; street?: string; zip?: string; city?: string }[];
   birthday?: string;
@@ -332,7 +335,13 @@ function applyLine(
       if (v.toUpperCase() === "COMPANY") cur.isCompany = true;
       break;
     case "TEL":
-      if (v) cur.phones.push({ value: v, label: methodLabel(line.types) });
+      // Fold the number down to the app's stored shape — national digits plus
+      // the calling code peeled off any `+…` prefix.
+      if (v)
+        cur.phones.push({
+          ...toStoredPhone(v),
+          label: methodLabel(line.types),
+        });
       break;
     case "EMAIL":
       if (v) cur.emails.push({ value: v, label: methodLabel(line.types) });
@@ -411,7 +420,11 @@ function fromContact(c: Contact): ImportedContact {
     company: c.company,
     ...(c.isCompany ? { isCompany: true } : {}),
     ...(c.homepage ? { homepage: c.homepage } : {}),
-    phones: c.phones.map((p) => ({ value: p.value, label: p.label })),
+    phones: c.phones.map((p) => ({
+      value: p.value,
+      ...(p.countryCode ? { countryCode: p.countryCode } : {}),
+      label: p.label,
+    })),
     emails: c.emails.map((e) => ({ value: e.value, label: e.label })),
     addresses: c.addresses
       .map((a) => ({
@@ -531,13 +544,13 @@ export function parseCsv(text: string): ImportedContact[] {
           card.company = value;
           break;
         case "phoneMobile":
-          card.phones.push({ value, label: "private" });
+          card.phones.push({ ...toStoredPhone(value), label: "private" });
           break;
         case "phoneHome":
-          card.phones.push({ value, label: "private" });
+          card.phones.push({ ...toStoredPhone(value), label: "private" });
           break;
         case "phoneWork":
-          card.phones.push({ value, label: "work" });
+          card.phones.push({ ...toStoredPhone(value), label: "work" });
           break;
         case "email1":
         case "email2":

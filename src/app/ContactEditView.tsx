@@ -23,10 +23,12 @@ import { filesToAttachments } from "./attachmentIntake.ts";
 import {
   IconSection,
   inputClass,
+  KindToggle,
   LabeledInput,
   LabeledTextarea,
   RemoveButton,
 } from "./editWidgets.tsx";
+import { PhoneRows } from "./editPhones.tsx";
 import {
   BuildingIcon,
   FileIcon,
@@ -36,7 +38,6 @@ import {
   MailIcon,
   MapPinIcon,
   PaperclipIcon,
-  PersonIcon,
   PhoneIcon,
   UploadIcon,
 } from "./icons.tsx";
@@ -44,6 +45,7 @@ import { isValidFlexDate, parseFlexDate } from "./importantDates.ts";
 import { log } from "./log.ts";
 import { useLang, useT } from "./i18n/index.ts";
 import { freshId } from "./useContactStore.ts";
+import type { CountryCode } from "./countries/index.ts";
 import type {
   Address,
   Attachment,
@@ -52,7 +54,6 @@ import type {
   ContactMethodKind,
   Email,
   ImportantDate,
-  Phone,
 } from "./types.ts";
 import { methodKind } from "./types.ts";
 
@@ -64,9 +65,12 @@ import { methodKind } from "./types.ts";
 // settled edit is one undoable step and one sync push.
 export function ContactEditView({
   contact,
+  home,
   updateContact,
 }: {
   contact: Contact;
+  /** The home country — the phone editor's default calling code. */
+  home: CountryCode;
   updateContact: (id: string, patch: Partial<Contact>) => void;
 }) {
   const t = useT();
@@ -77,20 +81,11 @@ export function ContactEditView({
   return (
     <div className="flex flex-col">
       <IconSection icon={PhoneIcon} title={t("contact.phones")}>
-        <MethodRows<Phone>
+        <PhoneRows
           rows={contact.phones}
-          placeholder={t("contact.phonePlaceholder")}
-          inputMode="tel"
-          addLabel={t("contact.addPhone")}
-          removeLabel={t("contact.removeRow")}
-          kindLabel={t("contact.phoneKind")}
           showKind={showKind}
+          home={home}
           onCommit={(phones) => updateContact(contact.id, { phones })}
-          makeRow={(value, kind) => ({
-            id: freshId("phone"),
-            value,
-            label: kind,
-          })}
         />
       </IconSection>
 
@@ -462,52 +457,8 @@ function AttachmentEditRow({
 
 type MethodRow = { id: string; value: string; label?: string };
 
-// The private / work type toggle shared by phone and email rows — the
-// framework `SegmentedControl` with a glyph per option (a person for private, a
-// briefcase for work) in place of the old dropdown. The wrapper captures the
-// pointer press and cancels its default so tapping a glyph keeps an open value
-// input focused: without it the mousedown would blur the field first —
-// committing (and, for a fresh draft row, removing) it — before the click
-// lands, forcing a defocus-then-click. Cancelling the focus shift lets a tap on
-// the glyph flip the kind while the user is still typing the number.
-function KindToggle({
-  kind,
-  ariaLabel,
-  onChange,
-}: {
-  kind: ContactMethodKind;
-  ariaLabel: string;
-  onChange: (next: ContactMethodKind) => void;
-}) {
-  const t = useT();
-  const glyph = (
-    Icon: (p: { className?: string }) => ReactNode,
-    text: string,
-  ) => (
-    <span className="flex h-4 items-center">
-      <Icon className="h-4 w-4" />
-      <span className="sr-only">{text}</span>
-    </span>
-  );
-  return (
-    <div className="shrink-0" onMouseDownCapture={(e) => e.preventDefault()}>
-      <SegmentedControl<ContactMethodKind>
-        value={kind}
-        ariaLabel={ariaLabel}
-        onChange={onChange}
-        options={[
-          {
-            value: "private",
-            label: glyph(PersonIcon, t("contact.kindPrivate")),
-          },
-          { value: "work", label: glyph(BuildingIcon, t("contact.kindWork")) },
-        ]}
-      />
-    </div>
-  );
-}
-
-// An editable list of typed contact methods (phones, emails): each row carries
+// An editable list of typed contact methods (email addresses; phones have
+// their own country-aware `PhoneRows`): each row carries
 // a private / work type, commits its value on blur, the trash drops a row, and
 // the add button appends an empty draft row. The rows prop is the committed
 // truth; a just-added row lives locally until its first commit so an abandoned

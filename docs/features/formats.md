@@ -1,10 +1,12 @@
 # Formats
 
 **Settings → Format** decides how the value-shaped fields on a card — phone
-numbers and postal codes — are shown. It changes the **display only**: whatever
-you typed is stored untouched, so switching formats reformats every card at once
-without ever rewriting your data. Each picker previews your current choice with
-a live sample.
+numbers and postal codes — are shown. It changes the **display only**: switching
+formats reformats every card at once without rewriting what a field holds. Each
+picker previews your current choice with a live sample. (A phone number is
+itself stored as plain national digits plus a country code, chosen as you type
+it — see [Contact cards](feature:contact-cards) — but that's fixed at entry; the
+toggles here never touch it.)
 
 ## Pick a country
 

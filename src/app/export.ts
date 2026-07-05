@@ -15,6 +15,7 @@
 
 import { formatAddress, hasAddress } from "./address.ts";
 import { activePhoto } from "./contactPhotos.ts";
+import { phoneDialString } from "./format.ts";
 import { parseFlexDate } from "./importantDates.ts";
 import type { Contact } from "./types.ts";
 import { displayName, methodKind } from "./types.ts";
@@ -74,8 +75,11 @@ export function contactToVCard(c: Contact): string {
   if (c.isCompany) lines.push("X-ABShowAs:COMPANY");
   if (c.homepage?.trim()) lines.push(`URL:${vEscape(c.homepage)}`);
   for (const p of c.phones) {
-    if (p.value.trim()) {
-      lines.push(`TEL;TYPE=${telType(p.label)}:${vEscape(p.value)}`);
+    // Export the full dialable number — the calling code re-attached to the
+    // stored national digits (`+46…`) — so a foreign importer keeps the code.
+    const dial = phoneDialString(p);
+    if (dial) {
+      lines.push(`TEL;TYPE=${telType(p.label)}:${vEscape(dial)}`);
     }
   }
   for (const e of c.emails) {
@@ -163,18 +167,20 @@ function csvField(value: string): string {
 function phoneFor(c: Contact, column: "mobile" | "home" | "work"): string {
   // Work-kind numbers fill the Business column. A legacy "home" label still
   // routes to the Home column; everything else (private / mobile / unlabelled)
-  // fills the Mobile column, so nothing is silently dropped on export.
+  // fills the Mobile column, so nothing is silently dropped on export. Each
+  // exports as its full dialable number (calling code + national digits).
   const isHome = (label: string | undefined) =>
     (label ?? "").trim().toLowerCase() === "home";
+  const dial = (p: Contact["phones"][number] | undefined) =>
+    p ? phoneDialString(p) : "";
   if (column === "work") {
-    return c.phones.find((p) => methodKind(p.label) === "work")?.value ?? "";
+    return dial(c.phones.find((p) => methodKind(p.label) === "work"));
   }
   if (column === "home") {
-    return c.phones.find((p) => isHome(p.label))?.value ?? "";
+    return dial(c.phones.find((p) => isHome(p.label)));
   }
-  return (
-    c.phones.find((p) => methodKind(p.label) !== "work" && !isHome(p.label))
-      ?.value ?? ""
+  return dial(
+    c.phones.find((p) => methodKind(p.label) !== "work" && !isHome(p.label)),
   );
 }
 
