@@ -29,6 +29,7 @@ export const sv: Catalog = {
   },
   toast: {
     contactArchived: "Kontakt arkiverad",
+    contactCreated: "Kontakt skapad",
     contactDeleted: "Kontakt borttagen",
     contactsArchived: "{n} kontakter arkiverade",
     contactsDeleted: "{n} kontakter borttagna",

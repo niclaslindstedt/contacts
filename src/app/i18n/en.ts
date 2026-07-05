@@ -37,6 +37,7 @@ export const en = {
     // The hovering "action taken — undo?" banner raised after an archive or a
     // delete, mirroring the import result banner.
     contactArchived: "Contact archived",
+    contactCreated: "Contact created",
     contactDeleted: "Contact deleted",
     contactsArchived: "{n} contacts archived",
     contactsDeleted: "{n} contacts deleted",
