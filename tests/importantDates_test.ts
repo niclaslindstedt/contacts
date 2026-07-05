@@ -2,6 +2,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  birthdayIcs,
+  dateEventIcs,
   daysUntilDate,
   formatImportantDate,
   isValidFlexDate,
@@ -92,5 +94,75 @@ describe("formatImportantDate", () => {
     expect(formatImportantDate("06-15", "us")).toBe("06/15");
     expect(formatImportantDate("06-15", "eu")).toBe("15/06");
     expect(formatImportantDate("06-15", "long")).toBe("15 June");
+  });
+});
+
+// The `.ics` shims — thin compositions over the framework's RFC 5545 builders.
+// The envelope, escaping, and folding are the framework's to test; what is
+// app-owned (and covered here) is the anchor-date choice and the null cases.
+
+// A fixed "now" so the anchoring is deterministic — 3 July 2026.
+const ICS_NOW = new Date(Date.UTC(2026, 6, 3, 9, 30, 0));
+
+describe("birthdayIcs", () => {
+  function ics(iso: string): string {
+    return (
+      birthdayIcs({
+        iso,
+        summary: "Ada Lovelace's birthday",
+        uid: "birthday-c1@contacts.app",
+        now: ICS_NOW,
+      }) ?? ""
+    );
+  }
+
+  it("anchors a yearly all-day event on the birth date", () => {
+    const out = ics("1990-07-20");
+    expect(out).toContain("DTSTART;VALUE=DATE:19900720");
+    expect(out).toContain("DTEND;VALUE=DATE:19900721");
+    expect(out).toContain("RRULE:FREQ=YEARLY");
+    expect(out).toContain("UID:birthday-c1@contacts.app");
+  });
+
+  it("is null for a date that isn't real or has no year", () => {
+    expect(
+      birthdayIcs({ iso: "2001-02-30", summary: "x", uid: "u", now: ICS_NOW }),
+    ).toBeNull();
+    // A birthday always knows its year — a bare MM-DD is refused.
+    expect(
+      birthdayIcs({ iso: "07-20", summary: "x", uid: "u", now: ICS_NOW }),
+    ).toBeNull();
+  });
+});
+
+describe("dateEventIcs", () => {
+  function ics(value: string): string {
+    return (
+      dateEventIcs({
+        value,
+        summary: "Anniversary Sarah Connor",
+        uid: "date-d1@contacts.app",
+        now: ICS_NOW,
+      }) ?? ""
+    );
+  }
+
+  it("anchors a full date on its own year", () => {
+    const out = ics("2010-06-15");
+    expect(out).toContain("DTSTART;VALUE=DATE:20100615");
+    expect(out).toContain("RRULE:FREQ=YEARLY");
+  });
+
+  it("anchors a yearless date on its next occurrence from now", () => {
+    // 15 June is before 3 July (now), so the first reminder is next year;
+    // 15 August is still ahead, so it starts this year.
+    expect(ics("06-15")).toContain("DTSTART;VALUE=DATE:20270615");
+    expect(ics("08-15")).toContain("DTSTART;VALUE=DATE:20260815");
+  });
+
+  it("is null for a date that isn't real", () => {
+    expect(
+      dateEventIcs({ value: "13-40", summary: "x", uid: "u", now: ICS_NOW }),
+    ).toBeNull();
   });
 });

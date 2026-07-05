@@ -9,11 +9,12 @@ import {
   FolderIcon,
   FolderOpenIcon,
   InlineEditRow,
+  PersonIcon,
   PlusIcon,
 } from "@niclaslindstedt/oss-framework/components";
 import type { DragHandleProps } from "@niclaslindstedt/oss-framework/sidebar";
 
-import { PersonIcon, SectionsToggleIcon } from "./icons.tsx";
+import { SectionsToggleIcon } from "./icons.tsx";
 
 // The side menu's presentational leaf rows — the dumb building blocks the
 // stateful `SideMenuContent` composes: section headings, folder / contact

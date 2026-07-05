@@ -11,7 +11,7 @@
 //
 // Pure functions over the domain types — no DOM here — so the whole surface
 // is unit-testable in node (see `tests/export_test.ts`). The download glue
-// (Blob + anchor click) lives in `download.ts`.
+// (Blob + anchor click) is the framework's (`files` — `downloadText`).
 
 import { formatAddress, hasAddress } from "./address.ts";
 import { activePhoto } from "./contactPhotos.ts";

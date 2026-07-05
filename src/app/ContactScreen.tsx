@@ -4,9 +4,11 @@ import { useCallback, useRef, useState } from "react";
 import {
   CheckIcon,
   CopyButton,
+  DownloadIcon,
   PencilIcon,
   PullToRefreshIndicator,
 } from "@niclaslindstedt/oss-framework/components";
+import { downloadText, MIME_VCARD } from "@niclaslindstedt/oss-framework/files";
 import { usePullToRefresh } from "@niclaslindstedt/oss-framework/hooks";
 import { SyncStatus } from "@niclaslindstedt/oss-framework/sync";
 import { unlock } from "@niclaslindstedt/oss-framework/achievements";
@@ -15,10 +17,9 @@ import { ContactEditView } from "./ContactEditView.tsx";
 import { ContactIdentity } from "./ContactIdentity.tsx";
 import { ContactPhotoDropZone } from "./ContactPhotoDropZone.tsx";
 import { ContactReadView } from "./ContactReadView.tsx";
-import { DownloadIcon, FavoriteIcon } from "./icons.tsx";
+import { FavoriteIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { contactToVCard, exportFileStem } from "./export.ts";
-import { downloadText, MIME_VCARD } from "./download.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { SyncEngine } from "./useSyncEngine.ts";
 import { hasAddress } from "./address.ts";

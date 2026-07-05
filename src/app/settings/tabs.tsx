@@ -20,6 +20,14 @@ import {
 import { LogViewer } from "@niclaslindstedt/oss-framework/logging";
 import { useStandaloneMobile } from "@niclaslindstedt/oss-framework/pwa";
 import { unlock as unlockTrophy } from "@niclaslindstedt/oss-framework/achievements";
+import {
+  downloadBlob,
+  downloadText,
+  MIME_CSV,
+  MIME_JSON,
+  MIME_VCARD,
+  MIME_ZIP,
+} from "@niclaslindstedt/oss-framework/files";
 
 import { log, logStore } from "../log.ts";
 import { useDevSeed } from "../dev/useDevSeed.ts";
@@ -34,14 +42,6 @@ import {
   readBackupDoc,
 } from "../backup.ts";
 import { BackupsModal } from "../BackupsModal.tsx";
-import {
-  downloadBlob,
-  downloadText,
-  MIME_CSV,
-  MIME_JSON,
-  MIME_VCARD,
-  MIME_ZIP,
-} from "../download.ts";
 import { DATE_FORMATS, formatDate, type DateFormat } from "../format.ts";
 import {
   formatPhoneValue,

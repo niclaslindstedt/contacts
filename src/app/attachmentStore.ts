@@ -25,13 +25,16 @@
 // is composed only for the plaintext cloud path in `useSyncEngine`.
 
 import {
+  bytesToDataUrl,
+  dataUrlToBytes,
+} from "@niclaslindstedt/oss-framework/files";
+import {
   type DropboxAuth,
   type StorageAdapter,
 } from "@niclaslindstedt/oss-framework/storage";
 
 import { exportFileStem } from "./export.ts";
 import { logStore } from "./log.ts";
-import { bytesToDataUrl, dataUrlToBytes } from "./photo.ts";
 import {
   dropboxPhotoFileStore,
   gdrivePhotoFileStore,

@@ -50,7 +50,7 @@ describe("backup archives", () => {
 
   it("rejects a ZIP that isn't a contacts backup", async () => {
     // A valid ZIP, but without the contacts.json member.
-    const { createZip } = await import("../src/app/zip.ts");
+    const { createZip } = await import("@niclaslindstedt/oss-framework/zip");
     const stray = await createZip([
       { name: "readme.txt", data: new TextEncoder().encode("hi") },
     ]);

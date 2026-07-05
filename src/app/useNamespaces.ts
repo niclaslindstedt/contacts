@@ -14,7 +14,7 @@ import {
   type NamespaceAppearance,
 } from "@niclaslindstedt/oss-framework/namespaces";
 import { unlock } from "@niclaslindstedt/oss-framework/achievements";
-import { useLocalStorageState } from "./useLocalStorageState.ts";
+import { useLocalStorageState } from "@niclaslindstedt/oss-framework/hooks";
 
 import { docKey } from "./useContactStore.ts";
 
