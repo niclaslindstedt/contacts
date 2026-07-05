@@ -51,12 +51,21 @@ The same three formats round-trip:
 - **JSON backup** — the app's own document, run through the migration pipeline
   so an older backup is upgraded on the way in. Archived cards are skipped.
 
-Imported cards are always added (never merged over existing ones) and land at
-the root; every card and field gets a fresh id, and the whole batch is a single
+Imported cards are triaged against the existing address book before they land
+(`importMerge.ts`): a card sharing a normalized phone number or email with an
+existing contact is obviously the same person and **merges silently**; a card
+with the exact same normalized name is a probable duplicate and raises a
+confirm dialog — Merge / All (n) / Keep both — before anything is written. A
+merge only adds what's missing: new phones/emails/addresses/dates append
+(deduped), empty fields fill in, and a more precise name ("Andreas Andersson"
+arriving for a card that just says "Andreas") upgrades the stored one — nothing
+already on the card is overwritten. Everything else is added as a new card at
+the root with fresh ids, and the whole batch — merges included — is a single
 undo step. A file that yields nothing is a no-op with a short "no contacts
-found" note. The readers are pure and node-tested (`tests/import_test.ts`); the
-file-reading glue lives in `importFiles.ts` and the drop UI in
-`ImportDropZone.tsx`.
+found" note. The triage and merge logic is pure and node-tested
+(`tests/importMerge_test.ts`, `tests/import_test.ts`); the file-reading glue
+lives in `importFiles.ts`, the conflict-dialog flow in `useImportFlow.tsx`, and
+the drop UI in `ImportDropZone.tsx`.
 
 ## Backups
 

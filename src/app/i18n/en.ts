@@ -20,7 +20,18 @@ export const en = {
     dropHint: "vCard (.vcf), CSV, or a JSON backup",
     done: "Imported {n} contacts",
     doneOne: "Imported 1 contact",
+    merged: "Merged {n} contacts",
+    mergedOne: "Merged 1 contact",
+    doneMerged: "Imported {added}, merged {merged}",
     none: "No contacts found in that file",
+    // The duplicate-confirm dialog raised when an imported card has the exact
+    // same name as an existing one (see `useImportFlow`).
+    conflictTitle: "Merge duplicate?",
+    conflictBody:
+      "You already have “{existing}”. Merge the imported “{incoming}” into it, or keep both?",
+    conflictMerge: "Merge",
+    conflictMergeAll: "All ({n})",
+    conflictKeep: "Keep both",
   },
   toast: {
     // The hovering "action taken — undo?" banner raised after an archive or a

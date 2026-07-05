@@ -16,7 +16,16 @@ export const sv: Catalog = {
     dropHint: "vCard (.vcf), CSV eller en JSON-säkerhetskopia",
     done: "Importerade {n} kontakter",
     doneOne: "Importerade 1 kontakt",
+    merged: "Slog ihop {n} kontakter",
+    mergedOne: "Slog ihop 1 kontakt",
+    doneMerged: "Importerade {added}, slog ihop {merged}",
     none: "Inga kontakter hittades i filen",
+    conflictTitle: "Slå ihop dubblett?",
+    conflictBody:
+      "Du har redan ”{existing}”. Vill du slå ihop den importerade ”{incoming}” med den, eller behålla båda?",
+    conflictMerge: "Slå ihop",
+    conflictMergeAll: "Alla ({n})",
+    conflictKeep: "Behåll båda",
   },
   toast: {
     contactArchived: "Kontakt arkiverad",

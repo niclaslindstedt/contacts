@@ -6,8 +6,9 @@
 // file picker — can pour foreign cards straight into the address book.
 //
 // The three readers each produce an {@link ImportedContact} — a card without an
-// id, folder, or per-row ids. The store's `importContacts` action is what mints
-// those and files the cards (see `useContactStore.ts`), keeping this whole
+// id, folder, or per-row ids. The store's `applyImport` action is what mints
+// those and files the cards (see `useContactStore.ts`), after `importMerge.ts`
+// has triaged them against the existing address book — keeping this whole
 // surface pure and DOM-free so it is unit-testable in node (see
 // `tests/import_test.ts`).
 
@@ -441,7 +442,7 @@ function fromContact(c: Contact): ImportedContact {
     })),
     notes: c.notes ?? undefined,
     // A single-photo interchange draft carries the card's current face; the
-    // importer re-seats it as the sole gallery entry (see `importContacts`).
+    // importer re-seats it as the sole gallery entry (see `applyImport`).
     photo: activePhoto(c)?.photo ?? undefined,
     ...(attachmentList(c).length > 0 ? { attachments: attachmentList(c) } : {}),
     ...(c.ice ? { ice: true } : {}),

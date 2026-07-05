@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { useCallback, useRef, useState, type ReactNode } from "react";
 
-import { unlock } from "@niclaslindstedt/oss-framework/achievements";
 import { UploadIcon } from "@niclaslindstedt/oss-framework/components";
 import { useFileDrop } from "@niclaslindstedt/oss-framework/hooks";
 
 import { useT } from "./i18n/index.ts";
-import { readImportedContacts } from "./importFiles.ts";
+import {
+  importResultText,
+  useImportFlow,
+  type ImportRunResult,
+} from "./useImportFlow.tsx";
 import { info, warn } from "../output.ts";
 import type { ContactStore } from "./useContactStore.ts";
 
@@ -14,8 +17,9 @@ import type { ContactStore } from "./useContactStore.ts";
 // file drag enters it, raises a full-area overlay inviting the drop. Dropping
 // a `.vcf` (the format iOS/Android/Outlook Contacts hand out), the app's own
 // JSON backup, or an Outlook CSV parses the cards and files them into the
-// address book (see `import.ts` / `useContactStore.importContacts`). A short
-// banner reports how many contacts landed.
+// address book — merging obvious duplicates and confirming probable ones (see
+// `useImportFlow` / `importMerge.ts`). A short banner reports how many
+// contacts landed and how many merged.
 //
 // The framework's `useFileDrop` owns the drag mechanics — including the
 // enter/leave depth counting that keeps the overlay from flickering as the
@@ -42,33 +46,28 @@ export function ImportDropZone({
     bannerTimer.current = setTimeout(() => setBanner(null), 4000);
   }, []);
 
-  const runImport = useCallback(
-    async (files: File[]) => {
-      if (files.length === 0) return;
-      const { contacts, emptyFiles } = await readImportedContacts(files);
-      if (contacts.length === 0) {
-        warn(`import: no contacts found in ${files.length} file(s)`);
+  const onResult = useCallback(
+    (r: ImportRunResult) => {
+      if (r.total === 0) {
+        warn("import: no contacts found in the dropped file(s)");
         showBanner({ kind: "empty", text: t("import.none") });
         return;
       }
-      const n = store.importContacts(contacts);
-      info(`import: filed ${n} contact(s) from ${files.length} file(s)`);
-      if (n > 0) unlock("importer");
-      showBanner({
-        kind: "ok",
-        text:
-          n === 1 ? t("import.doneOne") : t("import.done", { n: String(n) }),
-      });
-      if (emptyFiles > 0) {
-        warn(`import: ${emptyFiles} file(s) had no importable contacts`);
+      info(
+        `import: filed ${r.added} new contact(s), merged ${r.merged} into existing`,
+      );
+      showBanner({ kind: "ok", text: importResultText(t, r) });
+      if (r.emptyFiles > 0) {
+        warn(`import: ${r.emptyFiles} file(s) had no importable contacts`);
       }
     },
-    [store, showBanner, t],
+    [showBanner, t],
   );
+  const { importFiles, conflictDialog } = useImportFlow(store, onResult);
 
   const { active } = useFileDrop({
     targetRef: zoneRef,
-    onDrop: (files) => void runImport(files),
+    onDrop: (files) => void importFiles(files),
   });
 
   return (
@@ -89,6 +88,8 @@ export function ImportDropZone({
           </div>
         </div>
       )}
+
+      {conflictDialog}
 
       {banner && (
         <div
