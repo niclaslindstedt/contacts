@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { describe, expect, it } from "vitest";
 
+import { dataUrlToBytes } from "@niclaslindstedt/oss-framework/files";
+
 import {
-  bytesToDataUrl,
   clampTransform,
-  dataUrlToBytes,
   drawRect,
   parsePhotoPath,
   photoPathFor,
@@ -17,9 +17,10 @@ import {
 } from "../src/app/photoStore.ts";
 
 // The photo layer's node-testable surface: the deterministic file path, the
-// data-URL ⇄ bytes seam the externaliser moves across, the crop geometry, and
-// the strip / re-hydrate / prune behaviour of `withExternalPhotos` (driven with
-// in-memory fakes — the canvas bake and the real cloud stores stay UI-only).
+// crop geometry, and the strip / re-hydrate / prune behaviour of
+// `withExternalPhotos` (driven with in-memory fakes — the canvas bake and the
+// real cloud stores stay UI-only). The data-URL ⇄ bytes codec the externaliser
+// moves across is the framework's (`files`), used here only as a test helper.
 
 describe("photoPathFor", () => {
   it("builds a deterministic photos/<name>-<id>-<photoId>.jpg path", () => {
@@ -106,23 +107,6 @@ describe("parsePhotoPath", () => {
     expect(parsePhotoPath("attachments/ada-c1-a1.pdf", ["c1"])).toBeNull();
     // Nothing after the contact id to serve as a photo id.
     expect(parsePhotoPath("photos/ada-c1-.jpg", ["c1"])).toBeNull();
-  });
-});
-
-describe("data URL <-> bytes", () => {
-  it("round-trips bytes through a base64 data URL", () => {
-    const bytes = new Uint8Array([0, 1, 2, 250, 128, 255]);
-    const url = bytesToDataUrl("image/jpeg", bytes);
-    expect(url.startsWith("data:image/jpeg;base64,")).toBe(true);
-    const back = dataUrlToBytes(url);
-    expect(back?.mime).toBe("image/jpeg");
-    expect(Array.from(back!.bytes)).toEqual(Array.from(bytes));
-  });
-
-  it("returns null for a non-base64 / non-data string", () => {
-    expect(dataUrlToBytes("https://example.com/a.png")).toBeNull();
-    expect(dataUrlToBytes(undefined)).toBeNull();
-    expect(dataUrlToBytes("data:image/png,notbase64")).toBeNull();
   });
 });
 

@@ -2,8 +2,12 @@
 // Turning a picked / dropped file into a contact {@link Attachment}. Unlike a
 // photo (which is downscaled and re-encoded — see `photo.ts`), an attachment is
 // kept byte-for-byte: a PDF menu or a scanned card must round-trip unchanged, so
-// the file is read straight to a base64 `data:` URI. This is the DOM half of the
-// feature (FileReader); the pure list mechanics live in `attachments.ts`.
+// the file is read straight to a base64 `data:` URI. The framework owns the
+// reading mechanics (`readFilesWithLimit`: FileReader, the size ceiling, the
+// accepted/rejected partition); this shim only shapes the result into the app's
+// `Attachment` records. The pure list mechanics live in `attachments.ts`.
+
+import { readFilesWithLimit } from "@niclaslindstedt/oss-framework/files";
 
 import { freshId } from "./useContactStore.ts";
 import type { Attachment } from "./types.ts";
@@ -29,52 +33,22 @@ export type AttachmentIntake = {
   rejected: AttachmentRejection[];
 };
 
-/** Read one file into a base64 `data:` URI, preserving its exact bytes. */
-function readAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error ?? new Error("read failed"));
-    reader.readAsDataURL(file);
-  });
-}
-
-/** Read a single picked file into an {@link Attachment}, or reject it when it's
- *  too large / unreadable. The MIME type falls back to a generic octet-stream so
- *  an extension-less file still round-trips. */
-export async function fileToAttachment(
-  file: File,
-): Promise<{ attachment: Attachment } | { rejected: AttachmentRejection }> {
-  if (file.size > MAX_ATTACHMENT_BYTES) {
-    return { rejected: { name: file.name, reason: "too-large" } };
-  }
-  try {
-    const data = await readAsDataUrl(file);
-    return {
-      attachment: {
-        id: freshId("attach"),
-        name: file.name || "file",
-        mime: file.type || "application/octet-stream",
-        size: file.size,
-        data,
-      },
-    };
-  } catch {
-    return { rejected: { name: file.name, reason: "read-failed" } };
-  }
-}
-
 /** Read a batch of picked files, partitioning them into the ones that became
  *  attachments and the ones that were refused. */
 export async function filesToAttachments(
   files: readonly File[],
 ): Promise<AttachmentIntake> {
-  const results = await Promise.all(files.map(fileToAttachment));
-  const attachments: Attachment[] = [];
-  const rejected: AttachmentRejection[] = [];
-  for (const r of results) {
-    if ("attachment" in r) attachments.push(r.attachment);
-    else rejected.push(r.rejected);
-  }
-  return { attachments, rejected };
+  const { accepted, rejected } = await readFilesWithLimit(files, {
+    maxBytes: MAX_ATTACHMENT_BYTES,
+  });
+  return {
+    attachments: accepted.map((f) => ({
+      id: freshId("attach"),
+      name: f.name,
+      mime: f.type,
+      size: f.size,
+      data: f.dataUrl,
+    })),
+    rejected: rejected.map(({ name, reason }) => ({ name, reason })),
+  };
 }

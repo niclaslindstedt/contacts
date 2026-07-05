@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { useCallback } from "react";
 
-import { useLocalStorageState } from "./useLocalStorageState.ts";
+import { useLocalStorageState } from "@niclaslindstedt/oss-framework/hooks";
 import type { DateFormat } from "./format.ts";
 import {
   DEFAULT_COUNTRY,

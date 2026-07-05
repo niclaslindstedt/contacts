@@ -13,6 +13,7 @@ import {
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
 import { unlock as unlockTrophy } from "@niclaslindstedt/oss-framework/achievements";
+import { downloadBlob, MIME_ZIP } from "@niclaslindstedt/oss-framework/files";
 
 import {
   backupDisplayName,
@@ -23,7 +24,6 @@ import {
   readBackupDoc,
   type BackupInfo,
 } from "./backup.ts";
-import { downloadBlob, MIME_ZIP } from "./download.ts";
 import { useT } from "./i18n/index.ts";
 import { log } from "./log.ts";
 import type { ContactStore } from "./useContactStore.ts";

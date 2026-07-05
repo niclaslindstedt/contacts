@@ -24,6 +24,7 @@ import {
   NamespaceSwitcher,
   type Namespace,
 } from "@niclaslindstedt/oss-framework/namespaces";
+import { useLocalStorageState } from "@niclaslindstedt/oss-framework/hooks";
 import {
   CheckForUpdatesItem,
   type PwaUpdateCheckResult,
@@ -55,7 +56,6 @@ import {
   SectionHeader,
 } from "./SideMenuRows.tsx";
 import { useT } from "./i18n/index.ts";
-import { useLocalStorageState } from "./useLocalStorageState.ts";
 import type { FolderSort } from "./useAppSettings.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { Contact, Folder } from "./types.ts";

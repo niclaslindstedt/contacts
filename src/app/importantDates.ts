@@ -8,9 +8,16 @@
 // This module is the pure seam over that flexible shape: parse it, tell how many
 // days remain until the next occurrence, and (when the year is known) how many
 // years have passed. The read view's chip hands the date to the device calendar
-// via `calendar.ts`. Everything here takes the reference "now" as an argument,
+// via the `.ics` shims at the bottom, thin compositions over the framework's
+// RFC 5545 builders. Everything here takes the reference "now" as an argument,
 // so the whole surface is deterministic and unit-testable in node (see
 // `tests/importantDates_test.ts`).
+
+import {
+  buildIcsCalendar,
+  nextOccurrence,
+  parseDateParts,
+} from "@niclaslindstedt/oss-framework/calendar";
 
 import { formatDate, MONTHS_EN, type DateFormat } from "./format.ts";
 
@@ -116,4 +123,69 @@ export function yearsSince(value: string, now: Date): number | null {
     monthNow > p.m || (monthNow === p.m && now.getDate() >= p.d);
   const years = now.getFullYear() - p.y - (hadItThisYear ? 0 : 1);
   return years < 0 ? null : years;
+}
+
+// --- handing a date to the device calendar -----------------------------------
+//
+// The read view's chips download a one-event `.ics` file (RFC 5545) that iOS
+// Calendar, Google Calendar, and Outlook all import: a single all-day event
+// that recurs every year, marked free (`TRANSP:TRANSPARENT`) so a reminder
+// never blocks the user's availability. The framework owns the envelope and
+// the escaping / folding; these shims only decide the anchor date and the
+// PRODID, and the caller supplies the already-translated event title so the
+// module stays free of the i18n runtime.
+
+/** One birthday as an importable `.ics` calendar: a single all-day event on
+ *  the birth date that recurs every year. Returns null when the birthday
+ *  string isn't a real full `YYYY-MM-DD` date — a birthday always knows its
+ *  year. `uid` makes the event stable across re-imports so a calendar updates
+ *  the same entry rather than piling up duplicates. */
+export function birthdayIcs(opts: {
+  iso: string;
+  summary: string;
+  uid: string;
+  now: Date;
+}): string | null {
+  const p = parseDateParts(opts.iso);
+  if (!p || p.year === null) return null;
+  return buildIcsCalendar({
+    prodId: "-//contacts//birthday//EN",
+    events: [
+      {
+        uid: opts.uid,
+        summary: opts.summary,
+        date: { year: p.year, month: p.month, day: p.day },
+        repeat: "yearly",
+      },
+    ],
+    now: opts.now,
+  });
+}
+
+/** One important date as an importable `.ics` calendar, the same yearly
+ *  all-day shape as {@link birthdayIcs} but for a flexible date: a full ISO
+ *  `YYYY-MM-DD`, or a bare `MM-DD` with no year. A yearless date is anchored
+ *  on its next occurrence from `now`, so the reminder starts in the future and
+ *  then recurs every year on the same month/day; a dated one anchors on its
+ *  own year. Returns null when the value isn't a real date. `summary` is the
+ *  (already translated and name-woven) title — e.g. "Anniversary Sarah
+ *  Connor". */
+export function dateEventIcs(opts: {
+  value: string;
+  summary: string;
+  uid: string;
+  now: Date;
+}): string | null {
+  const p = parseDateParts(opts.value);
+  if (!p) return null;
+  const date =
+    p.year !== null
+      ? { year: p.year, month: p.month, day: p.day }
+      : nextOccurrence(opts.value, opts.now);
+  if (!date) return null;
+  return buildIcsCalendar({
+    prodId: "-//contacts//important-date//EN",
+    events: [{ uid: opts.uid, summary: opts.summary, date, repeat: "yearly" }],
+    now: opts.now,
+  });
 }

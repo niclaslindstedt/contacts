@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 // The browser glue that feeds real files into the pure import readers. Kept
-// apart from `import.ts` (the same way `download.ts` is kept apart from
-// `export.ts`) so the readers stay pure and node-testable: this module reads a
-// dropped or picked `File`'s text and hands it to `parseImportFile`.
+// apart from `import.ts` (the same way the framework's download glue is kept
+// apart from `export.ts`) so the readers stay pure and node-testable: this
+// module reads a dropped or picked `File`'s text and hands it to
+// `parseImportFile`.
 
 import { parseImportFile, type ImportedContact } from "./import.ts";
 
