@@ -18,12 +18,21 @@ export function methodKind(label: string | undefined): ContactMethodKind {
   return (label ?? "").trim().toLowerCase() === "work" ? "work" : "private";
 }
 
-/** One phone number on a contact card. `label` carries the {@link
- *  ContactMethodKind} ("private" / "work"); it maps onto the vCard TEL TYPE on
- *  export. */
+/** One phone number on a contact card. Stored **structured**: `value` is the
+ *  national significant number as *pure digits* — no country code, no spaces,
+ *  no hyphens (the edit form strips separators on entry, and `migrations.ts`
+ *  normalises older free-typed numbers) — and `countryCode` is the E.164
+ *  calling code without the leading `+` ("46", "1"), picked from the edit
+ *  form's country dropdown. An absent `countryCode` means "the home country"
+ *  (see `settings.country`), so a plain local number needs no explicit code.
+ *  `label` carries the {@link ContactMethodKind} ("private" / "work"); it maps
+ *  onto the vCard TEL TYPE on export. */
 export type Phone = {
   id: string;
   value: string;
+  /** E.164 country calling code without the `+` ("46", "1"), or absent for a
+   *  number that follows the home country. */
+  countryCode?: string;
   label?: string;
 };
 

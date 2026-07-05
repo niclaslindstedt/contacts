@@ -268,7 +268,11 @@ function ContactCard({
           updateContact={updateContact}
         />
         {editing ? (
-          <ContactEditView contact={contact} updateContact={updateContact} />
+          <ContactEditView
+            contact={contact}
+            home={settings.country}
+            updateContact={updateContact}
+          />
         ) : (
           <ContactReadView
             contact={contact}

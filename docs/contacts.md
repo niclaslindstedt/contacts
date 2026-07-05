@@ -91,6 +91,16 @@ marked as a **company** rather than a person.
   place of a monogram, and exports with its name as the organisation (`ORG`) so
   it lands as a company in the address book you send it to. A company hides the
   person-only fields — the birthday and the extra important dates.
+- **Phone numbers are stored clean.** A phone number is kept as **plain
+  national digits** — no spaces, no hyphens, no country code baked into the
+  digits. Its **country code** is a separate **dropdown** on the row (a flag and
+  a `+46`), which starts on your home country from **Settings → Format** so a
+  local number needs no fuss; paste a number that already begins with `+46` /
+  `00…` and the code jumps into the dropdown while the rest is stripped to bare
+  digits. Existing numbers are converted to this shape automatically the first
+  time a document opens. How a number then **reads** on the card is still up to
+  the Format tab — the stored digits and code don't change when you switch
+  formats.
 - **Private / work types.** Each phone number and email address carries a type —
   Private or Work — flipped with a small two-glyph toggle in edit mode (a person
   for Private, a briefcase for Work); tapping a glyph flips the type without the

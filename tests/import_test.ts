@@ -48,9 +48,10 @@ describe("parseVCards", () => {
     expect(c!.firstName).toBe("Ada");
     expect(c!.lastName).toBe("Lovelace");
     expect(c!.company).toBe("Analytical Engines");
+    // Imported numbers fold to the stored shape — national digits + code.
     expect(c!.phones).toEqual([
-      { value: "+46701234567", label: "private" },
-      { value: "+4681234567", label: "work" },
+      { value: "701234567", countryCode: "46", label: "private" },
+      { value: "81234567", countryCode: "46", label: "work" },
     ]);
     expect(c!.emails).toEqual([{ value: "ada@example.com", label: "private" }]);
   });
@@ -184,8 +185,8 @@ describe("round-trips through export", () => {
       lastName: "Lovelace",
       company: "Engines",
       phones: [
-        { id: "p1", value: "+46701234567", label: "private" },
-        { id: "p2", value: "+4681234567", label: "work" },
+        { id: "p1", value: "701234567", countryCode: "46", label: "private" },
+        { id: "p2", value: "81234567", countryCode: "46", label: "work" },
       ],
       emails: [{ id: "e1", value: "ada@example.com", label: "work" }],
       addresses: [
@@ -204,8 +205,8 @@ describe("round-trips through export", () => {
     expect(back!.lastName).toBe("Lovelace");
     expect(back!.company).toBe("Engines");
     expect(back!.phones).toEqual([
-      { value: "+46701234567", label: "private" },
-      { value: "+4681234567", label: "work" },
+      { value: "701234567", countryCode: "46", label: "private" },
+      { value: "81234567", countryCode: "46", label: "work" },
     ]);
     expect(back!.emails).toEqual([{ value: "ada@example.com", label: "work" }]);
     expect(back!.addresses).toEqual([

@@ -204,6 +204,7 @@ export const en = {
     kindPrivate: "Private",
     kindWork: "Work",
     phoneKind: "Phone type",
+    phoneCountry: "Country code",
     emailKind: "Email type",
     details: "Details",
     firstName: "First name",

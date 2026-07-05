@@ -15,7 +15,7 @@ const doc: AppData = {
       id: "c1",
       firstName: "Ada",
       lastName: "Lovelace",
-      phones: [{ id: "p1", value: "+46701234567" }],
+      phones: [{ id: "p1", value: "701234567", countryCode: "46" }],
       emails: [],
       addresses: [],
       importantDates: [],
@@ -171,6 +171,37 @@ describe("serializeDoc / parseDoc", () => {
     expect("photo" in ada).toBe(false);
     expect("photoSource" in ada).toBe(false);
     expect(upgraded.contacts[1]!.photos).toBeUndefined();
+  });
+
+  it("structures free-typed phone numbers (v4→v5)", () => {
+    const v4 = JSON.stringify({
+      version: 4,
+      folders: [],
+      contacts: [
+        {
+          id: "c1",
+          firstName: "Ada",
+          lastName: "Lovelace",
+          phones: [
+            // An international number: the code peels into `countryCode` and the
+            // separators are stripped from the national digits.
+            { id: "p1", value: "+46 (0)70-123 45 67", label: "work" },
+            // A bare local number keeps no code — it follows the home country.
+            { id: "p2", value: "08-123 45 67" },
+          ],
+          emails: [],
+          addresses: [],
+          importantDates: [],
+          folderId: null,
+        },
+      ],
+      activeContactId: "c1",
+    });
+    const ada = parseDoc(v4).contacts[0]!;
+    expect(ada.phones).toEqual([
+      { id: "p1", value: "0701234567", countryCode: "46", label: "work" },
+      { id: "p2", value: "081234567" },
+    ]);
   });
 
   it("normalises a wiped or malformed file into an empty document", () => {

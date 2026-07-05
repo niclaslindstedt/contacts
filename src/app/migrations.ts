@@ -5,6 +5,7 @@ import {
 } from "@niclaslindstedt/oss-framework/storage";
 
 import { parseAddress } from "./address.ts";
+import { toStoredPhone } from "./format.ts";
 import { logStore } from "./log.ts";
 import type { AppData, Contact, Folder } from "./types.ts";
 
@@ -21,7 +22,7 @@ import type { AppData, Contact, Folder } from "./types.ts";
 
 /** The current persisted-document version. Bump it and add a step below when
  *  the on-disk shape changes — every shipped step stays forever. */
-export const LATEST_VERSION = 4;
+export const LATEST_VERSION = 5;
 
 const migrations = {
   // v0 (pre-versioning / blank) → v1: the bootstrap step. Guarantee the two
@@ -144,6 +145,29 @@ const migrations = {
       },
     );
     return { ...doc, version: 4, contacts };
+  },
+  // v4 → v5: phone numbers become *structured*. A phone used to hold whatever
+  // the user typed verbatim (`+46 (0)70-123 45 67`); now `value` is the bare
+  // national digits and the E.164 calling code moves to its own `countryCode`
+  // field (the edit form's country dropdown). Fold every existing number down
+  // to that shape — strip separators, peel an explicit `+…`/`00…` code — so old
+  // documents display and edit the same as freshly-typed ones. A number with no
+  // explicit code keeps `countryCode` absent (it follows the home country).
+  4: (doc: Versioned): Versioned => {
+    const contacts = (Array.isArray(doc.contacts) ? doc.contacts : []).map(
+      (raw) => {
+        const c = raw as Record<string, unknown>;
+        const phones = (Array.isArray(c.phones) ? c.phones : []).map((rawP) => {
+          const p = rawP as Record<string, unknown>;
+          const value = typeof p.value === "string" ? p.value : "";
+          // Keep the row's id/label; replace the verbatim value with the
+          // national digits and the calling code parsed out of it.
+          return { ...p, ...toStoredPhone(value) };
+        });
+        return { ...c, phones };
+      },
+    );
+    return { ...doc, version: 5, contacts };
   },
 } as const;
 
