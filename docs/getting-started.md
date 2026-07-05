@@ -58,12 +58,18 @@ the raw value for editing.
 Settings → **Appearance** restyles the whole app: pick a theme (or roll your own
 palette), a font and text size, and the shape-and-feel knobs — **Corner radius**,
 **Density**, **Border width**, button and checkbox styles, and elevation. Every
-change previews live.
+change previews live. **Density** reaches the app's chrome too: a denser setting
+tightens the Settings cards (this tab included), the side-menu rows and their
+action-button island, and the footer collapse rail; a roomier one spreads them
+apart.
 
 The **Dialogs** section tunes how the page behind an open dialog looks:
 **Backdrop dimming** sets how far it's darkened (none through dark), and
 **Backdrop blur** how far it's blurred (off by default). Adjust either and the
 open Settings dialog previews the change against itself.
+
+When you're on the **Custom** theme, the **Colours** section — the full palette
+editor — sits at the very bottom of the tab, below the Dialogs controls.
 
 ## Keep it synced (optional)
 

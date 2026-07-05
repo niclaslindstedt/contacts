@@ -219,8 +219,10 @@ export function SettingsModal({
         </div>
       </FloatingPanel>
 
-      {/* Tab body. */}
-      <div className="flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4">
+      {/* Tab body. `settings-body` scopes the density-driven card spacing (see
+          styles.css) so the Appearance → Density knob tightens or loosens the
+          settings cards themselves. */}
+      <div className="settings-body flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4">
         {activeTab === "general" && (
           <GeneralTab settings={draft} update={update} />
         )}

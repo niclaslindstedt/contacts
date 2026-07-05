@@ -94,6 +94,68 @@
   }
 }
 
+/* ── Density-driven spacing ──────────────────────────────────────────────────
+   The Appearance → Density knob (`ui.density`) is published by the theme engine
+   as the `--density-row-py` / `--density-row-px` variables the row components
+   already ride, and mirrored onto `<html data-density>` (see `App.tsx`) so the
+   discrete level can drive app-owned chrome too. Comfortable is the framework
+   default, so only compact and spacious carry overrides here.
+
+   • Settings cards. The framework `Section` hard-codes `p-3` / `mt-3`, so the
+     Settings tabs — the Appearance tab included — ignored the knob and stayed a
+     fixed size regardless of density. Route the two spacing utilities the card
+     wears through the level, scoped to the Settings body, so choosing a denser
+     look visibly pushes the sections and their padding together (and a roomier
+     one spreads them apart). `:not(:first-child)` leaves the card's own
+     `first:mt-0` top edge intact. */
+[data-density="compact"] .settings-body .p-3 {
+  padding: 0.5rem;
+}
+[data-density="compact"] .settings-body .mt-3:not(:first-child) {
+  margin-top: 0.5rem;
+}
+[data-density="spacious"] .settings-body .p-3 {
+  padding: 1rem;
+}
+[data-density="spacious"] .settings-body .mt-3:not(:first-child) {
+  margin-top: 1rem;
+}
+
+/* • Sidebar action island. The button grid's icons shrink a touch at the
+     densest setting so the island reads smaller, matching the tighter row
+     padding the buttons already pick up from `--density-row-py`. */
+[data-density="compact"] .island-button svg {
+  height: 1.125rem;
+  width: 1.125rem;
+}
+
+/* ── Appearance tab: colours last ────────────────────────────────────────────
+   The framework `AppearancePicker` renders its Colours section (Custom palette
+   only) directly above the app-owned dialog-backdrop section, so the palette
+   swatches sat in the middle of the tab. Lay the tab out as a flex column and
+   flip the two: the backdrop section rises above the colours, dropping the
+   (long) palette grid to the very bottom. Only the Custom theme shows a colours
+   section, so the reorder is gated on `--custom` — otherwise the `:has()` rule
+   would push whichever section happens to precede the backdrop below it. */
+.appearance-tab {
+  display: flex;
+  flex-direction: column;
+}
+.appearance-tab > .appearance-backdrop {
+  order: 1;
+}
+.appearance-tab--custom > *:has(+ .appearance-backdrop) {
+  order: 2;
+}
+
+/* Centre the palette swatch captions under their colour wells. The framework
+   `ColorSwatchInput` stacks a full-width well over a left-aligned caption, so
+   the multi-word labels ("Surface (raised)", "Page background") wrapped
+   ragged-left and read awkwardly against the centred well above them. */
+.appearance-tab label:has(> input[type="color"]) {
+  text-align: center;
+}
+
 /* ── App-shell layout ────────────────────────────────────────────────────────
    A full-viewport `100svh` flex app whose panes own their own scroll regions,
    so the document itself never scrolls. */

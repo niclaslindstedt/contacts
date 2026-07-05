@@ -285,7 +285,7 @@ export function BarButton({
       aria-pressed={current}
       disabled={disabled}
       onClick={onClick}
-      className={`relative flex flex-1 items-center justify-center py-2.5 transition-colors ${
+      className={`island-button relative flex flex-1 items-center justify-center py-[calc(var(--density-row-py)+0.25rem)] transition-colors ${
         disabled
           ? "cursor-not-allowed text-muted opacity-40"
           : "cursor-pointer text-fg hover:bg-surface-2 hover:text-fg-bright"
@@ -434,7 +434,7 @@ export function FooterCollapseRail({
       aria-label={label}
       aria-expanded={!collapsed}
       title={label}
-      className="flex w-full shrink-0 cursor-pointer items-center justify-center border-t border-line py-2.5 text-muted hover:bg-surface-2 hover:text-fg-bright"
+      className="flex w-full shrink-0 cursor-pointer items-center justify-center border-t border-line py-[calc(var(--density-row-py)+0.25rem)] text-muted hover:bg-surface-2 hover:text-fg-bright"
     >
       {collapsed ? (
         <ChevronUpIcon className="h-4 w-4" />
