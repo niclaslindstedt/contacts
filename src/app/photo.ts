@@ -156,6 +156,47 @@ function photoStem(contact: PhotoNamed): string {
   return `${stem}-${contact.id}`;
 }
 
+/** What a filed photo path names: the contact it belongs to, the photo's own
+ *  id, and whether it is the larger source original rather than the display
+ *  crop. */
+export type ParsedPhotoPath = {
+  contactId: string;
+  photoId: string;
+  source: boolean;
+};
+
+/** Parse a filed photo path back to the contact + photo it belongs to — the
+ *  inverse of {@link photoPathFor} / {@link photoSourcePathFor}, and the key to
+ *  re-indexing "lost" photo files (see `photoStore.ts`).
+ *
+ *  The filename is `photos/<name-slug>-<contactId>-<photoId>[-source].jpg`. The
+ *  leading `<name-slug>` is cosmetic — a human-readable label that can itself
+ *  contain hyphens — so rather than guess where it ends, the parse anchors on a
+ *  *known* contact id: the one segment that must line up with a real card. That
+ *  makes it robust to a slug that no longer matches a renamed contact, and means
+ *  a photo a user hand-drops into the drive is picked up as long as its name
+ *  carries the right `-<contactId>-` and a non-empty photo id after it — the
+ *  slug in front can be anything readable. Returns null when the path names no
+ *  known contact. */
+export function parsePhotoPath(
+  path: string,
+  contactIds: Iterable<string>,
+): ParsedPhotoPath | null {
+  const match = /^photos\/(.+?)(-source)?\.jpg$/i.exec(path);
+  if (!match) return null;
+  const stem = match[1]!;
+  const source = match[2] != null;
+  for (const contactId of contactIds) {
+    const marker = `-${contactId}-`;
+    const at = stem.indexOf(marker);
+    if (at === -1) continue;
+    const photoId = stem.slice(at + marker.length);
+    if (photoId.length === 0) continue;
+    return { contactId, photoId, source };
+  }
+  return null;
+}
+
 // --- data URL ⇄ bytes (the externalisation seam) -----------------------------
 
 /** Parsed pieces of a base64 `data:` URL. */
