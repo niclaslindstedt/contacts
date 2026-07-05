@@ -675,7 +675,19 @@ export function SideMenuContent({
     data.contacts.filter((c) => c.archived).length;
 
   return (
-    <div className="flex h-full flex-col select-none">
+    // The framework panel reserves a bottom inset as padding so its last child
+    // clears the home indicator. When the footer is folded away that inset is
+    // stranded as dead space below the thin collapse rail, so in the collapsed
+    // state we grow past the panel's content box to reclaim exactly that inset
+    // and hand it to the scrolling list. The expanded state keeps `h-full`, so
+    // the footer still sits above the panel's padding as before.
+    <div
+      className={`flex flex-col select-none ${
+        footerCollapsed
+          ? "shrink-0 [height:calc(100%+max(env(safe-area-inset-bottom),calc(1.25rem-var(--density-row-py))))]"
+          : "h-full"
+      }`}
+    >
       {/* Namespace switcher — fixed. The framework component owns the
           collapsible section, the switchable rows, and the per-row drop
           targets (a contact or folder dragged onto another workspace's row

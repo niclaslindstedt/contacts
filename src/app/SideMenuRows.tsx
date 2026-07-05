@@ -434,12 +434,12 @@ export function FooterCollapseRail({
       aria-label={label}
       aria-expanded={!collapsed}
       title={label}
-      className="flex w-full shrink-0 cursor-pointer items-center justify-center border-t border-line py-0 text-muted hover:bg-surface-2 hover:text-fg-bright"
+      className="flex w-full shrink-0 cursor-pointer items-center justify-center border-t border-line py-2.5 text-muted hover:bg-surface-2 hover:text-fg-bright"
     >
       {collapsed ? (
-        <ChevronUpIcon className="h-2.5 w-2.5" />
+        <ChevronUpIcon className="h-4 w-4" />
       ) : (
-        <ChevronDownIcon className="h-2.5 w-2.5" />
+        <ChevronDownIcon className="h-4 w-4" />
       )}
     </button>
   );
