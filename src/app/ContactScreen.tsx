@@ -25,6 +25,7 @@ import type { SyncEngine } from "./useSyncEngine.ts";
 import { hasAddress } from "./address.ts";
 import { hasAttachments } from "./attachments.ts";
 import { hasPhoto } from "./contactPhotos.ts";
+import { contactStamp } from "./contactTimestamps.ts";
 import { isValidFlexDate } from "./importantDates.ts";
 import type { AppSettings } from "./useAppSettings.ts";
 import type { Contact } from "./types.ts";
@@ -280,8 +281,32 @@ function ContactCard({
             onEdit={() => setEditing(true)}
           />
         )}
+        <ContactTimestamps contact={contact} settings={settings} />
       </div>
     </>
+  );
+}
+
+// The discreet foot-of-card date stamp: when the card was added, and — once
+// it's been edited on a later day — when it was last modified. Plain
+// right-aligned muted text, no section chrome. Renders nothing for a card that
+// carries no `createdAt` (a dev-seed card, or one not yet through the v5→v6
+// migration).
+function ContactTimestamps({
+  contact,
+  settings,
+}: {
+  contact: Contact;
+  settings: AppSettings;
+}) {
+  const t = useT();
+  const { added, modified } = contactStamp(contact, settings.dateFormat);
+  if (!added) return null;
+  return (
+    <p className="px-1 pt-4 text-right text-xs text-muted">
+      {t("contact.addedStamp", { date: added })}
+      {modified ? ` ${t("contact.modifiedStamp", { date: modified })}` : ""}
+    </p>
   );
 }
 

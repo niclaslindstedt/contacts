@@ -22,7 +22,7 @@ import type { AppData, Contact, Folder } from "./types.ts";
 
 /** The current persisted-document version. Bump it and add a step below when
  *  the on-disk shape changes — every shipped step stays forever. */
-export const LATEST_VERSION = 5;
+export const LATEST_VERSION = 6;
 
 const migrations = {
   // v0 (pre-versioning / blank) → v1: the bootstrap step. Guarantee the two
@@ -168,6 +168,22 @@ const migrations = {
       },
     );
     return { ...doc, version: 5, contacts };
+  },
+  // v5 → v6: a card gains `createdAt` / `updatedAt` timestamps (the read view's
+  // foot-of-card date stamp). Neither existed before, so stamp every existing
+  // card's `createdAt` with the migration time — a best-effort "we first saw it
+  // now" — and leave `updatedAt` absent, so an untouched card shows no
+  // "Modified" line until it's next edited. A card that somehow already carries
+  // a `createdAt` keeps it.
+  5: (doc: Versioned): Versioned => {
+    const now = new Date().toISOString();
+    const contacts = (Array.isArray(doc.contacts) ? doc.contacts : []).map(
+      (raw) => {
+        const c = raw as Record<string, unknown>;
+        return typeof c.createdAt === "string" ? c : { ...c, createdAt: now };
+      },
+    );
+    return { ...doc, version: 6, contacts };
   },
 } as const;
 
