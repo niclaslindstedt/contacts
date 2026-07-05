@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import {
   Button,
+  ChevronDownIcon,
   ConfirmDialog,
   DatabaseIcon,
   SegmentedControl,
@@ -43,11 +44,9 @@ import {
 } from "../download.ts";
 import { DATE_FORMATS, formatDate, type DateFormat } from "../format.ts";
 import {
-  COUNTRIES,
   formatPhoneValue,
   formatPostalValue,
   getCountry,
-  type CountryCode,
 } from "../countries/index.ts";
 import {
   applyBackdropVars,
@@ -70,6 +69,7 @@ import {
   type SyncEngine,
 } from "../useSyncEngine.ts";
 import { LanguagePicker } from "./shared.tsx";
+import { CountryPickerModal } from "./CountryPickerModal.tsx";
 
 type Update = <K extends keyof AppSettings>(
   key: K,
@@ -365,16 +365,14 @@ export function FormatTab({
   update: Update;
 }) {
   const t = useT();
+  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
   const country = getCountry(settings.country);
-
-  const countryOptions = COUNTRIES.map((c) => ({
-    value: c.code as CountryCode,
+  const countryName = t(
     // The country name key is data-driven (one per registered country), so it
     // can't be a statically-known catalog leaf — narrow it at the call site.
-    label: `${c.flag} ${t(
-      `settings.format.country.${c.nameKey}` as Parameters<typeof t>[0],
-    )}`,
-  }));
+    `settings.format.country.${country.nameKey}` as Parameters<typeof t>[0],
+  );
+
   const dateOptions = DATE_FORMATS.map((value) => ({
     value,
     label: t(`settings.format.date.${value}`),
@@ -398,18 +396,32 @@ export function FormatTab({
 
       <Section title={t("settings.format.countryTitle")}>
         <div className="flex flex-col gap-1.5">
-          <SegmentedControl<CountryCode>
-            value={settings.country}
-            options={countryOptions}
-            onChange={(next) => update("country", next)}
-            fullWidth
-            ariaLabel={t("settings.format.countryTitle")}
-          />
+          <button
+            type="button"
+            onClick={() => setCountryPickerOpen(true)}
+            aria-label={t("settings.format.countryChange")}
+            className="flex w-full items-center gap-3 rounded-lg border border-line bg-surface-1 px-3 py-2 text-left text-sm transition-colors hover:bg-surface-2"
+          >
+            <span className="text-lg leading-none" aria-hidden="true">
+              {country.flag}
+            </span>
+            <span className="min-w-0 flex-1 truncate font-medium text-fg-bright">
+              {countryName}
+            </span>
+            <ChevronDownIcon className="h-4 w-4 shrink-0 text-muted" />
+          </button>
           <p className="text-xs text-muted">
             {t("settings.format.countryHint")}
           </p>
         </div>
       </Section>
+
+      <CountryPickerModal
+        open={countryPickerOpen}
+        current={settings.country}
+        onSelect={(next) => update("country", next)}
+        onClose={() => setCountryPickerOpen(false)}
+      />
 
       <Section title={t("settings.format.phoneTitle")}>
         <ToggleRow

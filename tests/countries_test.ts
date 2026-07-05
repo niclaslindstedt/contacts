@@ -182,3 +182,109 @@ describe("postal codes", () => {
     expect(formatPostalValue("N/A", "US", postal())).toBe("N/A");
   });
 });
+
+// --- The developed-country catalogue ----------------------------------------
+// Sweden and the US are exercised in depth above; these pin the shared factory
+// and a representative slice of the catalogue's own rules.
+
+describe("developed-country catalogue", () => {
+  it("registers thirty countries, Sweden the default", () => {
+    expect(COUNTRIES).toHaveLength(30);
+    expect(DEFAULT_COUNTRY).toBe("SE");
+    expect(getCountry("SE").code).toBe("SE");
+    // Every code is unique.
+    expect(new Set(COUNTRIES.map((c) => c.code)).size).toBe(COUNTRIES.length);
+  });
+
+  it("routes the new calling codes to their country", () => {
+    expect(getCountryByCallingCode("33")?.code).toBe("FR");
+    expect(getCountryByCallingCode("81")?.code).toBe("JP");
+    expect(getCountryByCallingCode("358")?.code).toBe("FI");
+    // The US and Canada share +1; the first-registered (US) wins the lookup.
+    expect(getCountryByCallingCode("1")?.code).toBe("US");
+  });
+});
+
+describe("catalogue phone conventions", () => {
+  it("groups France in pairs with the trunk 0 inside them", () => {
+    expect(formatPhoneValue("+33612345678", "FR", phone())).toBe(
+      "+33 (0)6 12 34 56 78",
+    );
+    expect(
+      formatPhoneValue("+33612345678", "FR", phone({ countryCode: false })),
+    ).toBe("06 12 34 56 78");
+  });
+
+  it("groups a Danish number in even pairs (no trunk 0)", () => {
+    expect(formatPhoneValue("+4520123456", "DK", phone())).toBe(
+      "+45 20 12 34 56",
+    );
+  });
+
+  it("groups a Norwegian mobile 3-2-3", () => {
+    expect(formatPhoneValue("+4795123456", "NO", phone())).toBe(
+      "+47 951 23 456",
+    );
+  });
+
+  it("writes a Canadian number in the NANP shape", () => {
+    expect(formatPhoneValue("+14165550123", "CA", phone())).toBe(
+      "+1 (416) 555-0123",
+    );
+  });
+
+  it("writes a Japanese mobile as 090 1234 5678", () => {
+    expect(
+      formatPhoneValue("+819012345678", "JP", phone({ countryCode: false })),
+    ).toBe("090 1234 5678");
+  });
+
+  it("keeps a typed leading 0 where the country has no trunk (Italy)", () => {
+    // Italy dials its 0, so it is kept rather than stripped.
+    expect(
+      formatPhoneValue("06 1234 5678", "IT", phone({ countryCode: false })),
+    ).toMatch(/^0/);
+  });
+
+  it("drops the trunk digit when the leading-zero option is off", () => {
+    expect(
+      formatPhoneValue("+33612345678", "FR", phone({ leadingZero: false })),
+    ).toBe("+33 6 12 34 56 78");
+  });
+
+  it("routes a foreign number to its own country regardless of home", () => {
+    // A French number in a Swedish address book still reads French.
+    expect(formatPhoneValue("+33612345678", "SE", phone())).toBe(
+      "+33 (0)6 12 34 56 78",
+    );
+  });
+});
+
+describe("catalogue postal conventions", () => {
+  it("splits Portugal, Japan, and Poland on their fixed hyphen", () => {
+    expect(formatPostalValue("1000100", "PT", postal())).toBe("1000-100");
+    expect(formatPostalValue("1000001", "JP", postal())).toBe("100-0001");
+    expect(formatPostalValue("00950", "PL", postal())).toBe("00-950");
+  });
+
+  it("spaces Czech and Greek codes like Sweden's, honouring the toggle", () => {
+    expect(formatPostalValue("11000", "CZ", postal())).toBe("110 00");
+    expect(formatPostalValue("10431", "GR", postal())).toBe("104 31");
+    expect(formatPostalValue("11000", "CZ", postal({ spaces: false }))).toBe(
+      "11000",
+    );
+  });
+
+  it("groups the alphanumeric UK, Canadian, and Dutch codes", () => {
+    expect(formatPostalValue("sw1a1aa", "GB", postal())).toBe("SW1A 1AA");
+    expect(formatPostalValue("k1a0b1", "CA", postal())).toBe("K1A 0B1");
+    expect(formatPostalValue("1012ab", "NL", postal())).toBe("1012 AB");
+  });
+
+  it("leaves a plain-digit country ungrouped (Norway)", () => {
+    expect(formatPostalValue("0150", "NO", postal())).toBe("0150");
+    expect(formatPostalValue("0150", "NO", postal({ spaces: false }))).toBe(
+      "0150",
+    );
+  });
+});

@@ -8,12 +8,22 @@ a live sample.
 
 ## Pick a country
 
-The tab is organised around a **country**. Pick yours — **Sweden** or the
-**United States** to start — and phone numbers and postal codes are shown that
+The tab is organised around a **country**, and it defaults to **Sweden**. Tap
+the country row to open the country picker — a searchable list of the world's
+thirty most developed countries, each with its flag and name. Start typing and
+the list narrows as you go: type `Fin` and **Finland** jumps to the top with the
+match highlighted, so a press of Enter picks it. Choosing a country updates the
+active one, and phone numbers and postal codes are immediately shown that
 country's way:
 
 - **Sweden** — `+46 (0)76-818 13 37` and `123 45`.
 - **United States** — `+1 (202) 555-0100` and `12345-6789`.
+- **France** — `+33 (0)6 12 34 56 78` and `75008`.
+- **Japan** — `090 1234 5678` and `100-0001`.
+
+Each country carries its own rules: even pairs for France and Denmark, the North
+American `(NPA) NXX-XXXX` for the US and Canada, a fixed hyphen in Japanese and
+Portuguese postal codes, the alphanumeric `SW1A 1AA` of a UK code, and so on.
 
 A number that already carries its own country code (`+1`, `+46`) is formatted
 for **that** country automatically, so a Swedish address book still shows a US
@@ -40,7 +50,9 @@ only how it reads on the card changes.
 
 ## Adding more countries
 
-The country list is meant to grow — each new country is one self-contained file
-describing how it formats a number and a postal code, so support for another
-region is a small, isolated addition rather than a rework of the settings.
+The country list is meant to grow. Sweden and the United States are written out
+in full as the reference examples; every other country is a single data row that
+names its flag, calling code, and the grouping conventions it borrows from a
+shared toolkit, so adding another region is a small, isolated addition rather
+than a rework of the settings.
 </content>
