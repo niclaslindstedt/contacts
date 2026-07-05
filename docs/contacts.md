@@ -42,12 +42,15 @@ marked as a **company** rather than a person.
   folder dropdown (the whole tree, indented, plus **No folder** to un-group).
 - **Select mode.** The **Select** button turns the list into a multi-select:
   tick as many contacts as you like — or **Ctrl / Cmd-click** any row to jump
-  straight into select mode with it ticked. A floating toolbar hovers at the
-  bottom with the running count, an **✕** to leave, a **Select all** toggle, and
-  the batch **Copy** (one vCard block to the clipboard) / **Export** (to a vCard
-  or CSV file — see [Export & import](./export.md)) actions; the page title
-  stays put. With several selected, **drag any one of them** into a folder — or
-  use **Move to folder** — and the whole selection moves at once.
+  straight into select mode with it ticked. The Select button stays in the
+  header's top menu and lights up while you're selecting — tap it again to
+  leave. The batch **Copy** (one vCard block to the clipboard) and **Export**
+  (to a vCard or CSV file — see [Export & import](./export.md)) actions join
+  it there, alongside the collapse-all button. A **Select all** checkbox rides
+  at the very top of the list, and the running count hovers in a small pill at
+  the bottom; the page title stays put. With several selected, **drag any one of
+  them** into a folder — or use **Move to folder** — and the whole selection
+  moves at once.
 - **Favorites.** Star the people you reach for most and they gather on their own
   **Favorites** page — the button sits next to List in the sidebar's action
   grid. Unlike the List overview, Favorites is a single **hand-orderable
