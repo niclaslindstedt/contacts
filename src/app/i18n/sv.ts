@@ -737,6 +737,10 @@ export const sv: Catalog = {
     },
     developer: {
       intro: "Diagnostikverktyg. Dessa stannar på den här enheten.",
+      demoDataTitle: "Demodata",
+      demoData: "Ladda demodata",
+      demoDataHint:
+        "Byt ut din adressbok mot en polerad visningskatalog med ungefär hundra realistiska kontakter — mappar, favoriter, födelsedagar, anteckningar och bilagor — redo för demonstrationer och skärmbilder. Den finns bara i minnet — inget sparas, och en omladdning av sidan tar tillbaka dina riktiga kontakter.",
       fakeDataTitle: "Testdata",
       fakeData: "Ladda testdata",
       fakeDataHint:

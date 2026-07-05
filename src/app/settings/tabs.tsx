@@ -1049,10 +1049,11 @@ export function DeveloperTab({
   // Real install context, read from the framework's PWA detection. `true`
   // only inside an installed PWA window on a phone/tablet.
   const standalone = useStandaloneMobile();
-  // The "Fake data" toggle applies live and is in-memory only (not a staged
-  // draft setting): flipping it swaps the store's storage backend for the
-  // ephemeral seed backend immediately. See `useDevSeed`.
-  const { active: fakeData, setActive: setFakeData } = useDevSeed();
+  // The "Fake data" / "Demo data" toggles apply live and are in-memory only
+  // (not staged draft settings): flipping one swaps the store's storage
+  // backend for the matching ephemeral in-memory backend immediately. They
+  // share one mode, so turning one on turns the other off. See `useDevSeed`.
+  const { mode: devDataMode, setMode: setDevDataMode } = useDevSeed();
   // The photo re-index recovery action: rescan the backend's `photos/` tree and
   // reconnect any filed photo the document lost onto its contact. Only meaningful
   // on a plaintext file backend; `status` reports the outcome (or why it can't
@@ -1081,12 +1082,20 @@ export function DeveloperTab({
   return (
     <div>
       <p className="mb-3 text-xs text-muted">{t("settings.developer.intro")}</p>
+      <Section title={t("settings.developer.demoDataTitle")}>
+        <ToggleRow
+          label={t("settings.developer.demoData")}
+          hint={t("settings.developer.demoDataHint")}
+          checked={devDataMode === "demo"}
+          onChange={(next) => setDevDataMode(next ? "demo" : "off")}
+        />
+      </Section>
       <Section title={t("settings.developer.fakeDataTitle")}>
         <ToggleRow
           label={t("settings.developer.fakeData")}
           hint={t("settings.developer.fakeDataHint")}
-          checked={fakeData}
-          onChange={setFakeData}
+          checked={devDataMode === "fake"}
+          onChange={(next) => setDevDataMode(next ? "fake" : "off")}
         />
       </Section>
       <Section title={t("settings.developer.photosTitle")}>

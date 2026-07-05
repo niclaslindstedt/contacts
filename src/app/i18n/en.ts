@@ -752,6 +752,10 @@ export const en = {
     },
     developer: {
       intro: "Diagnostic tools. These stay on this device.",
+      demoDataTitle: "Demo data",
+      demoData: "Load demo data",
+      demoDataHint:
+        "Swap your address book for a polished showcase of about a hundred realistic contacts — folders, favorites, birthdays, notes, and attachments — ready for demos and screenshots. It lives in memory only — nothing is saved, and reloading the page brings your real contacts back.",
       fakeDataTitle: "Fake data",
       fakeData: "Load fake data",
       fakeDataHint:

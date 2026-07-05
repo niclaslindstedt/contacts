@@ -65,11 +65,16 @@ export, and formatters always have realistic input to shake out edge cases.
   page reload (or `npm run dev:clean`) drops back to the real address book. This
   mirrors the checklist project's dev-seed `StorageAdapter` swap.
 - `VITE_SEED` controls it: `1`/`sample` (curated edge-case set), a number
-  (roughly that many contacts), `large` (a big stress spread), `0`/unset (off).
-  Override the default with e.g. `VITE_SEED=25 npm run dev`.
+  (roughly that many contacts), `large` (a big stress spread), `demo` (the
+  presentation-grade demo book), `0`/unset (off). Override the default with
+  e.g. `VITE_SEED=25 npm run dev`.
 - The **Developer → Fake data** settings toggle (`useDevSeed`) flips the same
   backend live, without a rebuild. The sample builder is `buildFakeData`
   (`src/app/dev/fakeData.ts`). See `docs/configuration.md`.
+- The sibling **Developer → Demo data** toggle loads `buildDemoData`
+  (`src/app/dev/demoData.ts`) instead — a polished, realistic ~100-contact
+  address book for demos and screenshots rather than edge-case testing. The
+  two toggles share one mode and are mutually exclusive.
 
 ## Commit and PR conventions
 
