@@ -170,8 +170,8 @@ stale copy.
 
 | When you change…                    | Update…                                                                                                   |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| the contact model or export formats | `docs/features/export.md`, `tests/export_test.ts`, `README.md`                                            |
-| sync backends / encryption          | `docs/features/sync.md`, `docs/configuration.md`                                                          |
+| the contact model or export formats | `docs/export.md`, `docs/features/export.md`, `tests/export_test.ts`, `README.md`                          |
+| sync backends / encryption          | `docs/sync.md`, `docs/features/cloud-sync.md`, `docs/configuration.md`                                    |
 | settings surface                    | `docs/getting-started.md`                                                                                 |
 | user-visible features               | a `.changes/unreleased/` changeset fragment + `docs/features/*.md` (the in-app "What's new" renders both) |
 
@@ -205,33 +205,39 @@ fragment rather than adding a sibling `Fixed` entry.
 
 ### Feature docs and "Learn more"
 
-A **feature doc** is a long-form markdown file at `docs/features/<slug>.md` — a
-`# Title` heading, then a multi-paragraph, plain second-person explanation of one
-feature (English-only, no implementation jargon). The build inlines every
-`docs/features/*.md` into the bundle (`src/app/changelog.ts`), and a changelog
-bullet carrying `[Learn more](feature:<slug>)` opens the matching doc **in
-place** inside the "What's new" modal. A feature doc exists only to back a
-changelog "Learn more" link — general product docs live elsewhere under `docs/`.
+A **feature doc** is a short **"read more about this new thing"** companion to a
+changelog bullet — a `# Title` heading then a few plain second-person paragraphs
+introducing **one** feature (English-only, no implementation jargon). It is
+**not** a manual or reference: the build inlines every `docs/features/*.md` into
+the bundle (`src/app/changelog.ts`), and a changelog bullet carrying
+`[Learn more](feature:<slug>)` opens the matching doc **in place** inside the
+"What's new" modal, with a back button. That is the only thing that reads a
+feature doc.
+
+**One doc per feature; one feature per doc.** Give each headline feature its own
+focused file (`favorites.md`, `attachments.md`, `import.md`, `cloud-sync.md`, …)
+and point that feature's `[Learn more]` there — a doc may be linked from more
+than one bullet as the feature evolves across releases (e.g. `photos.md` from
+both the cropper and the multi-photo bullets), but a bullet links exactly one
+doc, and a doc covers exactly one feature. When a change **extends** an existing
+feature, fold a paragraph into that feature's doc instead of spawning a new one;
+docs cross-link siblings with `[label](feature:<slug>)`.
 
 **Reach for one sparingly — big features only.** Most fragments are just a
-`title:` + one sentence with **no** `doc:`. Add (or extend) a doc only when the
-feature genuinely can't be summarized in about two sentences — one whose honest
-explanation runs to several paragraphs or a real "how it works" walkthrough. A
-small setting, a visual tweak, a secondary facet of a larger feature, or a bug
-fix does **not** get one.
+`title:` + one sentence with **no** `doc:`. A small setting, a visual tweak, a
+secondary facet of a bigger feature, or a bug fix does **not** get a doc. When you
+do add a `doc:` slug, **create or update `docs/features/<slug>.md` in the same
+PR** (a slug with no file renders an inert dead link), and when you retire a
+feature delete its doc and drop the link so no orphan doc or dead `feature:` link
+is left behind.
 
-This repo keeps a few **broad umbrella docs** — `contacts.md` (the contact
-card and everything on it), `export.md` (export / import / backups), `sync.md`
-(the storage backends, photo/attachment files, encryption), `namespaces.md`,
-and `formats.md` — and the family of changelog bullets about one of those areas
-all point their `[Learn more]` at that area's doc. When a big feature extends an
-already-documented area, fold a paragraph into that area's doc rather than
-spawning a new one; only a genuinely new big feature with no umbrella home earns
-a new file (`formats.md` did). When you add a `doc:` slug, **create or update
-`docs/features/<slug>.md` in the same PR** — a slug with no file renders an inert
-dead link — and delete a doc (and its links) when you retire the feature so no
-orphan doc or dead `feature:` link is left behind. `docs/` is in the changeset
-skip-list, so a docs-only feature-doc edit needs no fragment of its own.
+**`docs/features/` is changelog-linked docs only.** Anything that isn't the
+read-more half of a changelog bullet — the fuller product reference — lives under
+`docs/` proper, not in `docs/features/`. The comprehensive references
+`docs/contacts.md`, `docs/sync.md`, and `docs/export.md` are general docs a
+feature doc may link for depth (`[the sync documentation](../sync.md)`); they are
+**not** `feature:` targets. `docs/` is in the changeset skip-list, so a docs-only
+edit needs no fragment of its own.
 
 ## Parity / cross-cutting rules
 

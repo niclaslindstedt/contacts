@@ -106,7 +106,7 @@ Enter — and start filling in the card.
   Settings → Storage (all contacts as `.vcf`, CSV, or JSON).
 - **Import** — drag a `.vcf` (or CSV / JSON backup) straight onto the contact
   screen — handy for dropping a card shared out of the iOS Contacts app — or
-  pick a file from Settings → Storage. See [`docs/features/export.md`](docs/features/export.md).
+  pick a file from Settings → Storage. See [`docs/export.md`](docs/export.md).
 - **Backups** — Settings → Storage → Backups: download the whole address book as
   a dated, compressed `.zip` (photos and attachments included) or restore one
   from disk. Connect a local folder or cloud drive to browse, take, and restore

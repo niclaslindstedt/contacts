@@ -76,11 +76,11 @@ editor — sits at the very bottom of the tab, below the Dialogs controls.
 Settings → Storage → _Where your data lives_: pick a **local folder** (a
 directory on this computer — no account, Chromium-based browsers only), or
 **Dropbox** / **Google Drive**, and hit Connect. See
-[features/sync.md](features/sync.md) and [configuration.md](configuration.md)
+[sync.md](sync.md) and [configuration.md](configuration.md)
 for the OAuth setup a self-hosted build needs (the local folder needs none).
 
 ## Take it with you
 
 Settings → Storage → _Export_: vCard (`.vcf`) for Outlook/iOS/Android, CSV for
 Outlook's importer, or a JSON backup. A single card exports from the download
-button in its header. See [features/export.md](features/export.md).
+button in its header. See [export.md](export.md).
