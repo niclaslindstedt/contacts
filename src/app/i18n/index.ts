@@ -25,3 +25,8 @@ export const i18n = createI18n<Lang, Catalog>({
 
 export const { LanguageRoot, useT, useLang, setLanguage, supportedLangs } =
   i18n;
+
+/** The translate function `useT()` returns — a message key (optionally with
+ *  interpolation params) to a resolved string. Handy where the catalog is
+ *  composed outside a component (e.g. `buildCatalog` in `achievements.ts`). */
+export type TFn = ReturnType<typeof useT>;

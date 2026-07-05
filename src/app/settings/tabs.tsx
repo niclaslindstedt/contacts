@@ -652,7 +652,7 @@ export function StorageTab({
       backupFileName(),
       new Blob([zip as BlobPart], { type: MIME_ZIP }),
     );
-    unlockTrophy("exporter");
+    unlockTrophy("backup");
     log.info("backup: exported a snapshot to disk");
   };
 

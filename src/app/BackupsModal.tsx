@@ -103,7 +103,7 @@ export function BackupsModal({
         zip,
         MIME_ZIP,
       );
-      unlockTrophy("exporter");
+      unlockTrophy("backup");
       log.info(`backup: wrote a snapshot (${zip.length} B)`);
       await refresh();
     } catch (err) {

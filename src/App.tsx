@@ -43,7 +43,7 @@ import { RELEASES, FEATURE_DOCS } from "./app/changelog.ts";
 import { SearchOverlay } from "./app/SearchOverlay.tsx";
 import { SettingsModal } from "./app/SettingsModal.tsx";
 import { SideMenuContent } from "./app/SideMenuContent.tsx";
-import { CATALOG } from "./app/achievements.ts";
+import { buildCatalog } from "./app/achievements.ts";
 import { useT } from "./app/i18n/index.ts";
 import { APP_LOOK } from "./app/look.ts";
 import { logStore } from "./app/log.ts";
@@ -148,6 +148,70 @@ export function App() {
   const [tourOpen, setTourOpen] = useState(false);
   const [unlockOpen, setUnlockOpen] = useState(false);
 
+  // The catalog and modal chrome carry translated copy, so both are composed
+  // against `t` and memoised on it — a language switch rebuilds them.
+  const catalog = useMemo(() => buildCatalog(t), [t]);
+  const achievementLabels = useMemo(
+    () => ({
+      title: t("achievements.modal.title"),
+      intro: t("achievements.modal.intro"),
+      locked: t("achievements.modal.locked"),
+      learnMore: t("achievements.modal.learnMore"),
+      close: t("achievements.modal.close"),
+      counter: (s: {
+        unlocked: number;
+        total: number;
+        earned: number;
+        max: number;
+      }) =>
+        t("achievements.modal.counter", {
+          unlocked: String(s.unlocked),
+          total: String(s.total),
+        }),
+      tierPoints: (s: { earned: number; max: number }) =>
+        t("achievements.modal.tierPoints", {
+          earned: String(s.earned),
+          max: String(s.max),
+        }),
+      tier: {
+        beginner: {
+          title: t("achievements.modal.tier.beginner.title"),
+          subtitle: t("achievements.modal.tier.beginner.subtitle"),
+        },
+        intermediate: {
+          title: t("achievements.modal.tier.intermediate.title"),
+          subtitle: t("achievements.modal.tier.intermediate.subtitle"),
+        },
+        pro: {
+          title: t("achievements.modal.tier.pro.title"),
+          subtitle: t("achievements.modal.tier.pro.subtitle"),
+        },
+        expert: {
+          title: t("achievements.modal.tier.expert.title"),
+          subtitle: t("achievements.modal.tier.expert.subtitle"),
+        },
+      },
+    }),
+    [t],
+  );
+  const unlockLabels = useMemo(
+    () => ({
+      titleOne: t("achievements.unlock.titleOne"),
+      titleOther: (n: number) =>
+        t("achievements.unlock.titleOther", { n: String(n) }),
+      dismiss: t("achievements.unlock.dismiss"),
+      close: t("achievements.unlock.close"),
+    }),
+    [t],
+  );
+  const trophyLabels = useMemo(
+    () => ({
+      open: t("achievements.trophy.open"),
+      unseen: (n: number) => t("achievements.trophy.unseen", { n: String(n) }),
+    }),
+    [t],
+  );
+
   // Undo lives outside the document state, so its trophy fires through the
   // manual bus rather than a derived predicate.
   const undoWithTrophy = () => {
@@ -160,13 +224,29 @@ export function App() {
   // from the first render (the watcher baselines that render, so pre-existing
   // data never backfills).
   useAchievementWatcher({
-    catalog: CATALOG,
+    catalog,
     state: store.data,
     unlocked: ach.unlocked,
     loaded: true,
     enabled: achievementsEnabled,
     record: ach.record,
   });
+
+  // The sync backend and encryption flag live outside the watched document, so
+  // their trophies fire through the manual bus on the state transition. The ref
+  // starts false, so a fresh connection (or a restored one on boot — a capability
+  // the user genuinely has) unlocks once; `record` dedupes any repeat.
+  const syncedRef = useRef(false);
+  useEffect(() => {
+    const synced = sync.backend !== "local" && sync.connected;
+    if (synced && !syncedRef.current) unlock("synced");
+    syncedRef.current = synced;
+  }, [sync.backend, sync.connected]);
+  const encryptedRef = useRef(false);
+  useEffect(() => {
+    if (sync.encrypted && !encryptedRef.current) unlock("encryption");
+    encryptedRef.current = sync.encrypted;
+  }, [sync.encrypted]);
 
   // The real PWA update lifecycle, driven by the app's own service worker
   // (built by `pwa-plugin.ts`). In a deployed install this raises the prompt
@@ -242,6 +322,7 @@ export function App() {
     <TrophyButton
       unseenCount={ach.unseen.length}
       showLabel
+      labels={trophyLabels}
       onClick={() => {
         setDrawerOpen(false);
         if (ach.unseen.length > 0) setUnlockOpen(true);
@@ -574,8 +655,9 @@ export function App() {
       <AchievementsModal
         open={tourOpen}
         onClose={() => setTourOpen(false)}
-        achievements={CATALOG}
+        achievements={catalog}
         unlocked={ach.unlocked}
+        labels={achievementLabels}
       />
 
       {/* The unlock celebration — just the freshly-earned trophies. Closing
@@ -586,8 +668,9 @@ export function App() {
           setUnlockOpen(false);
           ach.clearUnseen();
         }}
-        achievements={CATALOG}
+        achievements={catalog}
         unseenIds={ach.unseen}
+        labels={unlockLabels}
       />
     </div>
   );
