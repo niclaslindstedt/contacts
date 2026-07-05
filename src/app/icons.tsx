@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import type { IconProps } from "@niclaslindstedt/oss-framework/components";
+import {
+  HeartIcon,
+  type IconProps,
+} from "@niclaslindstedt/oss-framework/components";
 
 // The few glyphs the app needs that the framework's neutral set doesn't ship
 // (the framework keeps domain/dev-specific marks app-side). Traced on
@@ -66,29 +69,17 @@ export function SectionsToggleIcon({
 }
 
 /** A heart — the favorite affordance. Outline when a card isn't starred, a
- *  solid fill when it is, so the toggle reads its state at a glance. The
- *  Favorites page and the List / card toggles all draw this one mark, and the
- *  side-menu Donate link wears the filled variant — so every heart in the app
- *  is this one true, symmetric shape rather than the framework's skewed glyph. */
+ *  solid fill when it is, so the toggle reads its state at a glance. Draws the
+ *  framework's (now symmetric) `HeartIcon`, which ships filled-only; the
+ *  outline state overrides the SVG presentation attributes with utility
+ *  classes (CSS wins over attributes), keeping the domain-named toggle and its
+ *  `filled` seam app-side while the shape itself lives in the framework. */
 export function FavoriteIcon({
   className,
   filled,
 }: IconProps & { filled?: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-      focusable={false}
-      className={className}
-    >
-      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
-    </svg>
-  );
+  const outline = filled ? "" : "fill-none stroke-current stroke-2 ";
+  return <HeartIcon className={`${outline}${className ?? ""}`} />;
 }
 
 /** A hash / number sign — the Format surface (date, phone, and postal-code

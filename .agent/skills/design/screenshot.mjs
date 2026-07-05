@@ -127,14 +127,19 @@ const VIEWPORTS = {
 
 // Land on the app and wait until the shell has rendered. The app has no
 // auth gate; `npm run dev` seeds fake contacts (VITE_SEED), so the app
-// comes up on a populated address book with a contact already open.
-// Waits for a control present across every layout and mode: the card's
-// read-mode pencil ("Edit contact") or edit-mode check ("Done"), or the
-// phone's "Open sidebar" floating button.
+// comes up on a populated address book landing on the List page.
+// Waits for the List heading (the desktop landing state) or, on layouts
+// that come up elsewhere, a control present across every mode: the
+// card's read-mode pencil ("Edit contact") or edit-mode check ("Done"),
+// or the phone's "Open sidebar" floating button.
 export async function openApp(page) {
   await page.goto("./");
   await page
-    .getByRole("button", { name: /^(Edit contact|Done|Open sidebar)$/ })
+    .getByRole("heading", { name: /^List$/ })
+    .first()
+    .or(
+      page.getByRole("button", { name: /^(Edit contact|Done|Open sidebar)$/ }),
+    )
     .first()
     .waitFor();
 }
@@ -238,7 +243,10 @@ export async function openPhotoCropper(
   imagePath = "public/icons/pwa-512-maskable.png",
 ) {
   await openAppearancePopover(page);
-  await page.setInputFiles("input[type=file]", imagePath);
+  // Target the popover's image input specifically — the page also carries
+  // the accept-less vCard import input, which matches a bare
+  // `input[type=file]` first.
+  await page.setInputFiles('input[type=file][accept^="image"]', imagePath);
   await page
     .getByText(/^Position photo$/)
     .first()
