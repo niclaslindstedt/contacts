@@ -13,6 +13,7 @@ import {
   type Namespace,
   type NamespaceAppearance,
 } from "@niclaslindstedt/oss-framework/namespaces";
+import { unlock } from "@niclaslindstedt/oss-framework/achievements";
 import { useLocalStorageState } from "./useLocalStorageState.ts";
 
 import { docKey } from "./useContactStore.ts";
@@ -71,6 +72,9 @@ export function useNamespaces() {
           ? setNamespaceAppearance(withNew, created.slug, appearance)
           : withNew;
       });
+      // Keeping a second address book is its own trophy — creating one is the
+      // gesture that earns it (the registry lives outside the watched document).
+      unlock("namespaces");
     },
     [setList, switchTo],
   );

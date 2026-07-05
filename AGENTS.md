@@ -259,11 +259,12 @@ artifacts in sync with their sources of truth. Skills live under
 `.agent/skills/<name>/` and are also accessible via the `.claude/skills`
 symlink.
 
-| Skill           | When to run                                                                                                                |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `maintenance`   | When several artifacts have likely drifted at once — umbrella skill that runs every `update-*` skill in the correct order. |
-| `update-docs`   | After any change to user-visible behavior, configuration keys, or the export formats.                                      |
-| `update-readme` | After any change that alters user-visible behavior, commands, or install instructions.                                     |
+| Skill                 | When to run                                                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `maintenance`         | When several artifacts have likely drifted at once — umbrella skill that runs every `update-*` skill in the correct order.                  |
+| `update-docs`         | After any change to user-visible behavior, configuration keys, or the export formats.                                                       |
+| `update-readme`       | After any change that alters user-visible behavior, commands, or install instructions.                                                      |
+| `update-achievements` | After shipping a user-visible feature that deserves a trophy, or when the achievements catalog / i18n has drifted from the feature surface. |
 
 Each skill has a `SKILL.md` (the playbook) and a `.last-updated` file (the
 baseline commit hash). The `maintenance` skill owns a **Registry** table
