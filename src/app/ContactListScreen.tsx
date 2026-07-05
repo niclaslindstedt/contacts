@@ -973,9 +973,9 @@ function PhonePill({
   );
   const large = size === "lg";
   const base = `flex max-w-full items-center rounded-full bg-accent/10 font-medium text-accent ${
-    large ? "gap-1.5 px-3.5 py-2 text-sm" : "gap-1 px-2 py-0.5 text-xs"
+    large ? "gap-1.5 px-3 py-1.5 text-sm" : "gap-1 px-2 py-0.5 text-xs"
   }`;
-  const iconSize = large ? "h-4 w-4" : "h-3 w-3";
+  const iconSize = large ? "h-3.5 w-3.5" : "h-3 w-3";
   const body = (
     <>
       <Icon className={`${iconSize} shrink-0`} />
