@@ -86,7 +86,9 @@ Enter — and start filling in the card.
   which one is the face, adjust or remove it, or pick a glyph + accent colour
   instead. Tap a photo in read mode to view it full-screen and swipe between the
   gallery; only the current face exports to a vCard. On a cloud drive each photo
-  is filed at `photos/<name>-<id>-<photoId>.jpg`.
+  is filed at `photos/<name>-<id>-<photoId>.jpg`; because that name is
+  deterministic the app re-indexes lost photo files back onto their contacts on
+  open, and adopts an image you drop into the folder under the same pattern.
 - **Favorites** — tap the heart on a contact's card (or on any List row) to star
   it; the **Favorites** button in the action grid opens a flat shortlist of just
   the starred contacts that you **drag to reorder** (grab the grip on a row).

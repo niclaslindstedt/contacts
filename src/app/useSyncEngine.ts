@@ -308,8 +308,11 @@ export function useSyncEngine(
   // raises the setup prompt. A ref, not state: it's set inside the connect
   // paths and read once by the baseline effect that the same connect triggers.
   const justConnected = useRef(false);
-  // Set when a loaded cloud copy still holds inline photos (a pre-file-layout
-  // document): a one-time save then files them out — see the sweep effect below.
+  // Set when a loaded cloud copy needs filing out into the deterministic photo
+  // layout — it still holds inline photos (a pre-file-layout document), or the
+  // reconcile pass re-indexed a lost / hand-dropped photo file onto a contact.
+  // A one-time save then files them out and persists the references — see the
+  // sweep effect below.
   const [photoSweep, setPhotoSweep] = useState(false);
   // The edit counter that has been pushed to the backend. Anything newer is
   // unsaved — that's `dirty`.
@@ -705,12 +708,14 @@ export function useSyncEngine(
     doSave,
   ]);
 
-  // One-time photo sweep: when the adopted cloud copy still holds inline photos
-  // (a document from before the file layout), file them out on open instead of
-  // waiting for the next edit. `doSave` pushes the current document through the
-  // externaliser, which writes the image files and strips the bytes; the flag
-  // clears once fired so it runs at most once per adopted backend. Stays put
-  // while a fault, lock, or fake-data pause blocks saving, then fires when clear.
+  // One-time photo sweep: when the adopted cloud copy needs filing out — it
+  // still holds inline photos (a document from before the file layout), or the
+  // reconcile pass re-indexed a lost / hand-dropped photo file — settle it on
+  // open instead of waiting for the next edit. `doSave` pushes the current
+  // document through the externaliser, which writes any missing image files,
+  // strips the bytes, and persists the re-indexed paths; the flag clears once
+  // fired so it runs at most once per adopted backend. Stays put while a fault,
+  // lock, or fake-data pause blocks saving, then fires when clear.
   useEffect(() => {
     if (!photoSweep) return;
     if (!isRemote || !connected || !adapter || blocked || locked || paused)
@@ -720,7 +725,7 @@ export function useSyncEngine(
     if (pendingSetup) return;
     if (encrypted && passwordRef.current === null) return;
     setPhotoSweep(false);
-    syncLog.info("photos: cloud copy holds inline photos — filing them out");
+    syncLog.info("photos: filing out inline / re-indexed photos");
     void doSave();
   }, [
     photoSweep,

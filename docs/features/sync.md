@@ -118,6 +118,26 @@ cloud copy that still embeds photos, it files them out once in the background �
 no edit or manual save needed. After that one sweep the drive holds the image
 files and the document holds only their paths.
 
+### Finding lost or dropped photos
+
+Because the file names are deterministic, the layout is also **self-healing**.
+When the app opens a folder or cloud copy it scans the `photos/` tree and, for
+any image file the document doesn't already reference, reads the contact id and
+photo id back out of the file name and re-attaches the photo to that contact.
+Two things fall out of this:
+
+- A photo whose reference somehow went missing from the document — but whose
+  file is still on the drive — is **found and re-indexed** onto its contact the
+  next time the app opens, rather than lingering as a stray file.
+- You can **drop an image into the `photos/` folder yourself** and have it picked
+  up. Name it so it carries the target contact's id and a photo id —
+  `photos/<any-readable-name>-<contactId>-<photoId>.jpg` (add `-source.jpg` for a
+  re-croppable original) — the simplest way is to copy an existing photo file's
+  name and change the photo id. The leading name part is cosmetic; only the
+  contact id has to match a real card. On the next open the app adopts the file
+  onto that contact and, on the following save, records the reference in the
+  document.
+
 This applies to the **plaintext** folder or cloud copy only. With encryption on
 (below), photos stay inside the encrypted envelope rather than as separate
 plaintext image files.

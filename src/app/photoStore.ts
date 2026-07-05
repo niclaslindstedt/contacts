@@ -20,13 +20,24 @@
 // The `data:` URL ⇄ bytes conversion (see `photo.ts`) is what keeps the drive
 // copy binary; the byte-level transport is `photoFileStore.ts`.
 //
+// Because the paths are deterministic, the layout is also self-*healing*: on
+// load a reconcile pass lists the `photos/` tree and, for any file the document
+// doesn't already reference, parses its name back to the contact + photo it
+// belongs to (`parsePhotoPath`) and re-attaches it to that card. So a photo
+// whose gallery reference was lost is found and re-indexed, and a photo a user
+// hand-drops into the drive under the right `…-<contactId>-<photoId>.jpg` name
+// is adopted onto the matching contact — no edit needed.
+//
 // Two safety rules make it robust against an untested network:
 //   1. **Externalise-or-embed** — an image is only stripped from the outgoing
 //      document *after* its file write succeeds. A failed write leaves the photo
 //      inline, so a photo is never lost, only un-filed.
 //   2. **Prune after commit** — orphaned photo files are removed only once the
 //      document save has committed, so a save that throws (e.g. a conflict)
-//      never deletes a file the surviving remote copy still references.
+//      never deletes a file the surviving remote copy still references. The
+//      reconcile pass runs on load *before* any save, so a re-indexed or
+//      hand-dropped file is referenced by the document before prune could ever
+//      see it as an orphan.
 //
 // Encrypted documents skip this layer entirely (they keep photos inside the
 // AES-GCM envelope rather than leak plaintext image files onto the drive), so
@@ -38,7 +49,7 @@ import {
 } from "@niclaslindstedt/oss-framework/storage";
 
 import { logStore } from "./log.ts";
-import { bytesToDataUrl, dataUrlToBytes } from "./photo.ts";
+import { bytesToDataUrl, dataUrlToBytes, parsePhotoPath } from "./photo.ts";
 import { photoPathFor, photoSourcePathFor } from "./photo.ts";
 import {
   dropboxPhotoFileStore,
@@ -174,14 +185,17 @@ export function hasInlinePhotos(text: string): boolean {
  *  files on save and re-hydrated on load. Delegates every other adapter member
  *  (id, label, capabilities, probe, …) to `inner`.
  *
- *  `onInlinePhotosLoaded` fires when a *loaded* backend copy still holds inline
- *  image bytes (see {@link hasInlinePhotos}) — the sync engine uses it to kick a
- *  one-time save that files the photos out, so an existing document migrates to
- *  the file layout on open without waiting for the next edit. */
+ *  `onPhotosNeedResave` fires when a *loaded* backend copy needs filing out into
+ *  the deterministic layout — either because it still holds inline image bytes
+ *  (a pre-file-layout document, see {@link hasInlinePhotos}) or because the
+ *  reconcile pass re-indexed a photo file the document hadn't referenced (a lost
+ *  or hand-dropped photo). The sync engine uses it to kick a one-time save, so
+ *  the document converges on the file layout — and persists the re-indexed
+ *  references — without waiting for the next edit. */
 export function withExternalPhotos(
   inner: StorageAdapter,
   photos: PhotoStore,
-  onInlinePhotosLoaded?: () => void,
+  onPhotosNeedResave?: () => void,
 ): StorageAdapter {
   // Paths this session has already written, keyed to the source fingerprint, so
   // a re-crop (same original) or a debounced re-save doesn't re-upload.
@@ -267,6 +281,75 @@ export function withExternalPhotos(
     );
   }
 
+  // Load side: adopt filed photos the document doesn't yet reference — a photo
+  // whose gallery reference was lost, or one a user hand-dropped into the
+  // `photos/` tree under the right name — by re-attaching each to the contact
+  // its filename names. Mutates `doc` in place; returns whether anything was
+  // re-indexed. Runs before rehydrate (so the reclaimed paths get their bytes
+  // read back like any other filed photo) and before the next save's prune (so
+  // a reclaimed file is never mistaken for an orphan).
+  async function reconcile(doc: PhotoDoc): Promise<boolean> {
+    const contacts = Array.isArray(doc.contacts) ? doc.contacts : null;
+    if (!contacts || contacts.length === 0) return false;
+
+    let existing: string[];
+    try {
+      existing = await photos.list();
+    } catch (err) {
+      log.warn(`could not list photos to re-index (${errMsg(err)})`);
+      return false;
+    }
+    if (existing.length === 0) return false;
+
+    // Paths the document already accounts for — those need no re-indexing.
+    const referenced = new Set<string>();
+    const byId = new Map<string, PhotoContact>();
+    for (const c of contacts) {
+      byId.set(c.id, c);
+      for (const entry of c.photos ?? []) {
+        if (entry.photoPath) referenced.add(entry.photoPath);
+        if (entry.photoSourcePath) referenced.add(entry.photoSourcePath);
+      }
+    }
+
+    let changed = false;
+    for (const path of existing) {
+      if (referenced.has(path)) continue;
+      const parsed = parsePhotoPath(path, byId.keys());
+      if (!parsed) continue;
+      const contact = byId.get(parsed.contactId);
+      if (!contact) continue;
+      const gallery = (contact.photos ??= []);
+      let entry = gallery.find((p) => p.id === parsed.photoId);
+      if (!entry) {
+        entry = { id: parsed.photoId };
+        gallery.push(entry);
+      }
+      const field = parsed.source ? "photoSourcePath" : "photoPath";
+      if (entry[field] !== path) {
+        entry[field] = path;
+        changed = true;
+        log.info(`re-indexed ${path}`);
+      }
+    }
+    return changed;
+  }
+
+  // Parse → reconcile → re-serialise. Returns the (possibly rewritten) text and
+  // whether any photo file was re-indexed onto a contact.
+  async function reindex(
+    text: string,
+  ): Promise<{ text: string; changed: boolean }> {
+    let doc: PhotoDoc;
+    try {
+      doc = JSON.parse(text) as PhotoDoc;
+    } catch {
+      return { text, changed: false };
+    }
+    const changed = await reconcile(doc);
+    return { text: changed ? JSON.stringify(doc) : text, changed };
+  }
+
   // Load side: fetch each filed image back onto its contact.
   async function rehydrate(text: string): Promise<string> {
     let doc: PhotoDoc;
@@ -308,12 +391,14 @@ export function withExternalPhotos(
     async load() {
       const snap = await inner.load();
       if (!snap) return snap;
-      // Detect on the raw stored text, before rehydration re-inlines filed
-      // photos — so only a copy that genuinely still embeds bytes trips it.
-      if (onInlinePhotosLoaded && hasInlinePhotos(snap.text)) {
-        onInlinePhotosLoaded();
-      }
-      return { ...snap, text: await rehydrate(snap.text) };
+      // Detect inline bytes on the raw stored text, before rehydration re-inlines
+      // filed photos — so only a copy that genuinely still embeds bytes trips it.
+      const inline = hasInlinePhotos(snap.text);
+      // Re-index any filed photo the document doesn't reference (lost or
+      // hand-dropped), then rehydrate reads the reclaimed paths' bytes too.
+      const { text, changed } = await reindex(snap.text);
+      if (onPhotosNeedResave && (inline || changed)) onPhotosNeedResave();
+      return { ...snap, text: await rehydrate(text) };
     },
     async save(text, baseRevision) {
       const { text: stripped, desired } = await externalise(text);

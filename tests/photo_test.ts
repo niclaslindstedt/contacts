@@ -6,6 +6,7 @@ import {
   clampTransform,
   dataUrlToBytes,
   drawRect,
+  parsePhotoPath,
   photoPathFor,
   photoSourcePathFor,
 } from "../src/app/photo.ts";
@@ -55,6 +56,56 @@ describe("photoPathFor", () => {
     expect(photoSourcePathFor(c, "ph1")).toBe(
       "photos/ada-lovelace-c1-ph1-source.jpg",
     );
+  });
+});
+
+describe("parsePhotoPath", () => {
+  it("round-trips a display and a source path built by photoPathFor", () => {
+    const c = { id: "c1", firstName: "Ada", lastName: "Lovelace" };
+    const display = photoPathFor(c, "ph1");
+    const source = photoSourcePathFor(c, "ph1");
+    expect(parsePhotoPath(display, ["c1"])).toEqual({
+      contactId: "c1",
+      photoId: "ph1",
+      source: false,
+    });
+    expect(parsePhotoPath(source, ["c1"])).toEqual({
+      contactId: "c1",
+      photoId: "ph1",
+      source: true,
+    });
+  });
+
+  it("anchors on the known contact id even when the slug carries hyphens", () => {
+    // A uuid-shaped contact id and a name-slug full of hyphens: the parse must
+    // still split at the id, not guess where the slug ends.
+    const contactId = "contact-11111111-2222-3333-4444-555555555555";
+    const photoId = "photo-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+    const path = `photos/jean-luc-de-la-fontaine-${contactId}-${photoId}.jpg`;
+    expect(parsePhotoPath(path, [contactId])).toEqual({
+      contactId,
+      photoId,
+      source: false,
+    });
+  });
+
+  it("picks the id that matches a real contact from the given set", () => {
+    const path = "photos/sam-lee-c2-ph9.jpg";
+    expect(parsePhotoPath(path, ["c1", "c2", "c3"])).toEqual({
+      contactId: "c2",
+      photoId: "ph9",
+      source: false,
+    });
+  });
+
+  it("returns null when no known contact id is embedded", () => {
+    expect(
+      parsePhotoPath("photos/ada-lovelace-c1-ph1.jpg", ["other"]),
+    ).toBeNull();
+    // Not under photos/, or not a .jpg.
+    expect(parsePhotoPath("attachments/ada-c1-a1.pdf", ["c1"])).toBeNull();
+    // Nothing after the contact id to serve as a photo id.
+    expect(parsePhotoPath("photos/ada-c1-.jpg", ["c1"])).toBeNull();
   });
 });
 
@@ -311,6 +362,102 @@ describe("withExternalPhotos", () => {
     let signalled = 0;
     const adapter = withExternalPhotos(inner, store, () => (signalled += 1));
     await adapter.load();
+    expect(signalled).toBe(0);
+  });
+
+  it("re-indexes a lost photo file back onto its contact on load", async () => {
+    // The files are on the drive, but the document lost the gallery entry that
+    // referenced them (an empty gallery). Reconcile should find and re-attach.
+    const store = memPhotoStore();
+    store.files.set(
+      "photos/ada-lovelace-c1-ph1.jpg",
+      dataUrlToBytes(DISPLAY)!.bytes,
+    );
+    store.files.set(
+      "photos/ada-lovelace-c1-ph1-source.jpg",
+      dataUrlToBytes(SOURCE)!.bytes,
+    );
+    const inner = fakeInner();
+    await inner.save(
+      doc([{ id: "c1", firstName: "Ada", lastName: "Lovelace", photos: [] }]),
+    );
+
+    let signalled = 0;
+    const adapter = withExternalPhotos(inner, store, () => (signalled += 1));
+    const snap = await adapter.load();
+    const photos = JSON.parse(snap!.text).contacts[0].photos;
+    expect(photos).toHaveLength(1);
+    expect(photos[0].id).toBe("ph1");
+    expect(photos[0].photoPath).toBe("photos/ada-lovelace-c1-ph1.jpg");
+    expect(photos[0].photoSourcePath).toBe(
+      "photos/ada-lovelace-c1-ph1-source.jpg",
+    );
+    // The reclaimed images are rehydrated back inline for offline rendering.
+    expect(bytesOf(photos[0].photo)).toEqual(bytesOf(DISPLAY));
+    expect(bytesOf(photos[0].photoSource)).toEqual(bytesOf(SOURCE));
+    // And the caller is told to file the recovered references out.
+    expect(signalled).toBe(1);
+  });
+
+  it("adopts a hand-dropped photo whose name carries a real contact id", async () => {
+    // A user dropped an image into the drive and named it with an existing
+    // contact's id and a fresh photo id — no matching gallery entry exists yet.
+    const store = memPhotoStore();
+    store.files.set(
+      "photos/anything-readable-c1-dropped.jpg",
+      dataUrlToBytes(DISPLAY)!.bytes,
+    );
+    const inner = fakeInner();
+    await inner.save(
+      doc([{ id: "c1", firstName: "Ada", lastName: "Lovelace", photos: [] }]),
+    );
+
+    const adapter = withExternalPhotos(inner, store);
+    const snap = await adapter.load();
+    const photos = JSON.parse(snap!.text).contacts[0].photos;
+    expect(photos).toHaveLength(1);
+    expect(photos[0].id).toBe("dropped");
+    expect(photos[0].photoPath).toBe("photos/anything-readable-c1-dropped.jpg");
+    expect(bytesOf(photos[0].photo)).toEqual(bytesOf(DISPLAY));
+  });
+
+  it("re-indexed files survive the next save's prune", async () => {
+    // A lost file is re-indexed on load, then the same document is saved back —
+    // the reclaimed file must be kept, not pruned as an orphan.
+    const store = memPhotoStore();
+    store.files.set(
+      "photos/ada-lovelace-c1-ph1.jpg",
+      dataUrlToBytes(DISPLAY)!.bytes,
+    );
+    const inner = fakeInner();
+    await inner.save(
+      doc([{ id: "c1", firstName: "Ada", lastName: "Lovelace", photos: [] }]),
+    );
+
+    const adapter = withExternalPhotos(inner, store);
+    const snap = await adapter.load();
+    await adapter.save(snap!.text);
+
+    expect(store.files.has("photos/ada-lovelace-c1-ph1.jpg")).toBe(true);
+    const p = JSON.parse(inner.lastSaved()!).contacts[0].photos[0];
+    expect(p.photoPath).toBe("photos/ada-lovelace-c1-ph1.jpg");
+    expect(p.photo).toBeUndefined();
+  });
+
+  it("leaves a photo file whose contact is gone untouched (and does not signal)", async () => {
+    const store = memPhotoStore();
+    store.files.set("photos/ghost-cX-ph1.jpg", dataUrlToBytes(DISPLAY)!.bytes);
+    const inner = fakeInner();
+    await inner.save(
+      doc([{ id: "c1", firstName: "Ada", lastName: "Lovelace", photos: [] }]),
+    );
+
+    let signalled = 0;
+    const adapter = withExternalPhotos(inner, store, () => (signalled += 1));
+    const snap = await adapter.load();
+    // No contact named cX — nothing adopted, nothing signalled. (The file is
+    // left in place; it is only pruned once a save's document is authoritative.)
+    expect(JSON.parse(snap!.text).contacts[0].photos).toHaveLength(0);
     expect(signalled).toBe(0);
   });
 });
