@@ -223,8 +223,14 @@ export function SettingsModal({
 
       {/* Tab body. `settings-body` scopes the density-driven card spacing (see
           styles.css) so the Appearance → Density knob tightens or loosens the
-          settings cards themselves. */}
-      <div className="settings-body flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4">
+          settings cards themselves. `relative` makes this the containing block
+          for its descendants' absolutely-positioned bits — chiefly each
+          `ToggleRow`'s `sr-only` checkbox. Without it those inputs resolve to
+          the positioned modal card and escape this scroll region, giving the
+          card its own phantom overflow; focusing a toggle near the bottom then
+          scrolls the whole card and drags the header (with the tab menu) out of
+          view. */}
+      <div className="settings-body relative flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4">
         {activeTab === "general" && (
           <GeneralTab settings={draft} update={update} />
         )}
