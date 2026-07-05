@@ -821,19 +821,25 @@ function SectionHeader({
   expanded,
   onToggle,
   dropOver = false,
+  flush = false,
 }: {
   name: string;
   count: number;
   expanded: boolean;
   onToggle: () => void;
   dropOver?: boolean;
+  // Drop the band's own bottom margin. A header wrapped in a `SwipeableRow`
+  // must be flush and carry the gap on the wrapper instead: the swipe layers
+  // paint the wrapper's full box (`inset-0`), so a margin left inside it
+  // renders as a strip of action colour taller than the visible band.
+  flush?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className={`mb-0.5 flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${
+      className={`${flush ? "" : "mb-0.5"} flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${
         dropOver
           ? "bg-accent/15 text-fg-bright ring-1 ring-accent/50"
           : "bg-surface-2 text-muted hover:bg-surface-3 hover:text-fg"
@@ -900,7 +906,13 @@ function FolderSectionHeader({
       touchLongPress={false}
       ariaLabel={menuLabel}
     >
+      {/* The band's gap and radius live on the swipe container, not the header
+          button: the swipe layers fill the container (`inset-0`), so the
+          container must be exactly the visible band — same height (no inner
+          margin) and same rounded clip — for the revealed buttons to match the
+          row at every font scale and density. */}
       <SwipeableRow
+        className="mb-0.5 rounded-md"
         actions={[deleteAction]}
         leading={{
           kind: "commit",
@@ -915,6 +927,7 @@ function FolderSectionHeader({
           expanded={expanded}
           onToggle={onToggle}
           dropOver={dropOver}
+          flush
         />
       </SwipeableRow>
     </RowActionMenu>
