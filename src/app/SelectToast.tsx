@@ -3,6 +3,7 @@ import { useRef, useState, type ReactNode } from "react";
 
 import {
   CopyButton,
+  CopyIcon,
   FloatingPanel,
   type FloatingPlacement,
 } from "@niclaslindstedt/oss-framework/components";
@@ -25,9 +26,9 @@ const EXPORT_MENU_PLACEMENT: FloatingPlacement = {
 
 // The batch copy / export actions that live in the List header's top menu while
 // selecting — a copy-as-vCard button and a download button that opens the
-// vCard / CSV export menu. Both act over the ticked selection; the export menu
-// stays inert until at least one card is ticked. The buttons are sized to match
-// the header's other glyph buttons (`h-9 w-9`, bordered) so the row reads as one
+// vCard / CSV export menu. Both act over the ticked selection; both stay inert
+// until at least one card is ticked. The buttons are sized to match the
+// header's other glyph buttons (`h-9 w-9`, bordered) so the row reads as one
 // toolbar.
 export function SelectActions({ contacts }: { contacts: Contact[] }) {
   const t = useT();
@@ -47,11 +48,23 @@ export function SelectActions({ contacts }: { contacts: Contact[] }) {
 
   return (
     <>
-      <CopyButton
-        value={() => contactsToVCards(contacts)}
-        onCopied={() => unlock("exporter")}
-        labels={{ copy: t("list.copy"), copied: t("contact.copied") }}
-      />
+      {has ? (
+        <CopyButton
+          value={() => contactsToVCards(contacts)}
+          onCopied={() => unlock("exporter")}
+          labels={{ copy: t("list.copy"), copied: t("contact.copied") }}
+        />
+      ) : (
+        <button
+          type="button"
+          disabled
+          aria-label={t("list.copy")}
+          title={t("list.copy")}
+          className="flex h-9 w-9 shrink-0 cursor-not-allowed items-center justify-center rounded-md border border-line bg-transparent text-muted opacity-40"
+        >
+          <CopyIcon className="h-4 w-4" />
+        </button>
+      )}
       <button
         ref={exportRef}
         type="button"
