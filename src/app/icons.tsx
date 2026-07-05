@@ -155,6 +155,32 @@ export function FavoriteIcon({
   );
 }
 
+/** A star — the **primary phone** mark. Flags the one number to reach a contact
+ *  on when they carry several: a filled star on the number that is primary, a
+ *  hollow one on the others (tap to make that number primary). Distinct from the
+ *  heart, which stars the whole card as a favorite. Outline vs. fill reads the
+ *  state at a glance, the same way the heart does. */
+export function StarIcon({
+  className,
+  filled,
+}: IconProps & { filled?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      focusable={false}
+      className={className}
+    >
+      <path d="M12 2.5l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3-5.8 3 1.1-6.5L2.6 9.3l6.5-.9z" />
+    </svg>
+  );
+}
+
 /** Angle brackets — the Developer surface. */
 export function CodeIcon({ className }: IconProps) {
   return (

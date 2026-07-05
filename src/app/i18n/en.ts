@@ -205,6 +205,12 @@ export const en = {
     kindWork: "Work",
     phoneKind: "Phone type",
     phoneCountry: "Country code",
+    // The star on each phone row (shown when a card has more than one number)
+    // that picks the primary — the single number the Favorites page shows.
+    markPrimary: "Set as primary number",
+    clearPrimary: "Clear primary number",
+    // The badge on the primary number in the read view.
+    primaryLabel: "Primary",
     emailKind: "Email type",
     details: "Details",
     firstName: "First name",

@@ -15,8 +15,10 @@ import {
   type CountryCode,
 } from "./countries/index.ts";
 import { KindToggle, RemoveButton, inputClass } from "./editWidgets.tsx";
+import { StarIcon } from "./icons.tsx";
 import { toStoredPhone } from "./format.ts";
 import { useT } from "./i18n/index.ts";
+import { withPrimaryPhone } from "./primaryPhone.ts";
 import { freshId } from "./useContactStore.ts";
 import type { ContactMethodKind, Phone } from "./types.ts";
 import { methodKind } from "./types.ts";
@@ -104,20 +106,29 @@ function PhoneValueRow({
   code,
   kind,
   showKind,
+  showPrimary = false,
+  primary = false,
   autoFocus = false,
   onCommit,
   onCountryChange,
   onKindChange,
+  onTogglePrimary,
   onRemove,
 }: {
   initialValue: string;
   code: string;
   kind: ContactMethodKind;
   showKind: boolean;
+  // Whether to offer the primary-number star — only when a card holds more than
+  // one number, so a single-number card stays uncluttered (its lone number is
+  // implicitly the one to call).
+  showPrimary?: boolean;
+  primary?: boolean;
   autoFocus?: boolean;
   onCommit: (value: string, code: string, kind: ContactMethodKind) => void;
   onCountryChange?: (code: string) => void;
   onKindChange?: (kind: ContactMethodKind) => void;
+  onTogglePrimary?: () => void;
   onRemove: () => void;
 }): ReactNode {
   const t = useT();
@@ -161,8 +172,47 @@ function PhoneValueRow({
         }}
         className={inputClass}
       />
+      {showPrimary && onTogglePrimary && (
+        <PrimaryToggle primary={primary} onToggle={onTogglePrimary} />
+      )}
       <RemoveButton label={t("contact.removeRow")} onClick={onRemove} />
     </div>
+  );
+}
+
+// The primary-number star that sits on a phone row when a card holds several
+// numbers. A filled accent star marks the number that is primary; a hollow muted
+// one marks the others — tap it to make that number primary instead, or tap the
+// filled one to clear the choice. Like the kind and country pickers it captures
+// the pointer press (cancelling the default) so tapping it while a value input is
+// still focused doesn't blur-commit the field first, which would let a stale
+// commit clobber a just-typed number.
+function PrimaryToggle({
+  primary,
+  onToggle,
+}: {
+  primary: boolean;
+  onToggle: () => void;
+}) {
+  const t = useT();
+  const label = primary ? t("contact.clearPrimary") : t("contact.markPrimary");
+  return (
+    <span className="shrink-0" onMouseDownCapture={(e) => e.preventDefault()}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-pressed={primary}
+        aria-label={label}
+        title={label}
+        className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded transition-colors ${
+          primary
+            ? "text-accent hover:bg-accent/10"
+            : "text-muted hover:bg-surface-2 hover:text-fg"
+        }`}
+      >
+        <StarIcon className="h-4 w-4" filled={primary} />
+      </button>
+    </span>
   );
 }
 
@@ -182,6 +232,9 @@ export function PhoneRows({
   const t = useT();
   const [drafting, setDrafting] = useState(false);
   const homeCode = getCountry(home).callingCode;
+  // The primary-number star is only meaningful once a card holds more than one
+  // number to choose between — a lone number is implicitly the one to call.
+  const showPrimary = rows.length > 1;
 
   // Fold a typed value into a phone: national digits from `toStoredPhone`, and
   // the calling code it peeled off a pasted `+…`, falling back to the row's
@@ -232,9 +285,14 @@ export function PhoneRows({
           code={row.countryCode ?? homeCode}
           kind={methodKind(row.label)}
           showKind={showKind}
+          showPrimary={showPrimary}
+          primary={!!row.primary}
           onCommit={(v) => commitRow(row.id, v, row.countryCode ?? homeCode)}
           onCountryChange={(c) => setRowCountry(row.id, c)}
           onKindChange={(k) => setRowKind(row.id, k)}
+          onTogglePrimary={() =>
+            onCommit(withPrimaryPhone(rows, row.primary ? null : row.id))
+          }
           onRemove={() => onCommit(rows.filter((r) => r.id !== row.id))}
         />
       ))}

@@ -187,10 +187,11 @@ function curatedContacts(): Contact[] {
   // The sample numbers are written the way a person would type them; fold each
   // down to the app's stored shape (national digits + calling code) so the seed
   // mirrors a real, migrated document.
-  const phone = (value: string, label?: string): Phone => ({
+  const phone = (value: string, label?: string, primary?: boolean): Phone => ({
     id: ph(),
     ...toStoredPhone(value),
     ...(label ? { label } : {}),
+    ...(primary ? { primary: true } : {}),
   });
   const email = (value: string, label?: string): Email => ({
     id: em(),
@@ -212,7 +213,9 @@ function curatedContacts(): Contact[] {
       lastName: "Lovelace",
       company: "Analytical Engines Ltd",
       phones: [
-        phone("+46 8 123 45 67", "private"),
+        // The private number is flagged primary — so the Favorites page shows
+        // just this one for Ada, not both.
+        phone("+46 8 123 45 67", "private", true),
         phone("+44 20 7946 0958", "work"),
       ],
       emails: [

@@ -34,6 +34,16 @@ export type Phone = {
    *  number that follows the home country. */
   countryCode?: string;
   label?: string;
+  /** Marks this number as the contact's **primary** one — the one to reach them
+   *  on when they carry several. At most one number per card is flagged (the
+   *  editor clears the flag off the others when a new one is picked); the
+   *  Favorites page shows only the flagged number rather than the whole list.
+   *  Absent / `false` means an ordinary number. Kept app-local — like the
+   *  {@link Contact.favorite} and {@link Contact.ice} flags it isn't written to a
+   *  vCard or CSV, but it does round-trip through the JSON backup. Read it
+   *  through the helpers in `primaryPhone.ts` rather than reaching in directly,
+   *  so the "exactly one primary" rule stays in one place. */
+  primary?: boolean;
 };
 
 /** One email address on a contact card. `label` carries the {@link
