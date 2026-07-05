@@ -141,6 +141,39 @@ describe("dispatch by embedded country code", () => {
   });
 });
 
+describe("country code for foreign numbers only", () => {
+  const foreign = phone({ countryCodeForeignOnly: true });
+
+  it("drops the home country's calling code", () => {
+    // Home is Sweden, so a Swedish number loses its +46 but keeps the trunk 0.
+    expect(formatPhoneValue("+46768181337", "SE", foreign)).toBe(
+      "076-818 13 37",
+    );
+  });
+
+  it("drops the code for a bare number that defaults to home", () => {
+    expect(formatPhoneValue("768181337", "SE", foreign)).toBe("076-818 13 37");
+  });
+
+  it("keeps the calling code for a foreign number", () => {
+    // Home is Sweden; a +1 number is from abroad, so it keeps +1.
+    expect(formatPhoneValue("+12025550100", "SE", foreign)).toBe(
+      "+1 (202) 555-0100",
+    );
+  });
+
+  it("is inert while the country code is off entirely", () => {
+    expect(
+      formatPhoneValue("+12025550100", "SE", {
+        format: true,
+        countryCode: false,
+        countryCodeForeignOnly: true,
+        leadingZero: true,
+      }),
+    ).toBe("(202) 555-0100");
+  });
+});
+
 describe("formatStoredPhone", () => {
   it("formats a stored phone by its own calling code", () => {
     expect(

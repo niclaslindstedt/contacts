@@ -37,6 +37,9 @@ A few toggles adjust the details without changing country:
 
 - whether to format phone numbers at all,
 - whether to show the international country code,
+- whether to show that code only for foreign numbers — so a number in your own
+  country drops its `+46` and reads as a plain local number, while a number from
+  abroad still carries its code,
 - whether to show the leading-zero trunk digit, and
 - whether to group postal codes with spaces.
 

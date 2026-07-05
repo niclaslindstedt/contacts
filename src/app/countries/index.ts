@@ -71,9 +71,18 @@ export function formatPhoneValue(
   if (!opts.format) return input.trim() || input;
   const parsed = parsePhone(input);
   if (!parsed.valid) return parsed.raw;
-  const country =
-    getCountryByCallingCode(parsed.countryCode) ?? getCountry(home);
-  return country.formatPhone(parsed, opts);
+  const homeCountry = getCountry(home);
+  const country = getCountryByCallingCode(parsed.countryCode) ?? homeCountry;
+  // "Foreign only": a number that belongs to the home country — including a
+  // bare one that carries no code of its own, so it fell back to home — drops
+  // the calling code, leaving +46 (etc.) to mark only the numbers from abroad.
+  const effective =
+    opts.countryCode &&
+    opts.countryCodeForeignOnly &&
+    country.code === homeCountry.code
+      ? { ...opts, countryCode: false }
+      : opts;
+  return country.formatPhone(parsed, effective);
 }
 
 /** Format a *stored* phone (structured national digits + optional calling code)
