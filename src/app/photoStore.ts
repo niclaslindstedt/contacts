@@ -312,13 +312,26 @@ export function withExternalPhotos(
       }
     }
 
-    let changed = false;
-    for (const path of existing) {
-      if (referenced.has(path)) continue;
+    const unreferenced = existing.filter((p) => !referenced.has(p));
+    if (unreferenced.length === 0) return false;
+    // Log the shape of the reconcile so the Developer → Logs tab can show why a
+    // photo did (or didn't) reconnect — the per-file lines below name the
+    // contact each file claims, so a stale / renamed id is easy to spot.
+    log.info(
+      `reconcile: ${existing.length} photo file(s) on backend, ` +
+        `${referenced.size} already referenced, ${unreferenced.length} ` +
+        `unreferenced — checking against ${byId.size} contact(s)`,
+    );
+
+    let reindexed = 0;
+    const unmatched: string[] = [];
+    for (const path of unreferenced) {
       const parsed = parsePhotoPath(path, byId.keys());
-      if (!parsed) continue;
-      const contact = byId.get(parsed.contactId);
-      if (!contact) continue;
+      const contact = parsed ? byId.get(parsed.contactId) : undefined;
+      if (!parsed || !contact) {
+        unmatched.push(path);
+        continue;
+      }
       const gallery = (contact.photos ??= []);
       let entry = gallery.find((p) => p.id === parsed.photoId);
       if (!entry) {
@@ -328,11 +341,20 @@ export function withExternalPhotos(
       const field = parsed.source ? "photoSourcePath" : "photoPath";
       if (entry[field] !== path) {
         entry[field] = path;
-        changed = true;
-        log.info(`re-indexed ${path}`);
+        reindexed += 1;
+        log.info(
+          `re-indexed ${path} → contact ${parsed.contactId}` +
+            (parsed.source ? " (source)" : ""),
+        );
       }
     }
-    return changed;
+    for (const path of unmatched) {
+      log.warn(`reconcile: no matching contact for ${path} — left unattached`);
+    }
+    log.info(
+      `reconcile: re-indexed ${reindexed} file(s), ${unmatched.length} unmatched`,
+    );
+    return reindexed > 0;
   }
 
   // Parse → reconcile → re-serialise. Returns the (possibly rewritten) text and
