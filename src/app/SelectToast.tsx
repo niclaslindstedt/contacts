@@ -6,6 +6,7 @@ import {
   CopyIcon,
   DownloadIcon,
   FloatingPanel,
+  TrashIcon,
   type FloatingPlacement,
 } from "@niclaslindstedt/oss-framework/components";
 import { unlock } from "@niclaslindstedt/oss-framework/achievements";
@@ -28,13 +29,20 @@ const EXPORT_MENU_PLACEMENT: FloatingPlacement = {
   coordinateSpace: "viewport",
 };
 
-// The batch copy / export actions that live in the List header's top menu while
-// selecting — a copy-as-vCard button and a download button that opens the
-// vCard / CSV export menu. Both act over the ticked selection; both stay inert
-// until at least one card is ticked. The buttons are sized to match the
-// header's other glyph buttons (`h-9 w-9`, bordered) so the row reads as one
-// toolbar.
-export function SelectActions({ contacts }: { contacts: Contact[] }) {
+// The batch actions that live in the List header's top menu while selecting —
+// a copy-as-vCard button, a download button that opens the vCard / CSV export
+// menu, and a trash button that hands off to the caller's delete confirmation
+// (`onDelete` opens the dialog; nothing is removed until it's confirmed). All
+// act over the ticked selection and stay inert until at least one card is
+// ticked. The buttons are sized to match the header's other glyph buttons
+// (`h-9 w-9`, bordered) so the row reads as one toolbar.
+export function SelectActions({
+  contacts,
+  onDelete,
+}: {
+  contacts: Contact[];
+  onDelete: () => void;
+}) {
   const t = useT();
   const [menuOpen, setMenuOpen] = useState(false);
   const exportRef = useRef<HTMLButtonElement>(null);
@@ -85,6 +93,20 @@ export function SelectActions({ contacts }: { contacts: Contact[] }) {
         }`}
       >
         <DownloadIcon className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        disabled={!has}
+        aria-label={t("list.deleteSelected")}
+        title={t("list.deleteSelected")}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line ${
+          has
+            ? "cursor-pointer text-muted hover:bg-danger/10 hover:text-danger"
+            : "cursor-not-allowed text-muted opacity-40"
+        }`}
+      >
+        <TrashIcon className="h-4 w-4" />
       </button>
       <FloatingPanel
         open={menuOpen}

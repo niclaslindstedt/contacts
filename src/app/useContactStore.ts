@@ -418,6 +418,43 @@ export function useContactStore(
     [commit, data],
   );
 
+  // Delete several contacts in one undoable step — the batch behind select
+  // mode's bulk delete. Dropping them one call at a time would stack N undo
+  // steps and clobber each other (each call reads the same pre-delete `data`),
+  // so the whole set leaves in a single commit. A no-op when none are present.
+  const deleteContacts = useCallback(
+    (ids: readonly string[]) => {
+      const drop = new Set(ids);
+      if (!data.contacts.some((c) => drop.has(c.id))) return;
+      const contacts = data.contacts.filter((c) => !drop.has(c.id));
+      commit({
+        ...data,
+        contacts,
+        activeContactId: nextActiveId(contacts, data.activeContactId),
+      });
+    },
+    [commit, data],
+  );
+
+  // Archive several contacts in one undoable step — the batch counterpart of
+  // `archiveContact`, same single-commit rationale as `deleteContacts`. A
+  // no-op when every targeted card is already archived (or missing).
+  const archiveContacts = useCallback(
+    (ids: readonly string[]) => {
+      const set = new Set(ids);
+      if (!data.contacts.some((c) => set.has(c.id) && !c.archived)) return;
+      const contacts = data.contacts.map((c) =>
+        set.has(c.id) ? { ...c, archived: true } : c,
+      );
+      commit({
+        ...data,
+        contacts,
+        activeContactId: nextActiveId(contacts, data.activeContactId),
+      });
+    },
+    [commit, data],
+  );
+
   // Save the hand-picked order of the Favorites page. `orderedIds` is the full
   // favorites list in its new order (top to bottom); each card's
   // `favoriteOrder` is set to its index so the order persists and syncs like
@@ -800,7 +837,9 @@ export function useContactStore(
     importContacts,
     updateContact,
     deleteContact,
+    deleteContacts,
     archiveContact,
+    archiveContacts,
     unarchiveContact,
     toggleContactIce,
     reorderFavorites,

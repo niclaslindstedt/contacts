@@ -280,6 +280,22 @@ export function App() {
         store.deleteContact(id);
         showUndoToast(t("toast.contactDeleted"));
       },
+      archiveContacts: (ids: readonly string[]) => {
+        store.archiveContacts(ids);
+        showUndoToast(
+          ids.length === 1
+            ? t("toast.contactArchived")
+            : t("toast.contactsArchived", { n: String(ids.length) }),
+        );
+      },
+      deleteContacts: (ids: readonly string[]) => {
+        store.deleteContacts(ids);
+        showUndoToast(
+          ids.length === 1
+            ? t("toast.contactDeleted")
+            : t("toast.contactsDeleted", { n: String(ids.length) }),
+        );
+      },
       archiveFolder: (id: string) => {
         store.archiveFolder(id);
         showUndoToast(t("toast.folderArchived"));

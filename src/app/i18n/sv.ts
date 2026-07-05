@@ -21,6 +21,8 @@ export const sv: Catalog = {
   toast: {
     contactArchived: "Kontakt arkiverad",
     contactDeleted: "Kontakt borttagen",
+    contactsArchived: "{n} kontakter arkiverade",
+    contactsDeleted: "{n} kontakter borttagna",
     folderArchived: "Mapp arkiverad",
     folderDeleted: "Mapp borttagen",
     undo: "Ångra",
@@ -51,6 +53,9 @@ export const sv: Catalog = {
     contactName: "Kontaktens namn",
     renameContact: "Byt namn",
     deleteContact: "Ta bort",
+    deleteContacts: "Ta bort {n} kontakter",
+    archiveContacts: "Arkivera {n} kontakter",
+    moveContactsToFolder: "Flytta {n} till mapp…",
     contactActions: "Kontaktåtgärder",
     emergency: "I nödfall",
     iceContact: "Nödkontakt",
@@ -111,6 +116,13 @@ export const sv: Catalog = {
     export: "Exportera valda",
     exportVCard: "Exportera som vCard",
     exportCsv: "Exportera som CSV",
+    deleteSelected: "Ta bort valda",
+    deleteConfirmTitleOne: "Ta bort 1 kontakt?",
+    deleteConfirmTitle: "Ta bort {n} kontakter?",
+    deleteConfirmBodyOne:
+      "Den valda kontakten tas bort från adressboken. Ångra kan hämta tillbaka den.",
+    deleteConfirmBody:
+      "De valda kontakterna tas bort från adressboken. Ångra kan hämta tillbaka dem.",
   },
   search: {
     title: "Sök",

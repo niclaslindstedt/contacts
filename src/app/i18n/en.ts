@@ -27,6 +27,8 @@ export const en = {
     // delete, mirroring the import result banner.
     contactArchived: "Contact archived",
     contactDeleted: "Contact deleted",
+    contactsArchived: "{n} contacts archived",
+    contactsDeleted: "{n} contacts deleted",
     folderArchived: "Folder archived",
     folderDeleted: "Folder deleted",
     undo: "Undo",
@@ -57,6 +59,11 @@ export const en = {
     contactName: "Contact name",
     renameContact: "Rename",
     deleteContact: "Delete",
+    // The count-aware row-menu labels shown while a multi-select is active and
+    // the action carries the whole selection, not just the clicked row.
+    deleteContacts: "Delete {n} contacts",
+    archiveContacts: "Archive {n} contacts",
+    moveContactsToFolder: "Move {n} to folder…",
     contactActions: "Contact actions",
     // In case of emergency (ICE) — the pinned section title and the badge on a
     // flagged contact row.
@@ -119,6 +126,15 @@ export const en = {
     export: "Export selected",
     exportVCard: "Export as vCard",
     exportCsv: "Export as CSV",
+    deleteSelected: "Delete selected",
+    // The confirmation asked before a batch delete goes through — singular
+    // when one card is ticked, count-carrying otherwise.
+    deleteConfirmTitleOne: "Delete 1 contact?",
+    deleteConfirmTitle: "Delete {n} contacts?",
+    deleteConfirmBodyOne:
+      "The selected contact is removed from the address book. Undo can bring it right back.",
+    deleteConfirmBody:
+      "The selected contacts are removed from the address book. Undo can bring them right back.",
   },
   search: {
     title: "Search",

@@ -7,6 +7,7 @@ import {
   CheckboxGlyph,
   CheckSquareIcon,
   ChevronDownIcon,
+  ConfirmDialog,
   ChevronRightIcon,
   FolderOpenIcon,
   GripIcon,
@@ -56,13 +57,15 @@ import { displayName, methodKind } from "./types.ts";
 // Favorites button in the side menu both land here — one filtered, one not.
 //
 // A "Select" toggle turns the rows into a multi-select: tick as many as you
-// like, then copy them as one vCard block or export the selection to a vCard /
-// CSV file — the batch counterpart to the copy / download a single card offers
-// on its own screen. Select mode is driven from a floating toolbar that hovers
-// at the bottom of the page (`SelectToast`); a Ctrl / Cmd-click on any row
+// like, then copy them as one vCard block, export the selection to a vCard /
+// CSV file, or delete the lot from the header's trash button (behind a
+// confirmation) — the batch counterpart to what a single card offers on its
+// own screen. Select mode is driven from a floating toolbar that hovers at
+// the bottom of the page (`SelectToast`); a Ctrl / Cmd-click on any row
 // enters it directly. On the List page a card can also be **dragged into a
-// folder section** to file it there (the whole selection moves together), or
-// moved with the row's **Move to folder** right-click action.
+// folder section** to file it there (the whole selection moves together), and
+// the row's right-click actions — Move to folder, Archive, Delete — all carry
+// the whole selection when the clicked card is part of it.
 
 // The sentinel collapse key for the trailing ungrouped ("no folder") section,
 // which has no folder id of its own.
@@ -89,7 +92,9 @@ export function ContactListScreen({
     reorderFavorites,
     moveContactsToFolder,
     archiveContact,
+    archiveContacts,
     deleteContact,
+    deleteContacts,
     archiveFolder,
     deleteFolder,
   } = store;
@@ -233,31 +238,65 @@ export function ContactListScreen({
   const moveToFolder = (ids: string[], folderId: string | null) =>
     moveContactsToFolder(ids, folderId);
 
+  // Batch archive / delete over the ticked selection. Archive goes through in
+  // one undoable step; delete first asks — `confirmDelete` holds the ids while
+  // the confirmation dialog is up, and nothing is removed until it's confirmed.
+  // Both drop the acted-on ids from the selection so the ticked set never
+  // carries ghosts of cards that just left the list.
+  const [confirmDelete, setConfirmDelete] = useState<string[] | null>(null);
+  const dropFromSelection = (ids: readonly string[]) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) next.delete(id);
+      return next;
+    });
+  const archiveBatch = (ids: string[]) => {
+    archiveContacts(ids);
+    dropFromSelection(ids);
+  };
+  const runConfirmedDelete = () => {
+    if (confirmDelete) {
+      deleteContacts(confirmDelete);
+      dropFromSelection(confirmDelete);
+    }
+    setConfirmDelete(null);
+  };
+
   // The per-row actions shared by both pages, mirroring the side menu's contact
   // rows: a left-swipe **Delete** button, a right-swipe **Archive** commit, and
-  // the desktop right-click menu (Move to folder / Archive / Delete). Delete and
-  // archive act on the single grabbed card — like the sidebar — while "Move to
-  // folder" carries the whole selection when the card is part of it.
+  // the desktop right-click menu (Move to folder / Archive / Delete). Like a
+  // drag, every action carries the whole selection when the grabbed card is
+  // part of it (the labels pick up the count so the reach is explicit), and a
+  // multi-card delete asks for confirmation first; on an unticked card each
+  // acts on that single row, immediately.
   const contactRowActions = (contact: Contact) => {
+    const ids = idsForAction(contact.id);
+    const many = ids.length > 1;
     const deleteAction: RowAction = {
-      label: t("menu.deleteContact"),
+      label: many
+        ? t("menu.deleteContacts", { n: String(ids.length) })
+        : t("menu.deleteContact"),
       icon: <TrashIcon className="h-5 w-5" />,
       danger: true,
-      onSelect: () => deleteContact(contact.id),
+      onSelect: () =>
+        many ? setConfirmDelete(ids) : deleteContact(contact.id),
     };
     const archiveAction: RowAction = {
-      label: t("menu.archive"),
+      label: many
+        ? t("menu.archiveContacts", { n: String(ids.length) })
+        : t("menu.archive"),
       icon: <ArchiveIcon className="h-5 w-5" />,
-      onSelect: () => archiveContact(contact.id),
+      onSelect: () => (many ? archiveBatch(ids) : archiveContact(contact.id)),
     };
     // Filing into a folder is offered whenever there's somewhere to go: a folder
     // to land in, or (for an already-filed card) the root to lift it back to.
     const canMove = activeFolders.length > 0 || contact.folderId !== null;
     const moveAction: RowAction = {
-      label: t("menu.moveToFolder"),
+      label: many
+        ? t("menu.moveContactsToFolder", { n: String(ids.length) })
+        : t("menu.moveToFolder"),
       icon: <FolderOpenIcon className="h-5 w-5" />,
-      onSelect: () =>
-        setMovePicker({ ids: idsForAction(contact.id), at: movePos.current }),
+      onSelect: () => setMovePicker({ ids, at: movePos.current }),
     };
     const menuActions: RowAction[] = [
       ...(canMove ? [moveAction] : []),
@@ -359,8 +398,15 @@ export function ContactListScreen({
             <SectionsToggleIcon className="h-5 w-5" collapsed={allCollapsed} />
           </button>
         )}
-        {/* Batch copy / export, shown only while a selection is being made. */}
-        {selecting && <SelectActions contacts={selectedContacts} />}
+        {/* Batch copy / export / delete, shown only while a selection is being
+            made. The trash hands the ticked ids to the same confirmation the
+            row menu's multi-delete uses. */}
+        {selecting && (
+          <SelectActions
+            contacts={selectedContacts}
+            onDelete={() => setConfirmDelete(selectedContacts.map((c) => c.id))}
+          />
+        )}
         {total > 0 && (
           <button
             type="button"
@@ -537,6 +583,30 @@ export function ContactListScreen({
           setMovePicker(null);
         }}
         onClose={() => setMovePicker(null)}
+      />
+
+      {/* The batch-delete confirmation — raised by the header's trash button
+          and by the row menu's multi-card Delete; the delete only goes through
+          on confirm (and is still one undoable step afterwards). */}
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        tone="danger"
+        title={
+          confirmDelete?.length === 1
+            ? t("list.deleteConfirmTitleOne")
+            : t("list.deleteConfirmTitle", {
+                n: String(confirmDelete?.length ?? 0),
+              })
+        }
+        description={
+          confirmDelete?.length === 1
+            ? t("list.deleteConfirmBodyOne")
+            : t("list.deleteConfirmBody")
+        }
+        confirmLabel={t("menu.deleteContact")}
+        onConfirm={runConfirmedDelete}
+        onCancel={() => setConfirmDelete(null)}
+        labels={{ close: t("common.close"), cancel: t("common.cancel") }}
       />
     </div>
   );

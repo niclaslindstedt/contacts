@@ -187,8 +187,12 @@ export async function openSidebar(page) {
 
 // Open the overview List page (all active contacts, grouped by folder)
 // from the side menu's "List" bar button. Opens the drawer first on
-// phones. Waits for the list header to render.
+// phones. Waits for the list header to render. A no-op when the List
+// page is already up (the seeded app boots straight to it on desktop,
+// where the sidebar's List button isn't guaranteed to match first).
 export async function openList(page) {
+  const heading = page.getByRole("heading", { name: /^List$/ }).first();
+  if (await heading.isVisible().catch(() => false)) return;
   await openSidebar(page);
   await page
     .getByRole("button", { name: /^List$/ })
