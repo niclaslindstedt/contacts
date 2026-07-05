@@ -76,6 +76,24 @@
   backdrop-filter: blur(var(--modal-backdrop-blur, 0px));
 }
 
+/* ── Changelog / feature-doc modal safe-area inset ───────────────────────────
+   The framework `Modal` clears the notch by rendering a `bg-surface-3` spacer
+   of `env(safe-area-inset-top)` above its header, but `ChangelogModal` — the
+   "What's new" dialog and its "Learn more" feature-doc drill-down — is built on
+   the framework's private, full-screen `Overlay`, which ships no such spacer.
+   On a notched phone its header, and the close (×) button in it, render up
+   under the status bar out of reach. Extend the header's top padding by the
+   safe-area inset so its controls sit below the notch, matching the `Modal`
+   treatment (the header already paints `bg-surface-3`, so the inset region
+   fills with the header colour too). Scoped to the mobile full-screen layout —
+   from `sm` up the dialog is centred and inset from the edges, where the
+   safe-area inset is zero anyway. */
+@media (max-width: 639.98px) {
+  [role="dialog"][aria-labelledby="changelog-title"] > header {
+    padding-top: calc(0.75rem + env(safe-area-inset-top));
+  }
+}
+
 /* ── App-shell layout ────────────────────────────────────────────────────────
    A full-viewport `100svh` flex app whose panes own their own scroll regions,
    so the document itself never scrolls. */
