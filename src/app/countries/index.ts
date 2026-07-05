@@ -9,11 +9,19 @@ import { parsePhone } from "../format.ts";
 import type { CountryFormat, PhoneOptions, PostalOptions } from "./types.ts";
 import { SE } from "./se.ts";
 import { US } from "./us.ts";
+import { CATALOG } from "./catalog.ts";
 
 export type { CountryFormat, PhoneOptions, PostalOptions } from "./types.ts";
 
-/** Every country the app can format for, in the order the picker lists them. */
-export const COUNTRIES: readonly CountryFormat[] = [SE, US] as const;
+/** Every country the app can format for. Sweden leads (it is the default);
+ *  the United States and the rest of the developed-country catalogue follow.
+ *  The picker sorts them by localised name, so this order is only the registry
+ *  order, not what the user sees. */
+export const COUNTRIES: readonly CountryFormat[] = [
+  SE,
+  US,
+  ...CATALOG,
+] as const;
 
 /** The stable identifier stored in settings — the union of registered codes. */
 export type CountryCode = (typeof COUNTRIES)[number]["code"];
@@ -22,7 +30,16 @@ export type CountryCode = (typeof COUNTRIES)[number]["code"];
 export const DEFAULT_COUNTRY: CountryCode = SE.code;
 
 const BY_CODE = new Map(COUNTRIES.map((c) => [c.code, c]));
-const BY_CALLING_CODE = new Map(COUNTRIES.map((c) => [c.callingCode, c]));
+
+// A calling code can be shared (the US and Canada both own +1). The map keeps
+// the first-registered country for a code — which is fine because countries
+// sharing a calling code also share a numbering plan, so either formats an
+// ambiguous `+1` number identically.
+const BY_CALLING_CODE = new Map<string, CountryFormat>();
+for (const c of COUNTRIES) {
+  if (!BY_CALLING_CODE.has(c.callingCode))
+    BY_CALLING_CODE.set(c.callingCode, c);
+}
 
 /** The country for a stored code, falling back to the default when unknown
  *  (e.g. a code left behind by a country that was later removed). */
