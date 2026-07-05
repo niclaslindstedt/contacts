@@ -1,38 +1,34 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import {
   CheckboxGlyph,
   ChevronDownIcon,
   ChevronRightIcon,
-  CloseIcon,
-  CopyButton,
-  FloatingPanel,
   FolderIcon,
   FolderOpenIcon,
   GripIcon,
-  type FloatingPlacement,
+  RowActionMenu,
+  type FloatingPoint,
 } from "@niclaslindstedt/oss-framework/components";
 import {
   useDragDrop,
   type DragHandleProps,
 } from "@niclaslindstedt/oss-framework/sidebar";
-import { unlock } from "@niclaslindstedt/oss-framework/achievements";
 
 import { Avatar } from "./Avatar.tsx";
 import {
   BuildingIcon,
   CheckSquareIcon,
-  DownloadIcon,
   FavoriteIcon,
   ListIcon,
   PersonIcon,
 } from "./icons.tsx";
+import { MoveToFolderMenu } from "./MoveToFolderMenu.tsx";
+import { SelectToast } from "./SelectToast.tsx";
 import { useT } from "./i18n/index.ts";
 import { formatPhoneValue } from "./countries/index.ts";
 import { phoneOptions, type AppSettings } from "./useAppSettings.ts";
-import { contactsToCsv, contactsToVCards } from "./export.ts";
-import { downloadText, MIME_CSV, MIME_VCARD } from "./download.ts";
 import {
   favoriteContacts,
   groupContactsByFolder,
@@ -60,13 +56,11 @@ import { displayName, methodKind } from "./types.ts";
 // A "Select" toggle turns the rows into a multi-select: tick as many as you
 // like, then copy them as one vCard block or export the selection to a vCard /
 // CSV file — the batch counterpart to the copy / download a single card offers
-// on its own screen.
-
-const EXPORT_MENU_PLACEMENT: FloatingPlacement = {
-  width: { kind: "min", minPx: 176 },
-  anchor: "right",
-  coordinateSpace: "viewport",
-};
+// on its own screen. Select mode is driven from a floating toolbar that hovers
+// at the bottom of the page (`SelectToast`); a Ctrl / Cmd-click on any row
+// enters it directly. On the List page a card can also be **dragged into a
+// folder section** to file it there (the whole selection moves together), or
+// moved with the row's **Move to folder** right-click action.
 
 // The sentinel collapse key for the trailing ungrouped ("no folder") section,
 // which has no folder id of its own.
@@ -87,8 +81,14 @@ export function ContactListScreen({
   variant?: "all" | "favorites";
 }) {
   const t = useT();
-  const { data, updateContact, reorderFavorites } = store;
+  const { data, updateContact, reorderFavorites, moveContactsToFolder } = store;
   const favoritesOnly = variant === "favorites";
+  // The folders a card can be filed into — the non-archived set, shared by the
+  // drag-and-drop drop zones and the "Move to folder" right-click submenu.
+  const activeFolders = useMemo(
+    () => data.folders.filter((f) => !f.archived),
+    [data.folders],
+  );
   // The List page groups every active card by folder; the Favorites page is a
   // single hand-orderable shortlist instead (see `favoriteContacts`), so
   // reordering can move a card freely rather than only within one folder.
@@ -168,44 +168,113 @@ export function ContactListScreen({
     setSelected(
       allSelected ? new Set() : new Set(allContacts.map((c) => c.id)),
     );
+  // Ctrl / Cmd-clicking a row (out of select mode) enters select mode with just
+  // that card ticked — the quick way into a multi-select without reaching for
+  // the toolbar button first.
+  const enterSelectWith = (id: string) => {
+    setSelecting(true);
+    setSelected(new Set([id]));
+  };
+
+  // The ids a drag / move acts on: the whole selection when the grabbed card is
+  // part of it, otherwise just that one card. Lets a single drag file every
+  // ticked contact into a folder at once.
+  const idsForAction = (id: string): string[] =>
+    selecting && selected.has(id)
+      ? allContacts.filter((c) => selected.has(c.id)).map((c) => c.id)
+      : [id];
+  const moveToFolder = (ids: string[], folderId: string | null) =>
+    moveContactsToFolder(ids, folderId);
+
+  // Drag-and-drop of contacts into folder sections (List page only). A row is a
+  // drag source; each folder section is a drop zone that files the dragged card
+  // — or the whole selection — into it. The ungrouped section drops to the root.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const dnd = useDragDrop<
+    string,
+    { kind: "folder"; id: string } | { kind: "root" }
+  >({
+    canDrop: (dragId) => allContacts.some((c) => c.id === dragId),
+    onDrop: (dragId, target) =>
+      moveToFolder(
+        idsForAction(dragId),
+        target.kind === "folder" ? target.id : null,
+      ),
+  });
+  // While a drag is in flight, auto-scroll the list when the pointer nears its
+  // top / bottom edge — so a card low in a long list can be dragged up to a
+  // folder above without letting go.
+  const pointerRef = useRef(dnd.pointer);
+  pointerRef.current = dnd.pointer;
+  const dragging = dnd.dragging !== null;
+  useEffect(() => {
+    if (!dragging) return;
+    let raf = 0;
+    const EDGE = 56; // px hot zone at each edge
+    const MAX = 14; // px per frame at the very edge
+    const step = () => {
+      const el = scrollRef.current;
+      const p = pointerRef.current;
+      if (el && p) {
+        const rect = el.getBoundingClientRect();
+        if (p.y < rect.top + EDGE) {
+          el.scrollTop -= Math.ceil(
+            MAX * Math.min(1, (rect.top + EDGE - p.y) / EDGE),
+          );
+        } else if (p.y > rect.bottom - EDGE) {
+          el.scrollTop += Math.ceil(
+            MAX * Math.min(1, (p.y - (rect.bottom - EDGE)) / EDGE),
+          );
+        }
+      }
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [dragging]);
+
+  // The "Move to folder" right-click submenu — `movePos` captures where the row
+  // was right-clicked; `movePicker` holds the ids to move once the action fires.
+  const movePos = useRef<FloatingPoint>({ x: 0, y: 0 });
+  const [movePicker, setMovePicker] = useState<{
+    ids: string[];
+    at: FloatingPoint;
+  } | null>(null);
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-[calc(1.25rem+env(safe-area-inset-top))]">
-      {selecting ? (
-        <SelectHeader
-          count={selectedContacts.length}
-          allSelected={allSelected}
-          onToggleAll={toggleSelectAll}
-          onCancel={exitSelect}
-          contacts={selectedContacts}
-        />
-      ) : (
-        <header className="mb-2 flex items-center gap-3 border-b border-line px-1 pb-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
-            {favoritesOnly ? (
-              <FavoriteIcon className="h-5 w-5" filled />
-            ) : (
-              <ListIcon className="h-5 w-5" />
-            )}
-          </span>
-          <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-wide text-fg-bright">
-            {favoritesOnly ? t("favorites.title") : t("list.title")}
-          </h1>
-          {total > 0 && (
-            <button
-              type="button"
-              onClick={enterSelect}
-              aria-label={t("list.select")}
-              title={t("list.select")}
-              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-line text-muted hover:bg-surface-2 hover:text-fg"
-            >
-              <CheckSquareIcon className="h-5 w-5" />
-            </button>
+    <div className="relative mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-[calc(1.25rem+env(safe-area-inset-top))]">
+      {/* The title stays put — select mode no longer replaces it. The count,
+          exit ✕, and batch actions live in the floating `SelectToast` below. */}
+      <header className="mb-2 flex items-center gap-3 border-b border-line px-1 pb-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent/10 text-accent">
+          {favoritesOnly ? (
+            <FavoriteIcon className="h-5 w-5" filled />
+          ) : (
+            <ListIcon className="h-5 w-5" />
           )}
-        </header>
-      )}
+        </span>
+        <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-wide text-fg-bright">
+          {favoritesOnly ? t("favorites.title") : t("list.title")}
+        </h1>
+        {total > 0 && !selecting && (
+          <button
+            type="button"
+            onClick={enterSelect}
+            aria-label={t("list.select")}
+            title={t("list.select")}
+            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-line text-muted hover:bg-surface-2 hover:text-fg"
+          >
+            <CheckSquareIcon className="h-5 w-5" />
+          </button>
+        )}
+      </header>
 
-      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-10 [overscroll-behavior:contain]">
+      <div
+        ref={scrollRef}
+        className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto [overscroll-behavior:contain] ${
+          selecting ? "pb-24" : "pb-10"
+        }`}
+      >
         {total === 0 ? (
           <p className="px-2 py-10 text-center text-sm text-muted">
             {favoritesOnly ? t("favorites.empty") : t("list.empty")}
@@ -240,11 +309,22 @@ export function ContactListScreen({
             // the rows read as one flat list. Otherwise every section, the
             // ungrouped one included, gets a collapsible header.
             const showHeader = group.folder !== null || groups.length > 1;
+            // Each section is a drop zone — dropping a card (or the whole
+            // selection) here files it into this folder, or un-groups it to the
+            // root over the ungrouped section.
+            const zone = dnd.dropZone(
+              key,
+              group.folder
+                ? { kind: "folder", id: group.folder.id }
+                : { kind: "root" },
+            );
+            const dropOver = zone.isOver && dragging;
             // Subfolder sections step to the right so the nesting reads at a
             // glance (Family, then Family ▸ Spouse indented under it).
             return (
               <section
                 key={key}
+                ref={zone.ref}
                 className="mb-1"
                 style={
                   group.depth > 0
@@ -258,21 +338,53 @@ export function ContactListScreen({
                     count={group.contacts.length}
                     expanded={expanded}
                     onToggle={() => toggleSection(key)}
+                    dropOver={dropOver}
                   />
                 )}
                 {expanded && (
                   <ul className="m-0 list-none p-0">
                     {group.contacts.map((contact) => (
                       <li key={contact.id}>
-                        <ContactRow
-                          contact={contact}
-                          settings={settings}
-                          selecting={selecting}
-                          selected={selected.has(contact.id)}
-                          onOpen={() => onOpenContact(contact.id)}
-                          onToggleSelected={() => toggleSelected(contact.id)}
-                          onToggleFavorite={() => toggleFavorite(contact)}
-                        />
+                        <DraggableContactRow
+                          dragHandle={dnd.dragHandle(contact.id)}
+                          moveActions={
+                            activeFolders.length > 0 ||
+                            contact.folderId !== null
+                              ? [
+                                  {
+                                    label: t("menu.moveToFolder"),
+                                    icon: (
+                                      <FolderOpenIcon className="h-5 w-5" />
+                                    ),
+                                    onSelect: () =>
+                                      setMovePicker({
+                                        ids: idsForAction(contact.id),
+                                        at: movePos.current,
+                                      }),
+                                  },
+                                ]
+                              : []
+                          }
+                          menuLabel={t("menu.contactActions")}
+                          onCapturePos={(x, y) => {
+                            movePos.current = { x, y };
+                          }}
+                          onModifiedClick={
+                            selecting
+                              ? undefined
+                              : () => enterSelectWith(contact.id)
+                          }
+                        >
+                          <ContactRow
+                            contact={contact}
+                            settings={settings}
+                            selecting={selecting}
+                            selected={selected.has(contact.id)}
+                            onOpen={() => onOpenContact(contact.id)}
+                            onToggleSelected={() => toggleSelected(contact.id)}
+                            onToggleFavorite={() => toggleFavorite(contact)}
+                          />
+                        </DraggableContactRow>
                       </li>
                     ))}
                   </ul>
@@ -282,7 +394,84 @@ export function ContactListScreen({
           })
         )}
       </div>
+
+      {/* The floating select toolbar — hovers at the bottom over the list. */}
+      {selecting && (
+        <SelectToast
+          count={selectedContacts.length}
+          allSelected={allSelected}
+          onToggleAll={toggleSelectAll}
+          onExit={exitSelect}
+          contacts={selectedContacts}
+        />
+      )}
+
+      {/* The "Move to folder" right-click submenu. */}
+      <MoveToFolderMenu
+        folders={activeFolders}
+        folderSort={settings.folderSort}
+        position={movePicker ? movePicker.at : null}
+        onMove={(folderId) => {
+          if (movePicker) moveToFolder(movePicker.ids, folderId);
+          setMovePicker(null);
+        }}
+        onClose={() => setMovePicker(null)}
+      />
     </div>
+  );
+}
+
+// A List-page contact row wrapped for drag-and-drop and its right-click menu:
+// the whole row is a drag source (press-drag to file it into a folder section),
+// a Ctrl / Cmd-click enters select mode with it ticked, and a right-click opens
+// the row's actions (currently just "Move to folder"). A plain click still
+// falls through to the row's own open / toggle handlers.
+function DraggableContactRow({
+  dragHandle,
+  moveActions,
+  menuLabel,
+  onCapturePos,
+  onModifiedClick,
+  children,
+}: {
+  dragHandle: DragHandleProps;
+  moveActions: {
+    label: string;
+    icon: ReactNode;
+    onSelect: () => void;
+  }[];
+  menuLabel: string;
+  onCapturePos: (x: number, y: number) => void;
+  // Called when the row is clicked with Ctrl / Cmd held (enter select mode).
+  // Absent while already selecting, so a modified click just toggles as usual.
+  onModifiedClick?: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <RowActionMenu
+      actions={moveActions}
+      touchLongPress={false}
+      ariaLabel={menuLabel}
+    >
+      <div
+        {...dragHandle}
+        data-drawer-swipe-ignore
+        // Record the right-click point (capture phase) so the folder submenu
+        // opens there.
+        onContextMenuCapture={(e) => onCapturePos(e.clientX, e.clientY)}
+        // Intercept a Ctrl / Cmd-click before the row's buttons / links act on
+        // it, turning it into "enter select mode with this card".
+        onClickCapture={(e) => {
+          if (onModifiedClick && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            e.stopPropagation();
+            onModifiedClick();
+          }
+        }}
+      >
+        {children}
+      </div>
+    </RowActionMenu>
   );
 }
 
@@ -426,144 +615,32 @@ function ReorderGrip({
   );
 }
 
-// The header shown while selecting: cancel, the running count, a select-all
-// toggle, and the batch copy / export actions (inert until something's ticked).
-function SelectHeader({
-  count,
-  allSelected,
-  onToggleAll,
-  onCancel,
-  contacts,
-}: {
-  count: number;
-  allSelected: boolean;
-  onToggleAll: () => void;
-  onCancel: () => void;
-  contacts: Contact[];
-}) {
-  const t = useT();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const exportRef = useRef<HTMLButtonElement>(null);
-  const has = count > 0;
-
-  const runExport = (kind: "vcf" | "csv") => {
-    if (kind === "vcf") {
-      downloadText("contacts.vcf", contactsToVCards(contacts), MIME_VCARD);
-    } else {
-      downloadText("contacts.csv", contactsToCsv(contacts), MIME_CSV);
-    }
-    unlock("exporter");
-    setMenuOpen(false);
-  };
-
-  return (
-    <header className="mb-2 flex flex-col gap-2 border-b border-line px-1 pb-3">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          aria-label={t("common.cancel")}
-          title={t("common.cancel")}
-          className="-ml-1 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-line text-muted hover:bg-surface-2 hover:text-fg"
-        >
-          <CloseIcon className="h-5 w-5" />
-        </button>
-        <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-wide text-fg-bright tabular-nums">
-          {t("list.selectedCount", { n: String(count) })}
-        </h1>
-        <CopyButton
-          value={() => contactsToVCards(contacts)}
-          onCopied={() => unlock("exporter")}
-          labels={{ copy: t("list.copy"), copied: t("contact.copied") }}
-        />
-        <button
-          ref={exportRef}
-          type="button"
-          onClick={() => setMenuOpen((v) => !v)}
-          disabled={!has}
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
-          aria-label={t("list.export")}
-          title={t("list.export")}
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${
-            has
-              ? "cursor-pointer border-line text-muted hover:bg-surface-2 hover:text-fg"
-              : "cursor-not-allowed border-line text-muted opacity-40"
-          }`}
-        >
-          <DownloadIcon className="h-4 w-4" />
-        </button>
-        <FloatingPanel
-          open={menuOpen}
-          onClose={() => setMenuOpen(false)}
-          triggerRef={exportRef}
-          placement={EXPORT_MENU_PLACEMENT}
-          className="py-1"
-        >
-          <div role="menu" className="flex w-full flex-col">
-            <ExportMenuItem onClick={() => runExport("vcf")}>
-              {t("list.exportVCard")}
-            </ExportMenuItem>
-            <ExportMenuItem onClick={() => runExport("csv")}>
-              {t("list.exportCsv")}
-            </ExportMenuItem>
-          </div>
-        </FloatingPanel>
-      </div>
-      <button
-        type="button"
-        onClick={onToggleAll}
-        role="checkbox"
-        aria-checked={allSelected}
-        className="flex w-fit cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-left text-sm font-medium text-fg hover:text-fg-bright"
-      >
-        <span className="shrink-0" aria-hidden>
-          <CheckboxGlyph checked={allSelected} />
-        </span>
-        {t("list.selectAll")}
-      </button>
-    </header>
-  );
-}
-
-function ExportMenuItem({
-  children,
-  onClick,
-}: {
-  children: ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="menuitem"
-      onClick={onClick}
-      className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-fg hover:bg-surface-2 hover:text-fg-bright"
-    >
-      {children}
-    </button>
-  );
-}
-
 // A collapsible folder / ungrouped heading — a disclosure caret, the folder
-// glyph, its name, and the member count.
+// glyph, its name, and the member count. While a card is dragged over its
+// section, `dropOver` lights the header up so it reads as the landing folder.
 function SectionHeader({
   name,
   count,
   expanded,
   onToggle,
+  dropOver = false,
 }: {
   name: string;
   count: number;
   expanded: boolean;
   onToggle: () => void;
+  dropOver?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className="flex w-full cursor-pointer items-center gap-2 border-b border-line px-1 py-2 text-left text-fg hover:text-fg-bright"
+      className={`flex w-full cursor-pointer items-center gap-2 border-b px-1 py-2 text-left text-fg hover:text-fg-bright ${
+        dropOver
+          ? "rounded-md border-accent bg-accent/10 text-fg-bright"
+          : "border-line"
+      }`}
     >
       <span className="shrink-0 text-muted">
         {expanded ? (

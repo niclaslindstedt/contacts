@@ -29,12 +29,21 @@ marked as a **company** rather than a person.
   Each row also carries a **heart** at its trailing edge — tap it to star (or
   unstar) that contact as a favorite without opening the card. Tap a row to open
   that contact's card — its header carries a **back button** to return to the
-  list. The **Select**
-  button turns the list into a multi-select: tick as many contacts as you like,
-  or use the **Select all** checkbox on its own row to tick — or untick — every
-  contact at once, then **Copy** them as one vCard block to the clipboard or
-  **Export** the selection to a vCard or CSV file (see
-  [Export & import](feature:export)).
+  list.
+- **Organise from the List.** The List page files contacts, too. **Drag** a
+  contact row onto a folder section to move it there — the section lights up as
+  you hover, and the list auto-scrolls when you drag near its top or bottom edge
+  so a card low in a long list can be lifted into a folder above. Every row also
+  has a **Move to folder** right-click action that picks the destination from a
+  folder dropdown (the whole tree, indented, plus **No folder** to un-group).
+- **Select mode.** The **Select** button turns the list into a multi-select:
+  tick as many contacts as you like — or **Ctrl / Cmd-click** any row to jump
+  straight into select mode with it ticked. A floating toolbar hovers at the
+  bottom with the running count, an **✕** to leave, a **Select all** toggle, and
+  the batch **Copy** (one vCard block to the clipboard) / **Export** (to a vCard
+  or CSV file — see [Export & import](feature:export)) actions; the page title
+  stays put. With several selected, **drag any one of them** into a folder — or
+  use **Move to folder** — and the whole selection moves at once.
 - **Favorites.** Star the people you reach for most and they gather on their own
   **Favorites** page — the button sits next to List in the sidebar's action
   grid. Unlike the List overview, Favorites is a single **hand-orderable
@@ -61,7 +70,9 @@ marked as a **company** rather than a person.
   parent, and collapsing a folder folds its whole subtree away with it. **Drag**
   a folder onto another to nest it inside, or onto empty space to lift it back to
   the top level (in manual folder-sort, dropping near a sibling's top or bottom
-  edge still reorders them). Archiving, deleting, or moving a folder to another
+  edge still reorders them) — or use the folder's **Move to folder** right-click
+  action to nest it from a dropdown instead. A contact row's right-click menu
+  carries the same **Move to folder** action. Archiving, deleting, or moving a folder to another
   namespace carries the whole subtree along — **archiving** or **deleting** a
   folder shelves or removes every folder and contact beneath it, though a deleted
   folder's own contacts and subfolders are promoted up to its parent rather than

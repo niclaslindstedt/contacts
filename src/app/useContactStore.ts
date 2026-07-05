@@ -662,6 +662,28 @@ export function useContactStore(
     [commit, data],
   );
 
+  // Move several contacts into a folder (or out to the root, `null`) in one
+  // undoable step — the batch behind a multi-select drag or "Move to folder".
+  // Filing them one at a time would stack N undo steps *and* clobber each other
+  // (each call reads the same pre-move `data`), so the whole set moves in a
+  // single commit. A no-op when nothing actually changes folder.
+  const moveContactsToFolder = useCallback(
+    (contactIds: readonly string[], folderId: string | null) => {
+      const ids = new Set(contactIds);
+      const changes = data.contacts.some(
+        (c) => ids.has(c.id) && c.folderId !== folderId,
+      );
+      if (!changes) return;
+      commit({
+        ...data,
+        contacts: data.contacts.map((c) =>
+          ids.has(c.id) ? { ...c, folderId } : c,
+        ),
+      });
+    },
+    [commit, data],
+  );
+
   // Move a contact into *another* namespace — dropping it onto a workspace row
   // in the side menu. The target document lives under a different backend key,
   // so we read it, append a fresh-id copy (reset to the root — the target has
@@ -792,6 +814,7 @@ export function useContactStore(
     unarchiveFolder,
     deleteArchivedFolder,
     moveContactToFolder,
+    moveContactsToFolder,
     moveContactToNamespace,
     moveFolderToNamespace,
     reload,

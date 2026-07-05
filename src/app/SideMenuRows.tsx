@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { type ReactNode, type RefObject } from "react";
+import { createPortal } from "react-dom";
 
 import {
+  ChevronDownIcon,
+  ChevronUpIcon,
   ExternalLinkIcon,
   FolderIcon,
   FolderOpenIcon,
   InlineEditRow,
   PlusIcon,
 } from "@niclaslindstedt/oss-framework/components";
+import type { DragHandleProps } from "@niclaslindstedt/oss-framework/sidebar";
 
 import { PersonIcon } from "./icons.tsx";
 
@@ -354,5 +358,89 @@ export function FooterLink({
       </span>
       {external && <ExternalLinkIcon className="h-4 w-4 shrink-0 text-muted" />}
     </a>
+  );
+}
+
+// A draggable row: the whole row is the framework drag source. The framework
+// hook splits the gesture by pointer (a mouse press-and-drags, a finger
+// presses-and-holds to pick the row up) and owns the pointer once a drag
+// begins. The wrapper opts out of the drawer's swipe-to-close so a horizontal
+// drag here never doubles as a drawer dismiss.
+export function DraggableRow({
+  handle,
+  children,
+  containerRef,
+}: {
+  handle: DragHandleProps;
+  children: ReactNode;
+  // Optional handle on the row element — the folder rows use it to measure
+  // which half of the header a reorder drop was released over.
+  containerRef?: (el: HTMLElement | null) => void;
+}) {
+  return (
+    <div
+      ref={containerRef}
+      {...handle}
+      data-drawer-swipe-ignore
+      className="relative"
+    >
+      {children}
+    </div>
+  );
+}
+
+// The cursor-following drag preview — the dragged row's icon and name, portalled
+// to the body so it floats above everything. Dumb: the caller resolves the label
+// and glyph from whatever's mid-drag and hands them in.
+export function DragPreview({
+  label,
+  icon,
+  pointer,
+}: {
+  label: string;
+  icon: ReactNode;
+  pointer: { x: number; y: number } | null;
+}) {
+  if (!pointer) return null;
+  return createPortal(
+    <div
+      className="pointer-events-none fixed z-[60] flex max-w-[14rem] items-center gap-2 rounded-md border border-line bg-surface-2 px-3 py-1.5 text-sm text-fg-bright shadow-lg"
+      style={{ left: pointer.x + 14, top: pointer.y + 14 }}
+    >
+      <span className="text-muted">{icon}</span>
+      <span className="truncate">{label}</span>
+    </div>,
+    document.body,
+  );
+}
+
+// The thin chevron rail above the footer. A full-width button one line tall:
+// clicking it folds the footer away to give the contact list more room, and
+// again to bring it back. The chevron points down to collapse (fold the footer
+// down out of view) and up to restore it.
+export function FooterCollapseRail({
+  collapsed,
+  label,
+  onClick,
+}: {
+  collapsed: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      aria-expanded={!collapsed}
+      title={label}
+      className="flex w-full shrink-0 cursor-pointer items-center justify-center border-t border-line py-0 text-muted hover:bg-surface-2 hover:text-fg-bright"
+    >
+      {collapsed ? (
+        <ChevronUpIcon className="h-2.5 w-2.5" />
+      ) : (
+        <ChevronDownIcon className="h-2.5 w-2.5" />
+      )}
+    </button>
   );
 }

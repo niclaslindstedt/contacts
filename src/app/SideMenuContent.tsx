@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
 
 import {
   ArchiveIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
   CogIcon,
   ExternalLinkIcon,
   FloatingPanel,
   FolderIcon,
+  FolderOpenIcon,
   HelpCircleIcon,
   PencilIcon,
   PlusIcon,
@@ -21,6 +19,7 @@ import {
   TrashIcon,
   UndoIcon,
   type FloatingPlacement,
+  type FloatingPoint,
 } from "@niclaslindstedt/oss-framework/components";
 import {
   NamespaceSwitcher,
@@ -30,10 +29,7 @@ import {
   CheckForUpdatesItem,
   type PwaUpdateCheckResult,
 } from "@niclaslindstedt/oss-framework/pwa";
-import {
-  useDragDrop,
-  type DragHandleProps,
-} from "@niclaslindstedt/oss-framework/sidebar";
+import { useDragDrop } from "@niclaslindstedt/oss-framework/sidebar";
 
 import { Avatar } from "./Avatar.tsx";
 import {
@@ -41,14 +37,19 @@ import {
   childrenByParent,
   emergencyContacts,
   reorderIds,
+  subtreeFolderIds,
 } from "./contactList.ts";
 import { FavoriteIcon, IceIcon, ListIcon } from "./icons.tsx";
+import { MoveToFolderMenu } from "./MoveToFolderMenu.tsx";
 import {
   BarButton,
   CollapseAllButton,
   ContactEditRow,
+  DraggableRow,
+  DragPreview,
   FolderEditRow,
   FolderRow,
+  FooterCollapseRail,
   FooterLink,
   FooterRow,
   NavRow,
@@ -276,6 +277,16 @@ export function SideMenuContent({
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(
     () => new Set(),
   );
+  // The "Move to folder" right-click submenu. `movePointer` captures where the
+  // row was right-clicked (recorded in the capture phase, before the row's
+  // action menu opens) so the folder picker opens there; `movePicker` holds
+  // what's being moved once that action is chosen.
+  const movePointer = useRef<FloatingPoint>({ x: 0, y: 0 });
+  const [movePicker, setMovePicker] = useState<{
+    kind: "contact" | "folder";
+    id: string;
+    at: FloatingPoint;
+  } | null>(null);
   // A new folder isn't created until it's named: the "New folder" action drops
   // an inline editor into the list, and only a non-empty name commits it. The
   // value is the parent the folder will nest under — `null` for a root folder
@@ -368,10 +379,26 @@ export function SideMenuContent({
       danger: true,
       onSelect: () => deleteContact(contact.id),
     };
+    // Filing the card into a folder from the right-click menu — an alternative
+    // to dragging it there. Offered whenever there's somewhere to move it: a
+    // folder to file into, or (for a filed card) the root to lift it back to.
+    const canMoveContact =
+      visibleFolders.length > 0 || contact.folderId !== null;
+    const moveContactAction = {
+      label: t("menu.moveToFolder"),
+      icon: <FolderOpenIcon className="h-5 w-5" />,
+      onSelect: () =>
+        setMovePicker({
+          kind: "contact",
+          id: contact.id,
+          at: movePointer.current,
+        }),
+    };
     // The emergency flag is a set-once-ever choice, so it lives only in the
     // card's edit view (a toggle at the bottom) — not cluttering the per-row
     // right-click menu. The pinned ICE badge below still shows the state.
     const menuActions = [
+      ...(canMoveContact ? [moveContactAction] : []),
       {
         label: t("menu.archive"),
         icon: <ArchiveIcon className="h-5 w-5" />,
@@ -462,6 +489,24 @@ export function SideMenuContent({
       icon: <FolderIcon className="h-5 w-5" />,
       onSelect: () => beginCreateFolder(folder.id),
     };
+    // Nest this folder under another (or lift it to the root) from the menu —
+    // the drag gesture's counterpart. Its own subtree is excluded as a target
+    // (a folder can't nest inside itself), so it's offered only when a legal
+    // destination exists.
+    const folderSubtree = subtreeFolderIds(visibleFolders, folder.id);
+    const canMoveFolder =
+      (folder.parentId ?? null) !== null ||
+      visibleFolders.some((f) => !folderSubtree.has(f.id));
+    const moveFolderAction = {
+      label: t("menu.moveToFolder"),
+      icon: <FolderOpenIcon className="h-5 w-5" />,
+      onSelect: () =>
+        setMovePicker({
+          kind: "folder",
+          id: folder.id,
+          at: movePointer.current,
+        }),
+    };
     const deleteFolderAction = {
       label: t("menu.deleteFolder"),
       icon: <TrashIcon className="h-5 w-5" />,
@@ -476,6 +521,7 @@ export function SideMenuContent({
     const folderMenuActions = [
       renameFolderAction,
       newSubfolderAction,
+      ...(canMoveFolder ? [moveFolderAction] : []),
       {
         label: t("menu.archive"),
         icon: <ArchiveIcon className="h-5 w-5" />,
@@ -683,6 +729,11 @@ export function SideMenuContent({
         <div
           ref={rootZone.ref}
           className="flex min-h-0 flex-1 flex-col overflow-y-auto"
+          // Record where a right-click lands (capture phase, before the row's
+          // action menu opens) so the "Move to folder" submenu can open there.
+          onContextMenuCapture={(e) => {
+            movePointer.current = { x: e.clientX, y: e.clientY };
+          }}
         >
           {/* Pinned "in case of emergency" section — flagged contacts float to
               the top, mirrored from their folder so they're always in reach. */}
@@ -885,117 +936,63 @@ export function SideMenuContent({
 
       {/* The cursor-following label of whatever's mid-drag — portalled to the
           body so it rides above the drawer. */}
-      {dnd.dragging && (
-        <DragPreview
-          item={dnd.dragging}
-          pointer={dnd.pointer}
-          contacts={data.contacts}
-          folders={data.folders}
-        />
-      )}
+      {dnd.dragging &&
+        (() => {
+          // Resolve what's mid-drag into a label + glyph for the floating
+          // preview: a contact's avatar and name, or a folder's icon and name.
+          const drag = dnd.dragging;
+          const contact =
+            drag.kind === "contact"
+              ? data.contacts.find((c) => c.id === drag.id)
+              : null;
+          const folder =
+            drag.kind === "folder"
+              ? data.folders.find((f) => f.id === drag.id)
+              : null;
+          return (
+            <DragPreview
+              pointer={dnd.pointer}
+              label={contact ? displayName(contact) : (folder?.name ?? "")}
+              icon={
+                contact ? (
+                  <Avatar contact={contact} size="row" />
+                ) : (
+                  <FolderIcon className="h-4 w-4" />
+                )
+              }
+            />
+          );
+        })()}
+
+      {/* The "Move to folder" right-click submenu — a folder picker opened at
+          the pointer, filing the chosen contact / folder. A moving folder's own
+          subtree is excluded so it can't be nested inside itself. */}
+      <MoveToFolderMenu
+        folders={visibleFolders}
+        folderSort={folderSort}
+        position={movePicker ? movePicker.at : null}
+        excludeFolderIds={
+          movePicker?.kind === "folder"
+            ? subtreeFolderIds(visibleFolders, movePicker.id)
+            : undefined
+        }
+        onMove={(folderId) => {
+          if (!movePicker) return;
+          if (movePicker.kind === "contact") {
+            moveContactToFolder(movePicker.id, folderId);
+          } else {
+            moveFolderToFolder(movePicker.id, folderId);
+          }
+          setMovePicker(null);
+        }}
+        onClose={() => setMovePicker(null)}
+      />
     </div>
   );
 }
 
 // --- rows ------------------------------------------------------------------
 //
-// The presentational leaf rows live in `SideMenuRows.tsx`; this file keeps
-// only the two drag-coupled ones (`DraggableRow` wraps the framework drag
-// source, `DragPreview` reads the app's `DragItem`).
-
-// A draggable row: the whole row is the framework drag source. The framework
-// hook splits the gesture by pointer (a mouse press-and-drags, a finger
-// presses-and-holds to pick the row up) and owns the pointer once a drag
-// begins. The wrapper opts out of the drawer's swipe-to-close so a horizontal
-// drag here never doubles as a drawer dismiss.
-function DraggableRow({
-  handle,
-  children,
-  containerRef,
-}: {
-  handle: DragHandleProps;
-  children: ReactNode;
-  // Optional handle on the row element — the folder rows use it to measure
-  // which half of the header a reorder drop was released over.
-  containerRef?: (el: HTMLElement | null) => void;
-}) {
-  return (
-    <div
-      ref={containerRef}
-      {...handle}
-      data-drawer-swipe-ignore
-      className="relative"
-    >
-      {children}
-    </div>
-  );
-}
-
-// The cursor-following drag preview — the dragged contact's / folder's icon
-// and name, portalled to the body so it floats above everything.
-function DragPreview({
-  item,
-  pointer,
-  contacts,
-  folders,
-}: {
-  item: DragItem;
-  pointer: { x: number; y: number } | null;
-  contacts: Contact[];
-  folders: { id: string; name: string }[];
-}) {
-  if (!pointer) return null;
-  const contact =
-    item.kind === "contact" ? contacts.find((c) => c.id === item.id) : null;
-  const folder =
-    item.kind === "folder" ? folders.find((f) => f.id === item.id) : null;
-  const label = contact ? displayName(contact) : (folder?.name ?? "");
-  const icon = contact ? (
-    <Avatar contact={contact} size="row" />
-  ) : (
-    <FolderIcon className="h-4 w-4" />
-  );
-  return createPortal(
-    <div
-      className="pointer-events-none fixed z-[60] flex max-w-[14rem] items-center gap-2 rounded-md border border-line bg-surface-2 px-3 py-1.5 text-sm text-fg-bright shadow-lg"
-      style={{ left: pointer.x + 14, top: pointer.y + 14 }}
-    >
-      <span className="text-muted">{icon}</span>
-      <span className="truncate">{label}</span>
-    </div>,
-    document.body,
-  );
-}
-
-// The thin chevron rail above the footer (wide viewports only). A full-width
-// button one line tall: clicking it folds the footer away to give the contact
-// list more room, and again to bring it back. The chevron points down to
-// collapse (fold the footer down out of view) and up to restore it.
-function FooterCollapseRail({
-  collapsed,
-  label,
-  onClick,
-}: {
-  collapsed: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      aria-expanded={!collapsed}
-      title={label}
-      className="flex w-full shrink-0 cursor-pointer items-center justify-center border-t border-line py-1 text-muted hover:bg-surface-2 hover:text-fg-bright"
-    >
-      {collapsed ? (
-        <ChevronUpIcon className="h-4 w-4" />
-      ) : (
-        <ChevronDownIcon className="h-4 w-4" />
-      )}
-    </button>
-  );
-}
-
-// The footer's leaf rows (`FooterRow`, `FooterLink`) live in `SideMenuRows.tsx`.
+// The presentational leaf rows — including the drag-coupled `DraggableRow` /
+// `DragPreview` and the `FooterCollapseRail` — all live in `SideMenuRows.tsx`,
+// so this file stays about the navigation's state and gestures.
