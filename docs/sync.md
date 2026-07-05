@@ -71,7 +71,7 @@ The folder names default to `Contacts` but are build-time configurable via
 `VITE_DROPBOX_APP_FOLDER` and `VITE_GDRIVE_APP_FOLDER` — set them so the link
 and the displayed file location match your Dropbox app's real app folder (which
 Dropbox fixes from the app config) and the My Drive folder the app creates. See
-[configuration](../configuration.md).
+[configuration](./configuration.md).
 
 ## The on-device copy
 
@@ -153,7 +153,7 @@ plaintext image files.
 
 ## Attachment files
 
-Contact **attachments** (see [Contact cards](feature:contacts)) are filed out
+Contact **attachments** (see [Contact cards](./contacts.md)) are filed out
 the same way. On a folder or cloud backend each attachment's bytes move into
 their own file under `attachments/<name>-<id>-<attachId>.<ext>`, keeping the
 original file
@@ -166,7 +166,7 @@ attachments stay inside the encrypted envelope instead.
 
 ## Backup files
 
-Dated **backups** (see [Export & import](feature:export)) also live on a
+Dated **backups** (see [Export & import](./export.md)) also live on a
 folder or cloud backend, under a `backups/` folder beside the document. Each is
 a self-contained, compressed `.zip` of the whole address book named
 `contacts-<namespace>-<timestamp>-c<contacts>-f<folders>.zip`; **Settings →

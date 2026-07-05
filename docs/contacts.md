@@ -45,7 +45,7 @@ marked as a **company** rather than a person.
   straight into select mode with it ticked. A floating toolbar hovers at the
   bottom with the running count, an **✕** to leave, a **Select all** toggle, and
   the batch **Copy** (one vCard block to the clipboard) / **Export** (to a vCard
-  or CSV file — see [Export & import](feature:export)) actions; the page title
+  or CSV file — see [Export & import](./export.md)) actions; the page title
   stays put. With several selected, **drag any one of them** into a folder — or
   use **Move to folder** — and the whole selection moves at once.
 - **Favorites.** Star the people you reach for most and they gather on their own
@@ -138,7 +138,7 @@ marked as a **company** rather than a person.
   icon and accent colour instead. Only the **current face** is written to a
   downloaded or copied vCard. On a connected cloud drive each photo is filed at a
   tidy `photos/<name>-<id>-<photoId>.jpg` path so it's easy to find — see
-  [Cloud sync](feature:sync).
+  [Cloud sync](./sync.md).
 - **Attachments.** Clip **files** to a contact — a restaurant's menu, a signed
   contract, a scanned business card. In edit mode, the **Attachments** section's
   **Add file** button picks one or more files, and each can carry an optional
@@ -148,7 +148,7 @@ marked as a **company** rather than a person.
   else downloads. Attachments stay in the app (not written to a vCard or CSV) but
   are kept in the JSON backup. On a connected cloud drive they're filed out as
   real, previewable files under an `attachments/` folder — the same way photos
-  are — so the synced document stays lean (see [Cloud sync](feature:sync)).
+  are — so the synced document stays lean (see [Cloud sync](./sync.md)).
   Individual files are capped at 10 MB.
 - **In case of emergency.** Flag a contact as an **emergency contact** and it's
   pinned to a dedicated **In case of emergency** section at the very top of the
