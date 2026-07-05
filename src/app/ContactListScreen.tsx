@@ -2,13 +2,17 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import {
+  ArchiveIcon,
   CheckboxGlyph,
   ChevronDownIcon,
   ChevronRightIcon,
   FolderOpenIcon,
   GripIcon,
   RowActionMenu,
+  SwipeableRow,
+  TrashIcon,
   type FloatingPoint,
+  type RowAction,
 } from "@niclaslindstedt/oss-framework/components";
 import {
   useDragDrop,
@@ -81,7 +85,14 @@ export function ContactListScreen({
   variant?: "all" | "favorites";
 }) {
   const t = useT();
-  const { data, updateContact, reorderFavorites, moveContactsToFolder } = store;
+  const {
+    data,
+    updateContact,
+    reorderFavorites,
+    moveContactsToFolder,
+    archiveContact,
+    deleteContact,
+  } = store;
   const favoritesOnly = variant === "favorites";
   // The folders a card can be filed into — the non-archived set, shared by the
   // drag-and-drop drop zones and the "Move to folder" right-click submenu.
@@ -222,6 +233,40 @@ export function ContactListScreen({
   const moveToFolder = (ids: string[], folderId: string | null) =>
     moveContactsToFolder(ids, folderId);
 
+  // The per-row actions shared by both pages, mirroring the side menu's contact
+  // rows: a left-swipe **Delete** button, a right-swipe **Archive** commit, and
+  // the desktop right-click menu (Move to folder / Archive / Delete). Delete and
+  // archive act on the single grabbed card — like the sidebar — while "Move to
+  // folder" carries the whole selection when the card is part of it.
+  const contactRowActions = (contact: Contact) => {
+    const deleteAction: RowAction = {
+      label: t("menu.deleteContact"),
+      icon: <TrashIcon className="h-5 w-5" />,
+      danger: true,
+      onSelect: () => deleteContact(contact.id),
+    };
+    const archiveAction: RowAction = {
+      label: t("menu.archive"),
+      icon: <ArchiveIcon className="h-5 w-5" />,
+      onSelect: () => archiveContact(contact.id),
+    };
+    // Filing into a folder is offered whenever there's somewhere to go: a folder
+    // to land in, or (for an already-filed card) the root to lift it back to.
+    const canMove = activeFolders.length > 0 || contact.folderId !== null;
+    const moveAction: RowAction = {
+      label: t("menu.moveToFolder"),
+      icon: <FolderOpenIcon className="h-5 w-5" />,
+      onSelect: () =>
+        setMovePicker({ ids: idsForAction(contact.id), at: movePos.current }),
+    };
+    const menuActions: RowAction[] = [
+      ...(canMove ? [moveAction] : []),
+      archiveAction,
+      deleteAction,
+    ];
+    return { deleteAction, archiveAction, menuActions };
+  };
+
   // Drag-and-drop of contacts into folder sections (List page only). A row is a
   // drag source; each folder section is a drop zone that files the dragged card
   // — or the whole selection — into it. The ungrouped section drops to the root.
@@ -355,6 +400,10 @@ export function ContactListScreen({
             settings={settings}
             selecting={selecting}
             selected={selected}
+            rowActionsFor={contactRowActions}
+            onCapturePos={(x, y) => {
+              movePos.current = { x, y };
+            }}
             onOpenContact={onOpenContact}
             onToggleSelected={toggleSelected}
             onToggleFavorite={toggleFavorite}
@@ -420,25 +469,9 @@ export function ContactListScreen({
                       <li key={contact.id}>
                         <DraggableContactRow
                           dragHandle={dnd.dragHandle(contact.id)}
-                          moveActions={
-                            activeFolders.length > 0 ||
-                            contact.folderId !== null
-                              ? [
-                                  {
-                                    label: t("menu.moveToFolder"),
-                                    icon: (
-                                      <FolderOpenIcon className="h-5 w-5" />
-                                    ),
-                                    onSelect: () =>
-                                      setMovePicker({
-                                        ids: idsForAction(contact.id),
-                                        at: movePos.current,
-                                      }),
-                                  },
-                                ]
-                              : []
-                          }
+                          actions={contactRowActions(contact)}
                           menuLabel={t("menu.contactActions")}
+                          archiveLabel={t("menu.archive")}
                           onCapturePos={(x, y) => {
                             movePos.current = { x, y };
                           }}
@@ -489,26 +522,30 @@ export function ContactListScreen({
   );
 }
 
-// A List-page contact row wrapped for drag-and-drop and its right-click menu:
-// the whole row is a drag source (press-drag to file it into a folder section),
-// a Ctrl / Cmd-click enters select mode with it ticked, and a right-click opens
-// the row's actions (currently just "Move to folder"). A plain click still
-// falls through to the row's own open / toggle handlers.
+// A List-page contact row wrapped for drag-and-drop, swipe actions, and its
+// right-click menu — the same set the side menu's contact rows carry: the whole
+// row is a drag source (press-drag to file it into a folder section), a swipe
+// left reveals **Delete** and a swipe right commits **Archive**, a Ctrl /
+// Cmd-click enters select mode with it ticked, and a right-click opens the row
+// actions (Move to folder / Archive / Delete). A plain click still falls
+// through to the row's own open / toggle handlers.
 function DraggableContactRow({
   dragHandle,
-  moveActions,
+  actions,
   menuLabel,
+  archiveLabel,
   onCapturePos,
   onModifiedClick,
   children,
 }: {
   dragHandle: DragHandleProps;
-  moveActions: {
-    label: string;
-    icon: ReactNode;
-    onSelect: () => void;
-  }[];
+  actions: {
+    deleteAction: RowAction;
+    archiveAction: RowAction;
+    menuActions: RowAction[];
+  };
   menuLabel: string;
+  archiveLabel: string;
   onCapturePos: (x: number, y: number) => void;
   // Called when the row is clicked with Ctrl / Cmd held (enter select mode).
   // Absent while already selecting, so a modified click just toggles as usual.
@@ -516,29 +553,70 @@ function DraggableContactRow({
   children: ReactNode;
 }) {
   return (
+    <div
+      {...dragHandle}
+      data-drawer-swipe-ignore
+      // Record the right-click point (capture phase) so the folder submenu
+      // opens there.
+      onContextMenuCapture={(e) => onCapturePos(e.clientX, e.clientY)}
+      // Intercept a Ctrl / Cmd-click before the row's buttons / links act on
+      // it, turning it into "enter select mode with this card".
+      onClickCapture={(e) => {
+        if (onModifiedClick && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          e.stopPropagation();
+          onModifiedClick();
+        }
+      }}
+    >
+      <ContactRowActions
+        actions={actions}
+        menuLabel={menuLabel}
+        archiveLabel={archiveLabel}
+      >
+        {children}
+      </ContactRowActions>
+    </div>
+  );
+}
+
+// The swipe strip + right-click menu wrapper shared by both pages, mirroring the
+// side menu's contact rows: a left swipe latches a **Delete** button, a right
+// swipe commits **Archive**, and a desktop right-click opens the full action
+// menu (touch reaches the same actions through the swipe strip, so the menu
+// stays a pointer affordance).
+function ContactRowActions({
+  actions,
+  menuLabel,
+  archiveLabel,
+  children,
+}: {
+  actions: {
+    deleteAction: RowAction;
+    archiveAction: RowAction;
+    menuActions: RowAction[];
+  };
+  menuLabel: string;
+  archiveLabel: string;
+  children: ReactNode;
+}) {
+  return (
     <RowActionMenu
-      actions={moveActions}
+      actions={actions.menuActions}
       touchLongPress={false}
       ariaLabel={menuLabel}
     >
-      <div
-        {...dragHandle}
-        data-drawer-swipe-ignore
-        // Record the right-click point (capture phase) so the folder submenu
-        // opens there.
-        onContextMenuCapture={(e) => onCapturePos(e.clientX, e.clientY)}
-        // Intercept a Ctrl / Cmd-click before the row's buttons / links act on
-        // it, turning it into "enter select mode with this card".
-        onClickCapture={(e) => {
-          if (onModifiedClick && (e.metaKey || e.ctrlKey)) {
-            e.preventDefault();
-            e.stopPropagation();
-            onModifiedClick();
-          }
+      <SwipeableRow
+        actions={[actions.deleteAction]}
+        leading={{
+          kind: "commit",
+          onCommit: actions.archiveAction.onSelect,
+          label: archiveLabel,
+          icon: <ArchiveIcon className="h-5 w-5" />,
         }}
       >
         {children}
-      </div>
+      </SwipeableRow>
     </RowActionMenu>
   );
 }
@@ -554,6 +632,8 @@ function FavoritesReorderList({
   settings,
   selecting,
   selected,
+  rowActionsFor,
+  onCapturePos,
   onOpenContact,
   onToggleSelected,
   onToggleFavorite,
@@ -563,6 +643,16 @@ function FavoritesReorderList({
   settings: AppSettings;
   selecting: boolean;
   selected: ReadonlySet<string>;
+  // Builds the swipe + right-click actions for a row — the same set the List
+  // page uses, so both pages carry the side menu's row gestures.
+  rowActionsFor: (contact: Contact) => {
+    deleteAction: RowAction;
+    archiveAction: RowAction;
+    menuActions: RowAction[];
+  };
+  // Record where a row was right-clicked so the "Move to folder" submenu opens
+  // at the pointer.
+  onCapturePos: (x: number, y: number) => void;
   onOpenContact: (id: string) => void;
   onToggleSelected: (id: string) => void;
   onToggleFavorite: (contact: Contact) => void;
@@ -624,7 +714,14 @@ function FavoritesReorderList({
           else rowEls.current.delete(contact.id);
         };
         return (
-          <li key={contact.id} ref={setRef} className="relative">
+          <li
+            key={contact.id}
+            ref={setRef}
+            className="relative"
+            // Record the right-click point (capture phase) so the folder
+            // submenu opens there.
+            onContextMenuCapture={(e) => onCapturePos(e.clientX, e.clientY)}
+          >
             {showLine && (
               <div
                 aria-hidden
@@ -633,25 +730,31 @@ function FavoritesReorderList({
                 }`}
               />
             )}
-            <ContactRow
-              contact={contact}
-              settings={settings}
-              selecting={selecting}
-              selected={selected.has(contact.id)}
-              onOpen={() => onOpenContact(contact.id)}
-              onToggleSelected={() => onToggleSelected(contact.id)}
-              onToggleFavorite={() => onToggleFavorite(contact)}
-              grip={
-                selecting ? undefined : (
-                  <ReorderGrip
-                    handle={dnd.dragHandle(contact.id)}
-                    label={t("favorites.reorder", {
-                      name: displayName(contact) || t("contact.unnamed"),
-                    })}
-                  />
-                )
-              }
-            />
+            <ContactRowActions
+              actions={rowActionsFor(contact)}
+              menuLabel={t("menu.contactActions")}
+              archiveLabel={t("menu.archive")}
+            >
+              <ContactRow
+                contact={contact}
+                settings={settings}
+                selecting={selecting}
+                selected={selected.has(contact.id)}
+                onOpen={() => onOpenContact(contact.id)}
+                onToggleSelected={() => onToggleSelected(contact.id)}
+                onToggleFavorite={() => onToggleFavorite(contact)}
+                grip={
+                  selecting ? undefined : (
+                    <ReorderGrip
+                      handle={dnd.dragHandle(contact.id)}
+                      label={t("favorites.reorder", {
+                        name: displayName(contact) || t("contact.unnamed"),
+                      })}
+                    />
+                  )
+                }
+              />
+            </ContactRowActions>
           </li>
         );
       })}

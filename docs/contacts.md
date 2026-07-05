@@ -38,8 +38,12 @@ marked as a **company** rather than a person.
   contact row onto a folder section to move it there — the section lights up as
   you hover, and the list auto-scrolls when you drag near its top or bottom edge
   so a card low in a long list can be lifted into a folder above. Every row also
-  has a **Move to folder** right-click action that picks the destination from a
-  folder dropdown (the whole tree, indented, plus **No folder** to un-group).
+  carries the same gestures the side menu's rows do: **swipe a row left** to
+  bare a **Delete** button, **swipe it right** to **archive** it, and — on a
+  desktop pointer — **right-click** for the full menu (**Move to folder**,
+  **Archive**, **Delete**). Move to folder picks the destination from a folder
+  dropdown (the whole tree, indented, plus **No folder** to un-group). The same
+  swipe actions and right-click menu ride along on the **Favorites** page rows.
 - **Select mode.** The **Select** button turns the list into a multi-select:
   tick as many contacts as you like — or **Ctrl / Cmd-click** any row to jump
   straight into select mode with it ticked. The Select button stays in the
