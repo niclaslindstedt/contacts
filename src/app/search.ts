@@ -6,15 +6,19 @@ import {
 } from "@niclaslindstedt/oss-framework/search";
 
 import { formatAddress } from "./address.ts";
+import { attachmentList } from "./attachments.ts";
 import type { AppData } from "./types.ts";
 import { displayName } from "./types.ts";
 
 // The app side of the search seam: the framework owns the matcher (the query
 // language, per-string matching, scoring, highlighting) and the overlay
 // chrome; this file owns the *corpus* — what gets indexed and how the hits are
-// grouped (per contact). A card contributes its display name, company, every
-// phone number and email address, each address (title + parts) and important
-// date, and its notes (clipped to a snippet).
+// grouped (per contact). A card contributes **everything textual it carries**:
+// its display name, company, homepage, every phone number and email address,
+// each address (title + parts), the birthday and each important date, every
+// attachment's file name and description, and its notes (long texts clipped
+// to a snippet) — so quick find surfaces a card no matter which corner of it
+// holds the term.
 
 /** One matched field within a contact group. */
 export type FieldHit = {
@@ -75,6 +79,8 @@ export function runSearch(data: AppData, raw: string): SearchOutcome {
     };
 
     tryField("company", contact.company);
+    tryField("homepage", contact.homepage);
+    tryField("birthday", contact.birthday);
     for (const p of contact.phones) tryField(`phone-${p.id}`, p.value);
     for (const e of contact.emails) tryField(`email-${e.id}`, e.value);
     for (const a of contact.addresses) {
@@ -88,6 +94,24 @@ export function runSearch(data: AppData, raw: string): SearchOutcome {
         `date-${d.id}`,
         [d.label?.trim(), d.date].filter(Boolean).join(" "),
       );
+    }
+
+    // Attachments: the file name and its free-text description both index, so
+    // "menu.pdf" and "lunch menu" alike surface the card carrying the file.
+    for (const att of attachmentList(contact)) {
+      tryField(`attachment-${att.id}`, att.name);
+      if (att.description) {
+        const m = q.match(att.description);
+        if (m) {
+          const clip = clipAround(att.description, m.ranges);
+          fields.push({
+            key: `attachment-desc-${att.id}`,
+            text: clip.text,
+            ranges: clip.ranges,
+          });
+          score = Math.max(score, m.score);
+        }
+      }
     }
 
     // Notes can be long — clip the hit to a focused window.
