@@ -44,6 +44,14 @@ all of them too: its labels turn into **Move 5 contacts to folder**, **Archive 5
 contacts**, and **Delete 5 contacts**, with the multi-card delete behind the
 same confirmation.
 
+Picking a run of contacts is quick: tick one, then **Shift-click** another and
+every card between them is ticked as well. The range follows what's on screen,
+so it sweeps straight across folder headings — a Shift-click that starts in one
+folder and ends in the folder below ticks every visible row in between, and
+skips whatever is tucked inside a folder you've collapsed. Each folder heading
+also grows its own **checkbox** while selecting — one tap ticks everyone in that
+folder, another clears them.
+
 Opening a contact from the List floats its card over the page — swipe it down
 (or press Escape, or tap outside) to dismiss it and drop back to where you left
 off.

@@ -12,6 +12,7 @@ import {
   listedContacts,
   orderedFolderTree,
   prioritizePhones,
+  rangeBetween,
   reorderIds,
   sortFolders,
   subtreeFolderIds,
@@ -571,5 +572,49 @@ describe("reorderIds", () => {
       "d",
       "c",
     ]);
+  });
+});
+
+describe("rangeBetween", () => {
+  it("returns the inclusive run between anchor and target", () => {
+    expect(rangeBetween(["a", "b", "c", "d", "e"], "b", "d")).toEqual([
+      "b",
+      "c",
+      "d",
+    ]);
+  });
+
+  it("is order-agnostic — anchor may sit below the target", () => {
+    expect(rangeBetween(["a", "b", "c", "d", "e"], "d", "b")).toEqual([
+      "b",
+      "c",
+      "d",
+    ]);
+  });
+
+  it("spans folder boundaries because the ids are the flat visible order", () => {
+    // Two folders flattened into one reading order: a Shift-click from the last
+    // row of the first folder to a row in the next sweeps the rows in between,
+    // ignoring the folder split.
+    const visible = ["fam-1", "fam-2", "work-1", "work-2", "work-3"];
+    expect(rangeBetween(visible, "fam-2", "work-2")).toEqual([
+      "fam-2",
+      "work-1",
+      "work-2",
+    ]);
+  });
+
+  it("is a single-element range when anchor equals target", () => {
+    expect(rangeBetween(["a", "b", "c"], "b", "b")).toEqual(["b"]);
+  });
+
+  it("falls back to just the target when the anchor isn't visible", () => {
+    // The anchor scrolled into a collapsed folder and dropped out of the
+    // visible run — the Shift-click still ticks the clicked card.
+    expect(rangeBetween(["a", "b", "c"], "x", "b")).toEqual(["b"]);
+  });
+
+  it("is empty when the target itself isn't present", () => {
+    expect(rangeBetween(["a", "b", "c"], "a", "z")).toEqual([]);
   });
 });

@@ -119,6 +119,8 @@ export const sv: Catalog = {
     selectAll: "Välj alla",
     selectNone: "Avmarkera alla",
     selectContact: "Välj {name}",
+    selectFolder: "Välj alla i {name}",
+    selectUngrouped: "Välj alla utan mapp",
     selectedCount: "{n} valda",
     exitSelect: "Avsluta markering",
     copy: "Kopiera valda",

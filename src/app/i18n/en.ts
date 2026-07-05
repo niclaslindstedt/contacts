@@ -131,6 +131,8 @@ export const en = {
     selectAll: "Select all",
     selectNone: "Select none",
     selectContact: "Select {name}",
+    selectFolder: "Select everyone in {name}",
+    selectUngrouped: "Select everyone with no folder",
     selectedCount: "{n} selected",
     exitSelect: "Exit selection",
     copy: "Copy selected",
