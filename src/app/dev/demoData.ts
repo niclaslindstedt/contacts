@@ -14,9 +14,10 @@
 // trip ends; two cards carry real (tiny) PDF attachments. Every field the
 // model offers is exercised somewhere — but, like a real address book, not on
 // every card. All names, companies, numbers (drama ranges), and addresses are
-// fictional; mail domains use the reserved `example` names. No photos: there
-// is no freely redistributable CC0 portrait source to embed, so cards wear
-// the app's glyph/colour avatars instead.
+// fictional; mail domains use the reserved `example` names. Most cards wear a
+// portrait photo from the owner-supplied AI-generated face set (see
+// `demoPhotos.ts` for provenance and the age-matched casting); the rest fall
+// back to the app's glyph/colour avatars.
 //
 // A pure, deterministic builder like `buildFakeData`: no randomness, no clock,
 // a fresh `AppData` each call. Loaded only through the in-memory demo backend
@@ -76,6 +77,20 @@ export const DEMO_CONTACT_SPECS: readonly DemoContactSpec[] = [
   ...DEMO_ARCHIVED_PEOPLE,
   ...DEMO_OLD_JOB,
 ];
+
+// The portrait map is ~290 KB of base64 JPEG, so it ships as its own lazy
+// chunk rather than in the main bundle every user parses on first load.
+// `setDevDataMode` awaits `loadDemoPhotos` before flipping into demo mode, so
+// by the time the demo backend seeds a document the cache is always filled —
+// the sync `buildDemoData` never has to wait on it.
+let demoPhotos: Record<string, string> = {};
+
+/** Pull the portrait chunk into the builder's cache. Idempotent; resolves
+ *  once the faces are ready to be baked into built documents. */
+export async function loadDemoPhotos(): Promise<void> {
+  const m = await import("./demoPhotos.ts");
+  demoPhotos = m.DEMO_PHOTOS;
+}
 
 // The book's timeline, so the foot-of-card stamp (see `ContactReadView`) reads
 // realistically: an address book filled in over years. Fixed anchors and a
@@ -199,6 +214,12 @@ function expandContact(
       id: `demo-${spec.slug}-att${i + 1}`,
       ...a,
     }));
+  }
+  // Cards cast with a portrait (see `demoPhotos.ts`) get a one-photo gallery;
+  // the rest keep their glyph/colour avatar.
+  const photo = demoPhotos[spec.slug];
+  if (photo) {
+    contact.photos = [{ id: `demo-${spec.slug}-photo`, photo }];
   }
 
   const { createdAt, updatedAt } = demoTimestamps(spec, index, total);

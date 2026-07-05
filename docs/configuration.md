@@ -54,8 +54,9 @@ presentation-grade address book of about a hundred realistic (but entirely
 fictional) contacts: family with birthdays and name days, friends at home and
 abroad, colleagues and clients, the kids' school circle, and a folder of
 household services, complete with favorites, emergency contacts, notes, nested
-folders, archived cards, and a couple of PDF attachments. It's made for demos
-and screenshots rather than stress-testing. Load it with the
+folders, archived cards, a couple of PDF attachments, and portrait photos on
+most cards (AI-generated faces owned by the project — no real people). It's
+made for demos and screenshots rather than stress-testing. Load it with the
 **Settings → Developer → Demo data** toggle (mutually exclusive with Fake
 data), or boot straight into it with `VITE_SEED=demo npm run dev`.
 
