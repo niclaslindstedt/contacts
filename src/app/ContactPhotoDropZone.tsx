@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { useCallback, useRef, useState, type ReactNode } from "react";
 
+import { ImageUpIcon } from "@niclaslindstedt/oss-framework/components";
 import {
   dragHasFilesOfType,
   firstFileOfType,
@@ -12,7 +13,6 @@ import {
 } from "@niclaslindstedt/oss-framework/viewer";
 
 import { withPhotoAdded } from "./contactPhotos.ts";
-import { ImageUpIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { fromViewTransform } from "./photo.ts";
 import { log } from "./log.ts";

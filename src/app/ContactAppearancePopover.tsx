@@ -3,7 +3,10 @@ import { useRef, useState, type ReactNode } from "react";
 
 import {
   CheckIcon,
+  CropIcon,
   FloatingPanel,
+  ImageUpIcon,
+  PersonIcon,
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
 import {
@@ -26,7 +29,6 @@ import {
   withPhotoAdjusted,
   withPhotoRemoved,
 } from "./contactPhotos.ts";
-import { CropIcon, ImageUpIcon, PersonIcon } from "./icons.tsx";
 import { log } from "./log.ts";
 import { fromViewTransform, toViewTransform } from "./photo.ts";
 import { freshId } from "./useContactStore.ts";

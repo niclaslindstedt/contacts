@@ -9,6 +9,7 @@ import {
   FolderIcon,
   FolderOpenIcon,
   HelpCircleIcon,
+  ListIcon,
   PencilIcon,
   PlusIcon,
   RedoIcon,
@@ -39,7 +40,7 @@ import {
   reorderIds,
   subtreeFolderIds,
 } from "./contactList.ts";
-import { FavoriteIcon, IceIcon, ListIcon } from "./icons.tsx";
+import { FavoriteIcon, IceIcon } from "./icons.tsx";
 import { MoveToFolderMenu } from "./MoveToFolderMenu.tsx";
 import {
   BarButton,

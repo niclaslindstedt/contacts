@@ -6,6 +6,7 @@ import {
   LABELED_FIELD_CLASS,
   PlusIcon,
   SelectPicker,
+  StarIcon,
   type SelectOption,
 } from "@niclaslindstedt/oss-framework/components";
 
@@ -16,7 +17,6 @@ import {
   type CountryCode,
 } from "./countries/index.ts";
 import { KindToggle, RemoveButton } from "./editWidgets.tsx";
-import { StarIcon } from "./icons.tsx";
 import { toStoredPhone } from "./format.ts";
 import { useT } from "./i18n/index.ts";
 import { withPrimaryPhone } from "./primaryPhone.ts";

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import {
   Avatar as FrameworkAvatar,
+  BuildingIcon,
+  PersonIcon,
   type AvatarSize as FrameworkAvatarSize,
 } from "@niclaslindstedt/oss-framework/components";
 import { Glyph } from "@niclaslindstedt/oss-framework/glyphs";
 
 import { CONTACT_GLYPH_PATHS } from "./contactGlyphs.ts";
 import { activePhoto } from "./contactPhotos.ts";
-import { BuildingIcon, PersonIcon } from "./icons.tsx";
 import type { Contact } from "./types.ts";
 import { initials } from "./types.ts";
 

@@ -5,10 +5,12 @@ import {
   Highlighted,
   SearchModal,
 } from "@niclaslindstedt/oss-framework/search";
-import { ChevronRightIcon } from "@niclaslindstedt/oss-framework/components";
+import {
+  ChevronRightIcon,
+  PersonIcon,
+} from "@niclaslindstedt/oss-framework/components";
 import { unlock } from "@niclaslindstedt/oss-framework/achievements";
 
-import { PersonIcon } from "./icons.tsx";
 import { runSearch, type ContactResult, type FieldHit } from "./search.ts";
 import { useT } from "./i18n/index.ts";
 import type { ContactStore } from "./useContactStore.ts";

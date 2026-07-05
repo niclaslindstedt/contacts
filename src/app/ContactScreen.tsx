@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import {
   CheckIcon,
   CopyButton,
+  DownloadIcon,
   PencilIcon,
   PullToRefreshIndicator,
 } from "@niclaslindstedt/oss-framework/components";
@@ -16,7 +17,7 @@ import { ContactEditView } from "./ContactEditView.tsx";
 import { ContactIdentity } from "./ContactIdentity.tsx";
 import { ContactPhotoDropZone } from "./ContactPhotoDropZone.tsx";
 import { ContactReadView } from "./ContactReadView.tsx";
-import { DownloadIcon, FavoriteIcon } from "./icons.tsx";
+import { FavoriteIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { contactToVCard, exportFileStem } from "./export.ts";
 import type { ContactStore } from "./useContactStore.ts";

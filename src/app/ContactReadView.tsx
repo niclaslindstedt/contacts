@@ -3,10 +3,20 @@ import { useState, type ReactNode } from "react";
 
 import {
   ArchiveIcon,
+  BuildingIcon,
   Button,
+  CalendarIcon,
+  DownloadIcon,
   ExternalLinkIcon,
+  FileIcon,
+  GiftIcon,
+  GlobeIcon,
+  MailIcon,
+  MapPinIcon,
   PencilIcon,
+  PhoneIcon,
   Section,
+  StarIcon,
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
 import {
@@ -37,18 +47,6 @@ import {
   formatImportantDate,
   isValidFlexDate,
 } from "./importantDates.ts";
-import {
-  BuildingIcon,
-  CalendarIcon,
-  DownloadIcon,
-  FileIcon,
-  GiftIcon,
-  GlobeIcon,
-  MailIcon,
-  MapPinIcon,
-  PhoneIcon,
-  StarIcon,
-} from "./icons.tsx";
 import { primaryPhone } from "./primaryPhone.ts";
 import { useT } from "./i18n/index.ts";
 import { formatDate, phoneDialString } from "./format.ts";

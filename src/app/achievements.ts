@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import {
   ArchiveIcon,
+  BuildingIcon,
+  CalendarIcon,
   CheckIcon,
   CloudIcon,
   CopyIcon,
   DatabaseIcon,
   FolderIcon,
   FolderOpenIcon,
+  GiftIcon,
+  ImageUpIcon,
+  MapPinIcon,
   PaletteIcon,
+  PaperclipIcon,
   PlusIcon,
   RefreshIcon,
   SearchIcon,
@@ -24,16 +30,7 @@ import type {
 
 import { hasAttachments } from "./attachments.ts";
 import { hasPhoto as contactHasPhoto, photoCount } from "./contactPhotos.ts";
-import {
-  BuildingIcon,
-  CalendarIcon,
-  FavoriteIcon,
-  GiftIcon,
-  IceIcon,
-  ImageUpIcon,
-  MapPinIcon,
-  PaperclipIcon,
-} from "./icons.tsx";
+import { FavoriteIcon, IceIcon } from "./icons.tsx";
 import type { AppData, Contact } from "./types.ts";
 import { displayName } from "./types.ts";
 import type { TFn } from "./i18n/index.ts";

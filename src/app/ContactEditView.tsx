@@ -3,15 +3,24 @@ import { useRef, useState, type ReactNode } from "react";
 
 import {
   ArchiveIcon,
+  BuildingIcon,
   Button,
+  FileIcon,
+  GiftIcon,
+  InfoIcon,
   LABELED_FIELD_CLASS,
   LabeledInput,
   LabeledTextarea,
+  MailIcon,
+  MapPinIcon,
   NoteIcon,
+  PaperclipIcon,
+  PhoneIcon,
   PlusIcon,
   Section,
   SegmentedControl,
   ToggleRow,
+  UploadIcon,
 } from "@niclaslindstedt/oss-framework/components";
 
 import {
@@ -26,18 +35,7 @@ import { autoArchiveAction, defaultAutoArchiveDate } from "./autoArchive.ts";
 import { filesToAttachments } from "./attachmentIntake.ts";
 import { KindToggle, RemoveButton } from "./editWidgets.tsx";
 import { PhoneRows } from "./editPhones.tsx";
-import {
-  BuildingIcon,
-  FileIcon,
-  GiftIcon,
-  IceIcon,
-  InfoIcon,
-  MailIcon,
-  MapPinIcon,
-  PaperclipIcon,
-  PhoneIcon,
-  UploadIcon,
-} from "./icons.tsx";
+import { IceIcon } from "./icons.tsx";
 import { isValidFlexDate, parseFlexDate } from "./importantDates.ts";
 import { log } from "./log.ts";
 import { useLang, useT } from "./i18n/index.ts";

@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { TrashIcon } from "@niclaslindstedt/oss-framework/components";
+import {
+  BuildingIcon,
+  PersonIcon,
+  TrashIcon,
+} from "@niclaslindstedt/oss-framework/components";
 
-import { BuildingIcon, PersonIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import type { ContactMethodKind } from "./types.ts";
 

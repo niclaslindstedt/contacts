@@ -2,9 +2,9 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
 
 import { unlock } from "@niclaslindstedt/oss-framework/achievements";
+import { UploadIcon } from "@niclaslindstedt/oss-framework/components";
 import { useFileDrop } from "@niclaslindstedt/oss-framework/hooks";
 
-import { UploadIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { readImportedContacts } from "./importFiles.ts";
 import { info, warn } from "../output.ts";

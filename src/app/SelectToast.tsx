@@ -4,6 +4,7 @@ import { useRef, useState, type ReactNode } from "react";
 import {
   CopyButton,
   CopyIcon,
+  DownloadIcon,
   FloatingPanel,
   type FloatingPlacement,
 } from "@niclaslindstedt/oss-framework/components";
@@ -14,7 +15,6 @@ import {
   MIME_VCARD,
 } from "@niclaslindstedt/oss-framework/files";
 
-import { DownloadIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { contactsToCsv, contactsToVCards } from "./export.ts";
 import type { Contact } from "./types.ts";
