@@ -102,9 +102,6 @@ const BUILD_LABEL = __BUILD_LABEL__;
 
 type Props = {
   store: ContactStore;
-  // True when the sidebar is docked (wide viewports). Only then is the footer
-  // collapse control offered — on a phone drawer the footer always shows.
-  pinned: boolean;
   // The workspace the menu's contacts belong to — heads the framework
   // `NamespaceSwitcher`, which highlights its row as active.
   activeNamespace: Namespace;
@@ -142,7 +139,6 @@ type Props = {
 
 export function SideMenuContent({
   store,
-  pinned,
   onDraggingChange,
   activeNamespace,
   namespaces,
@@ -296,15 +292,15 @@ export function SideMenuContent({
   >(false);
   // The folder / contact whose name is being edited in place, or `null`.
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
-  // On wide viewports the footer (Donate / trophy / About / update / Settings)
-  // can be folded away with the thin chevron rail above it, freeing the space
-  // for the contact list. The choice is remembered across reloads; it only
-  // takes effect while docked, so a phone drawer always shows the footer.
+  // The footer (Donate / trophy / About / update / Settings) can be folded
+  // away with the thin chevron rail above it, freeing the space for the
+  // contact list. The choice is remembered across reloads and applies on
+  // every viewport — the phone drawer offers the same collapse control.
   const [footerCollapsed, setFooterCollapsed] = useLocalStorageState(
     "contacts:footer-collapsed",
     false,
   );
-  const footerHidden = pinned && footerCollapsed;
+  const footerHidden = footerCollapsed;
   // The footer "About" dropdown, anchored to `aboutRef` and flipped upward.
   const [aboutOpen, setAboutOpen] = useState(false);
   const aboutRef = useRef<HTMLButtonElement>(null);
@@ -798,23 +794,21 @@ export function SideMenuContent({
         </div>
       </div>
 
-      {/* Footer collapse rail — wide viewports only. A thin, full-width chevron
-          button seated just above the footer that folds it away (and back), so
-          the contact list can claim the freed vertical space. */}
-      {pinned && (
-        <FooterCollapseRail
-          collapsed={footerCollapsed}
-          label={
-            footerCollapsed ? t("menu.expandFooter") : t("menu.collapseFooter")
-          }
-          onClick={() => setFooterCollapsed((v) => !v)}
-        />
-      )}
+      {/* Footer collapse rail. A thin, full-width chevron button seated just
+          above the footer that folds it away (and back), so the contact list
+          can claim the freed vertical space. Offered on every viewport,
+          including the phone drawer. */}
+      <FooterCollapseRail
+        collapsed={footerCollapsed}
+        label={
+          footerCollapsed ? t("menu.expandFooter") : t("menu.collapseFooter")
+        }
+        onClick={() => setFooterCollapsed((v) => !v)}
+      />
 
       {/* Footer — fixed. Donate (an external link), the trophy, an About
           dropdown, the framework's "check for updates" row, and Settings
-          pinned last under the thumb. Foldable away on wide viewports via the
-          rail above. */}
+          pinned last under the thumb. Foldable away via the rail above. */}
       {!footerHidden && (
         <div className="flex shrink-0 flex-col border-t border-line [padding-top:calc(1.25rem-var(--density-row-py))]">
           <FooterLink
