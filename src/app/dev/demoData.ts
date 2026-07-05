@@ -77,10 +77,74 @@ export const DEMO_CONTACT_SPECS: readonly DemoContactSpec[] = [
   ...DEMO_OLD_JOB,
 ];
 
+// The book's timeline, so the foot-of-card stamp (see `ContactReadView`) reads
+// realistically: an address book filled in over years. Fixed anchors and a
+// per-card offset derived from the roster position and slug — no clock, no
+// randomness — so the dates are the same on every build. `BOOK_END` sits before
+// the app's "today" so no card is ever stamped in the future.
+const DAY_MS = 86_400_000;
+const BOOK_START = Date.parse("2018-02-15T09:00:00.000Z");
+const BOOK_END = Date.parse("2026-05-01T09:00:00.000Z");
+
+/** A small, stable per-slug offset so two cards at the same roster position
+ *  still differ. Pure function of the slug — deterministic across builds. */
+function slugJitter(slug: string): number {
+  let n = 0;
+  for (const ch of slug) n = (n + ch.charCodeAt(0)) % 100000;
+  return n;
+}
+
+/** Realistic "added / last edited" timestamps for a demo card. Earlier roster
+ *  positions (family, the close circle) were added first; the previous
+ *  employer's archived cards belong to an older era; favorites and the
+ *  emergency card — the ones actually used — have been edited more recently,
+ *  while a slice of the rest carry a later edit and the remainder none (so the
+ *  stamp shows "Added" alone). `updatedAt` always falls after `createdAt` and
+ *  never past the book's end. */
+function demoTimestamps(
+  spec: DemoContactSpec,
+  index: number,
+  total: number,
+): { createdAt: string; updatedAt?: string } {
+  const j = slugJitter(spec.slug);
+  // Archived cards (the previous employer's folder and a few loose ones) predate
+  // the current book: added years ago, last touched before they were shelved.
+  if (spec.archived) {
+    const created = Date.parse("2015-03-01T09:00:00.000Z") + (j % 730) * DAY_MS;
+    const updated = Date.parse("2018-05-01T09:00:00.000Z") + (j % 150) * DAY_MS;
+    return {
+      createdAt: new Date(created).toISOString(),
+      updatedAt: new Date(updated).toISOString(),
+    };
+  }
+  const frac = total > 1 ? index / (total - 1) : 0;
+  const created =
+    BOOK_START + Math.round(frac * (BOOK_END - BOOK_START)) + (j % 21) * DAY_MS;
+  let updated: number | undefined;
+  if (spec.favorite !== undefined || spec.ice) {
+    // A card you reach for was edited recently — a touch in the last months.
+    const cand = BOOK_END - (j % 180) * DAY_MS;
+    if (cand > created + 30 * DAY_MS) updated = cand;
+  } else if (j % 5 < 2) {
+    // Roughly two in five other cards were edited some months after adding.
+    const cand = created + (60 + (j % 400)) * DAY_MS;
+    if (cand <= BOOK_END) updated = cand;
+  }
+  return {
+    createdAt: new Date(created).toISOString(),
+    ...(updated ? { updatedAt: new Date(updated).toISOString() } : {}),
+  };
+}
+
 /** Expand one authored spec into a real `Contact`. Ids derive from the spec's
  *  slug (`demo-c-sara`, `demo-sara-ph1`, …) so the built document — and the
- *  active-card pointer into it — is identical on every build. */
-function expandContact(spec: DemoContactSpec): Contact {
+ *  active-card pointer into it — is identical on every build. `index` / `total`
+ *  place the card on the book's timeline for its added / edited stamp. */
+function expandContact(
+  spec: DemoContactSpec,
+  index: number,
+  total: number,
+): Contact {
   const contact: Contact = {
     id: `demo-c-${spec.slug}`,
     firstName: spec.first ?? "",
@@ -137,15 +201,22 @@ function expandContact(spec: DemoContactSpec): Contact {
     }));
   }
 
+  const { createdAt, updatedAt } = demoTimestamps(spec, index, total);
+  contact.createdAt = createdAt;
+  if (updatedAt) contact.updatedAt = updatedAt;
+
   return contact;
 }
 
 /** Build a fresh demo document. Opens on the partner's card — the fullest one
  *  in the book — so the first screen of a demo already has everything on it. */
 export function buildDemoData(): AppData {
+  const total = DEMO_CONTACT_SPECS.length;
   return {
     folders: DEMO_FOLDERS.map((f) => ({ ...f })),
-    contacts: DEMO_CONTACT_SPECS.map(expandContact),
+    contacts: DEMO_CONTACT_SPECS.map((spec, i) =>
+      expandContact(spec, i, total),
+    ),
     activeContactId: "demo-c-sara",
   };
 }
