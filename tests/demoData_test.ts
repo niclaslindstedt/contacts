@@ -150,6 +150,44 @@ describe("buildDemoData", () => {
     expect(contacts.some((c) => c.archived && c.folderId === null)).toBe(true);
   });
 
+  it("stamps every card with a realistic added / edited date", () => {
+    const { contacts } = buildDemoData();
+    // A ceiling the whole book stays under, so nothing reads as added/edited
+    // in the future.
+    const ceiling = Date.parse("2026-06-01T00:00:00.000Z");
+    let edited = 0;
+    for (const c of contacts) {
+      expect(c.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      const created = Date.parse(c.createdAt!);
+      expect(created).toBeLessThanOrEqual(ceiling);
+      if (c.updatedAt) {
+        edited++;
+        const updated = Date.parse(c.updatedAt);
+        // Never edited before it existed, never in the future.
+        expect(updated).toBeGreaterThan(created);
+        expect(updated).toBeLessThanOrEqual(ceiling);
+      }
+    }
+    // A lived-in book has plenty of cards edited since they were added.
+    expect(edited).toBeGreaterThanOrEqual(10);
+    // The showcase card the demo opens on shows both halves of the stamp.
+    const sara = contacts.find((c) => c.id === "demo-c-sara")!;
+    expect(sara.createdAt).toBeTruthy();
+    expect(sara.updatedAt).toBeTruthy();
+    // The previous employer's archived cards belong to an older era than the
+    // freshest active card.
+    const archived = contacts.filter((c) => c.archived && c.createdAt);
+    const newestActive = Math.max(
+      ...contacts
+        .filter((c) => !c.archived)
+        .map((c) => Date.parse(c.createdAt!)),
+    );
+    expect(archived.length).toBeGreaterThan(0);
+    for (const c of archived) {
+      expect(Date.parse(c.createdAt!)).toBeLessThan(newestActive);
+    }
+  });
+
   it("only wears glyphs the app can draw", () => {
     const { contacts } = buildDemoData();
     let glyphs = 0;

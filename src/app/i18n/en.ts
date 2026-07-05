@@ -325,6 +325,9 @@ export const en = {
     autoArchiveDelete: "Delete",
     autoArchiveArchivesOn: "Archives itself on {date}",
     autoArchiveDeletesOn: "Deletes itself on {date}",
+    // The discreet date stamp at the foot of a card.
+    addedStamp: "Added {date}.",
+    modifiedStamp: "Modified {date}.",
     archive: "Archive contact",
     delete: "Delete contact",
   },

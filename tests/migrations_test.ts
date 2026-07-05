@@ -204,6 +204,57 @@ describe("serializeDoc / parseDoc", () => {
     ]);
   });
 
+  it("stamps createdAt on cards that predate the timestamp field (v5→v6)", () => {
+    const before = Date.now();
+    const v5 = JSON.stringify({
+      version: 5,
+      folders: [],
+      contacts: [
+        {
+          id: "c1",
+          firstName: "Ada",
+          lastName: "Lovelace",
+          phones: [],
+          emails: [],
+          addresses: [],
+          importantDates: [],
+          folderId: null,
+        },
+      ],
+      activeContactId: "c1",
+    });
+    const ada = parseDoc(v5).contacts[0]!;
+    // A best-effort "first seen now": createdAt lands at the migration time and
+    // updatedAt stays absent, so an untouched card shows no "Modified" stamp.
+    expect(typeof ada.createdAt).toBe("string");
+    expect(Date.parse(ada.createdAt!)).toBeGreaterThanOrEqual(before);
+    expect(ada.updatedAt).toBeUndefined();
+  });
+
+  it("keeps an existing createdAt through the v5→v6 migration", () => {
+    const v5 = JSON.stringify({
+      version: 5,
+      folders: [],
+      contacts: [
+        {
+          id: "c1",
+          firstName: "Ada",
+          lastName: "Lovelace",
+          phones: [],
+          emails: [],
+          addresses: [],
+          importantDates: [],
+          folderId: null,
+          createdAt: "2020-01-01T00:00:00.000Z",
+        },
+      ],
+      activeContactId: "c1",
+    });
+    expect(parseDoc(v5).contacts[0]!.createdAt).toBe(
+      "2020-01-01T00:00:00.000Z",
+    );
+  });
+
   it("normalises a wiped or malformed file into an empty document", () => {
     expect(parseDoc("null")).toEqual({
       folders: [],

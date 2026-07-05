@@ -10,6 +10,7 @@ import {
   parseBackups,
   readBackupDoc,
 } from "../src/app/backup.ts";
+import { LATEST_VERSION } from "../src/app/migrations.ts";
 import type { AppData } from "../src/app/types.ts";
 
 function doc(overrides: Partial<AppData> = {}): AppData {
@@ -43,7 +44,7 @@ describe("backup archives", () => {
     const zip = await createBackupZip(data, AT);
     const text = await readBackupDoc(zip);
     const parsed = JSON.parse(text) as AppData & { version: number };
-    expect(parsed.version).toBe(5);
+    expect(parsed.version).toBe(LATEST_VERSION);
     expect(parsed.contacts).toHaveLength(1);
     expect(parsed.contacts[0]!.firstName).toBe("Ada");
   });

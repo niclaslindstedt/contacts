@@ -227,6 +227,19 @@ export type Contact = {
    *  or delete it for good. Absent (or with no date set) means auto-archiving
    *  is off; a bare date with no action defaults to archiving. */
   autoArchiveAction?: AutoArchiveAction;
+  /** When the card was first added to the app — a full ISO timestamp
+   *  (`YYYY-MM-DDTHH:mm:ss.sssZ`). Set once when the contact is created and
+   *  never changed after; cards that predate the field are stamped at the
+   *  migration time (a best-effort "first seen now" — see `migrations.ts`). The
+   *  read view shows its date, discreetly, at the foot of the card. Kept
+   *  app-local — not written to a vCard or CSV — but it round-trips through the
+   *  JSON backup. */
+  createdAt?: string;
+  /** When the card was last edited — a full ISO timestamp. Absent until the
+   *  first edit after creation, so a never-touched card carries no "Modified"
+   *  stamp; bumped on every field commit (see `useContactStore.updateContact`).
+   *  App-local, like {@link createdAt}. */
+  updatedAt?: string;
 };
 
 /** A folder groups contacts in the side menu under one collapsible row.

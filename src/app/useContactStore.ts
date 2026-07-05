@@ -186,6 +186,7 @@ function mintImported(d: ImportedContact): Contact {
       : {}),
     ...(d.ice ? { ice: true } : {}),
     folderId: null,
+    createdAt: new Date().toISOString(),
   };
 }
 
@@ -350,6 +351,7 @@ export function useContactStore(
         addresses: [],
         importantDates: [],
         folderId,
+        createdAt: new Date().toISOString(),
       };
       commit({
         ...data,
@@ -408,15 +410,19 @@ export function useContactStore(
   );
 
   // Patch a card's fields — the contact screen's field commits land here, one
-  // undoable step per committed field.
+  // undoable step per committed field. Every edit refreshes `updatedAt` so the
+  // card's foot-of-card stamp tracks when it was last touched (see
+  // `ContactReadView`); a card only grows the field the first time it's edited.
   const updateContact = useCallback(
-    (id: string, patch: Partial<Contact>) =>
+    (id: string, patch: Partial<Contact>) => {
+      const updatedAt = new Date().toISOString();
       commit({
         ...data,
         contacts: data.contacts.map((c) =>
-          c.id === id ? { ...c, ...patch } : c,
+          c.id === id ? { ...c, ...patch, updatedAt } : c,
         ),
-      }),
+      });
+    },
     [commit, data],
   );
 

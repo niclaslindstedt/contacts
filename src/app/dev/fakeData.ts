@@ -175,6 +175,41 @@ const CURATED_FOLDERS: Folder[] = [
   { id: FLD_ARCHIVED, name: "Old colleagues", archived: true },
 ];
 
+// Realistic "added / last edited" dates for the curated cards, so the
+// foot-of-card stamp (see `ContactReadView`) has believable input to render.
+// Keyed by contact id and applied in `curatedContacts`. A one-element entry is
+// a card added but never edited (the stamp shows "Added" alone); a two-element
+// entry is one edited later, and the second date always falls after the first
+// so a card never reads as modified before it existed. Fixed literals — no
+// clock — so the seed stays deterministic across builds.
+const CURATED_STAMPS: Record<
+  string,
+  readonly [string] | readonly [string, string]
+> = {
+  "seed-c-full": ["2023-01-15T09:24:00.000Z", "2024-11-03T14:02:00.000Z"],
+  "seed-c-company": ["2024-06-02T11:00:00.000Z"],
+  "seed-c-firstonly": ["2021-03-08T18:12:00.000Z", "2023-09-19T07:45:00.000Z"],
+  "seed-c-lastonly": ["2019-11-20T10:05:00.000Z"],
+  "seed-c-long": ["2022-07-04T13:30:00.000Z", "2022-08-15T16:20:00.000Z"],
+  "seed-c-unicode": ["2020-05-11T08:00:00.000Z", "2024-02-29T21:10:00.000Z"],
+  "seed-c-rtl": ["2021-12-01T09:40:00.000Z"],
+  "seed-c-many": ["2018-09-30T12:00:00.000Z", "2025-01-22T15:33:00.000Z"],
+  "seed-c-leap": ["2020-02-29T06:15:00.000Z", "2024-06-10T19:00:00.000Z"],
+  "seed-c-ancient": ["2019-01-07T09:00:00.000Z"],
+  "seed-c-future": ["2025-04-18T14:25:00.000Z"],
+  "seed-c-zip-se": ["2022-10-14T11:11:00.000Z", "2023-03-27T09:02:00.000Z"],
+  "seed-c-zip-us9": ["2023-08-08T17:47:00.000Z"],
+  "seed-c-photo": ["2021-06-21T10:30:00.000Z", "2022-12-05T08:18:00.000Z"],
+  "seed-c-blank": ["2025-06-30T20:00:00.000Z"],
+  "seed-c-autoarchive": ["2025-05-02T09:15:00.000Z"],
+  "seed-c-autodelete": ["2025-05-03T09:20:00.000Z"],
+  "seed-c-arch-folder": [
+    "2017-02-15T08:45:00.000Z",
+    "2019-08-01T13:05:00.000Z",
+  ],
+  "seed-c-arch-solo": ["2018-04-22T16:00:00.000Z"],
+};
+
 // A little id sequencer so every field row / card gets a unique, legible id
 // within one built document. Base-36 keeps the ids short.
 function sequencer(prefix: string): () => string {
@@ -209,7 +244,7 @@ function curatedContacts(): Contact[] {
     ...d,
   });
 
-  return [
+  const cards: Contact[] = [
     // The fully-loaded card: every field carries something, so the read view,
     // export, and each formatter all have real input.
     {
@@ -569,6 +604,17 @@ function curatedContacts(): Contact[] {
       archived: true,
     },
   ];
+
+  // Stamp each curated card with its realistic added / edited dates.
+  return cards.map((c) => {
+    const stamp = CURATED_STAMPS[c.id];
+    if (!stamp) return c;
+    return {
+      ...c,
+      createdAt: stamp[0],
+      ...(stamp[1] ? { updatedAt: stamp[1] } : {}),
+    };
+  });
 }
 
 // One generated bulk card, derived entirely from its index so the output is
@@ -650,6 +696,18 @@ function generatedContact(i: number): Contact {
     const month = String((i % 12) + 1).padStart(2, "0");
     const day = String((i % 28) + 1).padStart(2, "0");
     contact.birthday = `19${String(50 + (i % 50)).padStart(2, "0")}-${month}-${day}`;
+  }
+  // Deterministic added / modified timestamps so the foot-of-card stamp has
+  // realistic input. The "added" year (2015–2019) always precedes the "modified"
+  // year (2021–2024), so a modified card never reads as edited before it existed;
+  // a third of the cards stay never-edited, so the "Added" alone case shows too.
+  const cm = String((i % 12) + 1).padStart(2, "0");
+  const cd = String((i % 27) + 1).padStart(2, "0");
+  contact.createdAt = `${2015 + (i % 5)}-${cm}-${cd}T08:30:00.000Z`;
+  if (i % 3 !== 0) {
+    const um = String(((i + 4) % 12) + 1).padStart(2, "0");
+    const ud = String(((i + 6) % 27) + 1).padStart(2, "0");
+    contact.updatedAt = `${2021 + (i % 4)}-${um}-${ud}T16:45:00.000Z`;
   }
   // A minority are archived so the Archive screen has bulk to page through.
   if (i % 11 === 0) contact.archived = true;

@@ -310,6 +310,9 @@ export const sv: Catalog = {
     autoArchiveDelete: "Ta bort",
     autoArchiveArchivesOn: "Arkiveras {date}",
     autoArchiveDeletesOn: "Tas bort {date}",
+    // Den diskreta datumstämpeln längst ner på kortet.
+    addedStamp: "Tillagd {date}.",
+    modifiedStamp: "Ändrad {date}.",
     archive: "Arkivera kontakt",
     delete: "Ta bort kontakt",
   },
