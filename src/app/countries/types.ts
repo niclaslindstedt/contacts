@@ -18,6 +18,12 @@ export type PhoneOptions = {
   format: boolean;
   /** Prefix the international calling code (+46 / +1). */
   countryCode: boolean;
+  /** With {@link countryCode} on, omit it for numbers that belong to the home
+   *  country — the calling code then shows only for numbers from abroad. This
+   *  is resolved by the value dispatch (which alone knows the home country),
+   *  so a country's own `formatPhone` never has to read it. Optional; defaults
+   *  to off (every number keeps its code). */
+  countryCodeForeignOnly?: boolean;
   /** Show the national trunk prefix / leading zero where the country has one
    *  (Sweden's `(0)` / `0`). No effect in countries without a trunk digit. */
   leadingZero: boolean;

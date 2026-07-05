@@ -70,6 +70,9 @@ export type AppSettings = {
   phoneFormat: boolean;
   /** Prefix the international calling code (+46 / +1). */
   phoneCountryCode: boolean;
+  /** With {@link phoneCountryCode} on, still omit the code for numbers in the
+   *  home country — show the calling code only for numbers from abroad. */
+  phoneCountryCodeForeignOnly: boolean;
   /** Show the national trunk prefix / leading zero where the country has one. */
   phoneLeadingZero: boolean;
   /** Format postal codes at all (off ⇒ shown exactly as entered). */
@@ -110,6 +113,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   country: DEFAULT_COUNTRY,
   phoneFormat: true,
   phoneCountryCode: true,
+  // Off by default: showing the code keeps every number's, home or foreign,
+  // until the user opts into hiding their own country's.
+  phoneCountryCodeForeignOnly: false,
   phoneLeadingZero: true,
   postalFormat: true,
   postalSpaces: true,
@@ -203,6 +209,7 @@ export function phoneOptions(s: AppSettings): PhoneOptions {
   return {
     format: s.phoneFormat,
     countryCode: s.phoneCountryCode,
+    countryCodeForeignOnly: s.phoneCountryCodeForeignOnly,
     leadingZero: s.phoneLeadingZero,
   };
 }

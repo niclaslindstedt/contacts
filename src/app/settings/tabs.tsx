@@ -437,6 +437,16 @@ export function FormatTab({
             checked={settings.phoneCountryCode}
             onChange={(next) => update("phoneCountryCode", next)}
           />
+          <NestedOptions enabled={settings.phoneCountryCode}>
+            <ToggleRow
+              label={t("settings.format.phoneForeignOnly")}
+              hint={t("settings.format.phoneForeignOnlyHint", {
+                country: countryName,
+              })}
+              checked={settings.phoneCountryCodeForeignOnly}
+              onChange={(next) => update("phoneCountryCodeForeignOnly", next)}
+            />
+          </NestedOptions>
           <ToggleRow
             label={t("settings.format.phoneLeadingZero")}
             hint={t("settings.format.phoneLeadingZeroHint")}

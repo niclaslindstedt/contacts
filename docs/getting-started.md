@@ -43,9 +43,10 @@ code (`+1`, `+46`) is formatted for that country automatically, so a Swedish
 address book still shows a US number the American way.
 
 A few toggles fine-tune the details without changing country: whether to format
-phone numbers at all, whether to show the international country code, whether to
-show the leading-zero trunk digit, and whether to group postal codes with
-spaces. Each country decides what those toggles mean and ignores the ones it has
+phone numbers at all, whether to show the international country code (and whether
+to show it only for foreign numbers, so numbers in your own country read plainly
+without a `+46`), whether to show the leading-zero trunk digit, and whether to
+group postal codes with spaces. Each country decides what those toggles mean and ignores the ones it has
 no use for. The birthday **date** keeps its own independent style — ISO, US,
 European, or a long `3 July 2026` form.
 

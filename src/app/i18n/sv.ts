@@ -600,6 +600,9 @@ export const sv: Catalog = {
       phoneCountryCode: "Visa landskod",
       phoneCountryCodeHint:
         "Lägg till den internationella landskoden, som +46.",
+      phoneForeignOnly: "Endast för utländska nummer",
+      phoneForeignOnlyHint:
+        "Utelämna landskoden för nummer i {country}; visa den bara för nummer från utlandet.",
       phoneLeadingZero: "Visa inledande nolla",
       phoneLeadingZeroHint:
         "Visa den nationella prefixsiffran — Sveriges (0) bredvid +46, eller en vanlig inledande 0. Ignoreras av länder utan sådan.",

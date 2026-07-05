@@ -615,6 +615,9 @@ export const en = {
         "Group saved numbers your country's way. Off shows them exactly as typed. Editing a number always reveals what you entered.",
       phoneCountryCode: "Show country code",
       phoneCountryCodeHint: "Prefix the international calling code, like +46.",
+      phoneForeignOnly: "Only for foreign numbers",
+      phoneForeignOnlyHint:
+        "Drop the country code for numbers in {country}; show it only for numbers from abroad.",
       phoneLeadingZero: "Show leading zero",
       phoneLeadingZeroHint:
         "Show the national trunk digit — Sweden's (0) beside +46, or a plain leading 0. Ignored by countries without one.",
