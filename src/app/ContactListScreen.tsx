@@ -764,6 +764,11 @@ function ContactRow({
   const spacious = settings.listDensity === "spacious";
   const avatarSize = spacious ? "list-spacious" : "list-compact";
   const rowSpacing = spacious ? "gap-4 py-3" : "gap-3 py-2";
+  // A spacious row wears a big 64px photo, so a lone small phone pill hugging
+  // the name leaves an unbalanced gap of dead space beneath it. When there's a
+  // single number, blow that one pill up and push it down off the name so the
+  // name + pill together fill the photo's height and the row reads deliberate.
+  const bigPill = spacious && phones.length === 1;
   // Every row rules off from the next with a bottom border, except the last row
   // of a section that has a folder below it — there the folder's own header band
   // is the divider, so a trailing rule just doubles it up.
@@ -838,8 +843,14 @@ function ContactRow({
         <Avatar contact={contact} size={avatarSize} />
       </span>
       {/* Narrow screens stack the methods under the name; from `sm` up there's
-          room to sit them to the right of it, so the row reads on one line. */}
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
+          room to sit them to the right of it, so the row reads on one line. A
+          lone big pill gets extra space above it (`gap-2`) so it drops toward
+          the photo's foot instead of clinging to the name. */}
+      <div
+        className={`flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-3 ${
+          bigPill ? "gap-2" : "gap-0.5"
+        }`}
+      >
         <span className="min-w-0 leading-tight sm:flex-1">{nameNode}</span>
         {/* Phone numbers (tap to call) as Private / Work pills, then emails
             (tap to write) as smaller links — each its own link, so the row stays
@@ -854,6 +865,7 @@ function ContactRow({
                     key={phone.id}
                     phone={phone}
                     settings={settings}
+                    size={bigPill ? "lg" : "md"}
                     interactive
                   />
                 ))}
@@ -941,10 +953,14 @@ function PhonePill({
   phone,
   settings,
   interactive = false,
+  size = "md",
 }: {
   phone: Phone;
   settings: AppSettings;
   interactive?: boolean;
+  // "md" is the standard chip; "lg" is the taller, roomier pill a spacious row
+  // gives its single number so it fills the big photo's height (see `bigPill`).
+  size?: "md" | "lg";
 }) {
   const t = useT();
   const work = methodKind(phone.label) === "work";
@@ -955,11 +971,14 @@ function PhonePill({
     settings.country,
     phoneOptions(settings),
   );
-  const base =
-    "flex max-w-full items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent";
+  const large = size === "lg";
+  const base = `flex max-w-full items-center rounded-full bg-accent/10 font-medium text-accent ${
+    large ? "gap-1.5 px-3 py-1.5 text-sm" : "gap-1 px-2 py-0.5 text-xs"
+  }`;
+  const iconSize = large ? "h-3.5 w-3.5" : "h-3 w-3";
   const body = (
     <>
-      <Icon className="h-3 w-3 shrink-0" />
+      <Icon className={`${iconSize} shrink-0`} />
       <span className="sr-only">{kindText}</span>
       <span className="truncate">{value}</span>
     </>
