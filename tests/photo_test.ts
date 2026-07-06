@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { dataUrlToBytes } from "@niclaslindstedt/oss-framework/files";
 
 import {
+  contactTag,
   fromViewTransform,
   parsePhotoPath,
   photoPathFor,
@@ -17,70 +18,92 @@ import {
 } from "../src/app/photoStore.ts";
 
 // The photo layer's node-testable surface: the deterministic file path, the
-// stored-transform mapping, and the strip / re-hydrate / prune behaviour of
-// `withExternalPhotos` (driven with in-memory fakes — the crop geometry, the
-// canvas bake, and the real cloud stores are the framework viewer's). The
-// data-URL ⇄ bytes codec the externaliser moves across is the framework's
-// (`files`), used here only as a test helper.
+// stored-transform mapping, and the strip / re-hydrate / prune / re-file
+// behaviour of `withExternalPhotos` (driven with in-memory fakes — the crop
+// geometry, the canvas bake, and the real cloud stores are the framework
+// viewer's). The data-URL ⇄ bytes codec the externaliser moves across is the
+// framework's (`files`), used here only as a test helper.
 
-describe("photoPathFor", () => {
-  it("builds a deterministic photos/<name>-<id>-<photoId>.jpg path", () => {
-    const path = photoPathFor(
-      { id: "c1", firstName: "Ada", lastName: "Lovelace" },
-      "ph1",
-    );
-    expect(path).toBe("photos/ada-lovelace-c1-ph1.jpg");
-    // Deterministic — same input, same path.
-    expect(
-      photoPathFor({ id: "c1", firstName: "Ada", lastName: "Lovelace" }, "ph1"),
-    ).toBe(path);
+const ADA = { id: "c1", firstName: "Ada", lastName: "Lovelace" };
+
+describe("contactTag", () => {
+  it("is a stable four-character tag derived from the id", () => {
+    const tag = contactTag("c1");
+    expect(tag).toMatch(/^[0-9a-z]{4}$/);
+    expect(contactTag("c1")).toBe(tag); // deterministic
   });
 
-  it("disambiguates same-named contacts by id, and photos by photo id", () => {
-    const a = photoPathFor({ id: "a", firstName: "Sam", lastName: "Lee" }, "p");
-    const b = photoPathFor({ id: "b", firstName: "Sam", lastName: "Lee" }, "p");
+  it("differs between different ids (disambiguates same-named contacts)", () => {
+    expect(contactTag("a")).not.toBe(contactTag("b"));
+  });
+});
+
+describe("photoPathFor", () => {
+  it("builds a deterministic photos/<name>-<tag>-<index>.jpg path", () => {
+    const path = photoPathFor(ADA, 1);
+    expect(path).toBe(`photos/ada-lovelace-${contactTag("c1")}-1.jpg`);
+    // Deterministic — same input, same path.
+    expect(photoPathFor(ADA, 1)).toBe(path);
+  });
+
+  it("numbers photos by their 1-based gallery position", () => {
+    expect(photoPathFor(ADA, 1)).toBe(
+      `photos/ada-lovelace-${contactTag("c1")}-1.jpg`,
+    );
+    expect(photoPathFor(ADA, 2)).toBe(
+      `photos/ada-lovelace-${contactTag("c1")}-2.jpg`,
+    );
+    expect(photoPathFor(ADA, 1)).not.toBe(photoPathFor(ADA, 2));
+  });
+
+  it("disambiguates same-named contacts by their tag", () => {
+    const a = photoPathFor({ id: "a", firstName: "Sam", lastName: "Lee" }, 1);
+    const b = photoPathFor({ id: "b", firstName: "Sam", lastName: "Lee" }, 1);
     expect(a).not.toBe(b);
-    // Two photos on the same card get distinct paths.
-    const c = { id: "a", firstName: "Sam", lastName: "Lee" };
-    expect(photoPathFor(c, "p1")).not.toBe(photoPathFor(c, "p2"));
   });
 
   it("falls back to the company, then a generic stem", () => {
-    expect(photoPathFor({ id: "x", company: "Acme Inc" }, "ph")).toBe(
-      "photos/acme-inc-x-ph.jpg",
+    expect(photoPathFor({ id: "x", company: "Acme Inc" }, 1)).toBe(
+      `photos/acme-inc-${contactTag("x")}-1.jpg`,
     );
-    expect(photoPathFor({ id: "y" }, "ph")).toBe("photos/contact-y-ph.jpg");
+    expect(photoPathFor({ id: "y" }, 1)).toBe(
+      `photos/contact-${contactTag("y")}-1.jpg`,
+    );
   });
 
   it("files the source beside the display crop", () => {
-    const c = { id: "c1", firstName: "Ada", lastName: "Lovelace" };
-    expect(photoPathFor(c, "ph1")).toBe("photos/ada-lovelace-c1-ph1.jpg");
-    expect(photoSourcePathFor(c, "ph1")).toBe(
-      "photos/ada-lovelace-c1-ph1-source.jpg",
+    expect(photoSourcePathFor(ADA, 1)).toBe(
+      `photos/ada-lovelace-${contactTag("c1")}-1-source.jpg`,
     );
   });
 });
 
 describe("parsePhotoPath", () => {
   it("round-trips a display and a source path built by photoPathFor", () => {
-    const c = { id: "c1", firstName: "Ada", lastName: "Lovelace" };
-    const display = photoPathFor(c, "ph1");
-    const source = photoSourcePathFor(c, "ph1");
-    expect(parsePhotoPath(display, ["c1"])).toEqual({
+    expect(parsePhotoPath(photoPathFor(ADA, 1), ["c1"])).toEqual({
       contactId: "c1",
-      photoId: "ph1",
+      index: 1,
       source: false,
     });
-    expect(parsePhotoPath(source, ["c1"])).toEqual({
+    expect(parsePhotoPath(photoSourcePathFor(ADA, 2), ["c1"])).toEqual({
       contactId: "c1",
-      photoId: "ph1",
+      index: 2,
       source: true,
     });
   });
 
-  it("anchors on the known contact id even when the slug carries hyphens", () => {
-    // A uuid-shaped contact id and a name-slug full of hyphens: the parse must
-    // still split at the id, not guess where the slug ends.
+  it("accepts the current scheme only when the tag maps to a real card", () => {
+    const path = photoPathFor(ADA, 1);
+    expect(parsePhotoPath(path, ["c1", "c2"])).toEqual({
+      contactId: "c1",
+      index: 1,
+      source: false,
+    });
+    // The same filename, but c1 isn't in the set — its tag matches no card.
+    expect(parsePhotoPath(path, ["c2", "c3"])).toBeNull();
+  });
+
+  it("still parses a legacy <contactId>-<photoId> path (for re-filing)", () => {
     const contactId = "contact-11111111-2222-3333-4444-555555555555";
     const photoId = "photo-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
     const path = `photos/jean-luc-de-la-fontaine-${contactId}-${photoId}.jpg`;
@@ -89,24 +112,19 @@ describe("parsePhotoPath", () => {
       photoId,
       source: false,
     });
-  });
-
-  it("picks the id that matches a real contact from the given set", () => {
-    const path = "photos/sam-lee-c2-ph9.jpg";
-    expect(parsePhotoPath(path, ["c1", "c2", "c3"])).toEqual({
-      contactId: "c2",
-      photoId: "ph9",
-      source: false,
-    });
-  });
-
-  it("returns null when no known contact id is embedded", () => {
+    // The source variant too.
     expect(
-      parsePhotoPath("photos/ada-lovelace-c1-ph1.jpg", ["other"]),
-    ).toBeNull();
+      parsePhotoPath(`photos/x-${contactId}-${photoId}-source.jpg`, [
+        contactId,
+      ]),
+    ).toEqual({ contactId, photoId, source: true });
+  });
+
+  it("returns null when the path names no known contact", () => {
+    expect(parsePhotoPath(photoPathFor(ADA, 1), ["other"])).toBeNull();
     // Not under photos/, or not a .jpg.
     expect(parsePhotoPath("attachments/ada-c1-a1.pdf", ["c1"])).toBeNull();
-    // Nothing after the contact id to serve as a photo id.
+    // Legacy shape with nothing after the contact id to serve as a photo id.
     expect(parsePhotoPath("photos/ada-c1-.jpg", ["c1"])).toBeNull();
   });
 });
@@ -160,12 +178,14 @@ const doc = (contacts: unknown[]) =>
 const DISPLAY = "data:image/jpeg;base64,QUJD"; // "ABC"
 const SOURCE = "data:image/jpeg;base64,REVG"; // "DEF"
 
+// The deterministic paths Ada's first gallery photo files out to.
+const DISPLAY_PATH = photoPathFor(ADA, 1);
+const SOURCE_PATH = photoSourcePathFor(ADA, 1);
+
 describe("withExternalPhotos", () => {
   // A contact carrying one gallery photo with the given fields.
   const withPhoto = (fields: Record<string, unknown>) => ({
-    id: "c1",
-    firstName: "Ada",
-    lastName: "Lovelace",
+    ...ADA,
     photos: [{ id: "ph1", ...fields }],
   });
 
@@ -179,21 +199,21 @@ describe("withExternalPhotos", () => {
     );
 
     // Both files landed at their deterministic paths as raw bytes (not text).
-    const display = store.files.get("photos/ada-lovelace-c1-ph1.jpg");
-    const source = store.files.get("photos/ada-lovelace-c1-ph1-source.jpg");
+    const display = store.files.get(DISPLAY_PATH);
+    const source = store.files.get(SOURCE_PATH);
     expect(display).toBeInstanceOf(Uint8Array);
     expect(Array.from(display!)).toEqual(bytesOf(DISPLAY));
     expect(Array.from(source!)).toEqual(bytesOf(SOURCE));
 
     // The synced doc kept the paths but dropped every image byte.
     const p = JSON.parse(inner.lastSaved()!).contacts[0].photos[0];
-    expect(p.photoPath).toBe("photos/ada-lovelace-c1-ph1.jpg");
-    expect(p.photoSourcePath).toBe("photos/ada-lovelace-c1-ph1-source.jpg");
+    expect(p.photoPath).toBe(DISPLAY_PATH);
+    expect(p.photoSourcePath).toBe(SOURCE_PATH);
     expect(p.photo).toBeUndefined();
     expect(p.photoSource).toBeUndefined();
   });
 
-  it("externalises every photo in a multi-photo gallery", async () => {
+  it("numbers each photo in a multi-photo gallery by position", async () => {
     const store = memPhotoStore();
     const inner = fakeInner();
     const adapter = withExternalPhotos(inner, store);
@@ -201,9 +221,7 @@ describe("withExternalPhotos", () => {
     await adapter.save(
       doc([
         {
-          id: "c1",
-          firstName: "Ada",
-          lastName: "Lovelace",
+          ...ADA,
           photos: [
             { id: "ph1", photo: DISPLAY },
             { id: "ph2", photo: SOURCE },
@@ -212,12 +230,12 @@ describe("withExternalPhotos", () => {
       ]),
     );
 
-    // Each gallery entry files out to its own path — no collision.
-    expect(store.files.has("photos/ada-lovelace-c1-ph1.jpg")).toBe(true);
-    expect(store.files.has("photos/ada-lovelace-c1-ph2.jpg")).toBe(true);
+    // Each gallery entry files out to its 1-based-index path — no collision.
+    expect(store.files.has(photoPathFor(ADA, 1))).toBe(true);
+    expect(store.files.has(photoPathFor(ADA, 2))).toBe(true);
     const photos = JSON.parse(inner.lastSaved()!).contacts[0].photos;
-    expect(photos[0].photoPath).toBe("photos/ada-lovelace-c1-ph1.jpg");
-    expect(photos[1].photoPath).toBe("photos/ada-lovelace-c1-ph2.jpg");
+    expect(photos[0].photoPath).toBe(photoPathFor(ADA, 1));
+    expect(photos[1].photoPath).toBe(photoPathFor(ADA, 2));
     expect(photos.every((p: { photo?: string }) => p.photo === undefined)).toBe(
       true,
     );
@@ -225,21 +243,12 @@ describe("withExternalPhotos", () => {
 
   it("re-hydrates both images from their files on load", async () => {
     const store = memPhotoStore();
-    store.files.set(
-      "photos/ada-lovelace-c1-ph1.jpg",
-      dataUrlToBytes(DISPLAY)!.bytes,
-    );
-    store.files.set(
-      "photos/ada-lovelace-c1-ph1-source.jpg",
-      dataUrlToBytes(SOURCE)!.bytes,
-    );
+    store.files.set(DISPLAY_PATH, dataUrlToBytes(DISPLAY)!.bytes);
+    store.files.set(SOURCE_PATH, dataUrlToBytes(SOURCE)!.bytes);
     const inner = fakeInner();
     await inner.save(
       doc([
-        withPhoto({
-          photoPath: "photos/ada-lovelace-c1-ph1.jpg",
-          photoSourcePath: "photos/ada-lovelace-c1-ph1-source.jpg",
-        }),
+        withPhoto({ photoPath: DISPLAY_PATH, photoSourcePath: SOURCE_PATH }),
       ]),
     );
 
@@ -260,33 +269,23 @@ describe("withExternalPhotos", () => {
 
     await adapter.save(doc([withPhoto({ photo: DISPLAY })]));
 
-    expect(store.files.has("photos/ada-lovelace-c1-ph1.jpg")).toBe(true);
+    expect(store.files.has(DISPLAY_PATH)).toBe(true);
     const p = JSON.parse(inner.lastSaved()!).contacts[0].photos[0];
     expect(p.photo).toBeUndefined();
-    expect(p.photoPath).toBe("photos/ada-lovelace-c1-ph1.jpg");
+    expect(p.photoPath).toBe(DISPLAY_PATH);
   });
 
   it("prunes orphaned photo files once a contact loses its photo", async () => {
     const store = memPhotoStore();
-    store.files.set(
-      "photos/ada-lovelace-c1-ph1.jpg",
-      dataUrlToBytes(DISPLAY)!.bytes,
-    );
-    store.files.set(
-      "photos/ada-lovelace-c1-ph1-source.jpg",
-      dataUrlToBytes(SOURCE)!.bytes,
-    );
+    store.files.set(DISPLAY_PATH, dataUrlToBytes(DISPLAY)!.bytes);
+    store.files.set(SOURCE_PATH, dataUrlToBytes(SOURCE)!.bytes);
     const inner = fakeInner();
     const adapter = withExternalPhotos(inner, store);
 
     // Save a doc where the contact no longer carries any photo.
-    await adapter.save(
-      doc([{ id: "c1", firstName: "Ada", lastName: "Lovelace", photos: [] }]),
-    );
-    expect(store.files.has("photos/ada-lovelace-c1-ph1.jpg")).toBe(false);
-    expect(store.files.has("photos/ada-lovelace-c1-ph1-source.jpg")).toBe(
-      false,
-    );
+    await adapter.save(doc([{ ...ADA, photos: [] }]));
+    expect(store.files.has(DISPLAY_PATH)).toBe(false);
+    expect(store.files.has(SOURCE_PATH)).toBe(false);
   });
 
   it("keeps a photo inline when the file write fails (externalise-or-embed)", async () => {
@@ -323,15 +322,10 @@ describe("withExternalPhotos", () => {
 
   it("does not signal a load that is already fully filed out", async () => {
     const store = memPhotoStore();
-    store.files.set(
-      "photos/ada-lovelace-c1-ph1.jpg",
-      dataUrlToBytes(DISPLAY)!.bytes,
-    );
+    store.files.set(DISPLAY_PATH, dataUrlToBytes(DISPLAY)!.bytes);
     const inner = fakeInner();
     // A filed-out cloud copy carries only paths, no inline bytes.
-    await inner.save(
-      doc([withPhoto({ photoPath: "photos/ada-lovelace-c1-ph1.jpg" })]),
-    );
+    await inner.save(doc([withPhoto({ photoPath: DISPLAY_PATH })]));
 
     let signalled = 0;
     const adapter = withExternalPhotos(inner, store, () => (signalled += 1));
@@ -339,22 +333,55 @@ describe("withExternalPhotos", () => {
     expect(signalled).toBe(0);
   });
 
-  it("re-indexes a lost photo file back onto its contact on load", async () => {
-    // The files are on the drive, but the document lost the gallery entry that
-    // referenced them (an empty gallery). Reconcile should find and re-attach.
+  it("re-files a photo filed under the legacy naming and prunes the old file", async () => {
+    // A cloud copy from an older build: files and stored paths use the
+    // <contactId>-<photoId> scheme. On load it should signal a re-file, and the
+    // next save writes the current <tag>-<index> file and prunes the legacy one.
     const store = memPhotoStore();
-    store.files.set(
-      "photos/ada-lovelace-c1-ph1.jpg",
-      dataUrlToBytes(DISPLAY)!.bytes,
-    );
-    store.files.set(
-      "photos/ada-lovelace-c1-ph1-source.jpg",
-      dataUrlToBytes(SOURCE)!.bytes,
-    );
+    const legacyDisplay = "photos/ada-lovelace-c1-ph1.jpg";
+    const legacySource = "photos/ada-lovelace-c1-ph1-source.jpg";
+    store.files.set(legacyDisplay, dataUrlToBytes(DISPLAY)!.bytes);
+    store.files.set(legacySource, dataUrlToBytes(SOURCE)!.bytes);
     const inner = fakeInner();
     await inner.save(
-      doc([{ id: "c1", firstName: "Ada", lastName: "Lovelace", photos: [] }]),
+      doc([
+        withPhoto({
+          photoPath: legacyDisplay,
+          photoSourcePath: legacySource,
+        }),
+      ]),
     );
+
+    let signalled = 0;
+    const adapter = withExternalPhotos(inner, store, () => (signalled += 1));
+    // Load: legacy paths are stale vs the current scheme → a re-file is asked for.
+    const snap = await adapter.load();
+    expect(signalled).toBe(1);
+    // The loaded copy has the bytes back inline (rehydrated from the old files).
+    const loaded = JSON.parse(snap!.text).contacts[0].photos[0];
+    expect(bytesOf(loaded.photo)).toEqual(bytesOf(DISPLAY));
+
+    // Saving that rehydrated copy re-files to the current paths and prunes old.
+    await adapter.save(snap!.text);
+    expect(store.files.has(DISPLAY_PATH)).toBe(true);
+    expect(store.files.has(SOURCE_PATH)).toBe(true);
+    expect(store.files.has(legacyDisplay)).toBe(false);
+    expect(store.files.has(legacySource)).toBe(false);
+    const saved = JSON.parse(inner.lastSaved()!).contacts[0].photos[0];
+    expect(saved.photoPath).toBe(DISPLAY_PATH);
+    expect(saved.photoSourcePath).toBe(SOURCE_PATH);
+  });
+
+  it("re-indexes a lost reference back onto its existing gallery entry", async () => {
+    // The files are on the drive and the gallery entry still exists, but it lost
+    // its path references (e.g. the local copy shed them). Reconcile re-attaches
+    // by the file's 1-based index.
+    const store = memPhotoStore();
+    store.files.set(DISPLAY_PATH, dataUrlToBytes(DISPLAY)!.bytes);
+    store.files.set(SOURCE_PATH, dataUrlToBytes(SOURCE)!.bytes);
+    const inner = fakeInner();
+    // Entry present, but with no path fields at all.
+    await inner.save(doc([withPhoto({})]));
 
     let signalled = 0;
     const adapter = withExternalPhotos(inner, store, () => (signalled += 1));
@@ -362,10 +389,8 @@ describe("withExternalPhotos", () => {
     const photos = JSON.parse(snap!.text).contacts[0].photos;
     expect(photos).toHaveLength(1);
     expect(photos[0].id).toBe("ph1");
-    expect(photos[0].photoPath).toBe("photos/ada-lovelace-c1-ph1.jpg");
-    expect(photos[0].photoSourcePath).toBe(
-      "photos/ada-lovelace-c1-ph1-source.jpg",
-    );
+    expect(photos[0].photoPath).toBe(DISPLAY_PATH);
+    expect(photos[0].photoSourcePath).toBe(SOURCE_PATH);
     // The reclaimed images are rehydrated back inline for offline rendering.
     expect(bytesOf(photos[0].photo)).toEqual(bytesOf(DISPLAY));
     expect(bytesOf(photos[0].photoSource)).toEqual(bytesOf(SOURCE));
@@ -373,18 +398,16 @@ describe("withExternalPhotos", () => {
     expect(signalled).toBe(1);
   });
 
-  it("adopts a hand-dropped photo whose name carries a real contact id", async () => {
-    // A user dropped an image into the drive and named it with an existing
-    // contact's id and a fresh photo id — no matching gallery entry exists yet.
+  it("adopts a legacy hand-dropped photo whose name carries a real contact id", async () => {
+    // A user dropped an image into the drive under the old naming — an existing
+    // contact id and a fresh photo id — with no matching gallery entry yet.
     const store = memPhotoStore();
     store.files.set(
       "photos/anything-readable-c1-dropped.jpg",
       dataUrlToBytes(DISPLAY)!.bytes,
     );
     const inner = fakeInner();
-    await inner.save(
-      doc([{ id: "c1", firstName: "Ada", lastName: "Lovelace", photos: [] }]),
-    );
+    await inner.save(doc([{ ...ADA, photos: [] }]));
 
     const adapter = withExternalPhotos(inner, store);
     const snap = await adapter.load();
@@ -396,25 +419,20 @@ describe("withExternalPhotos", () => {
   });
 
   it("re-indexed files survive the next save's prune", async () => {
-    // A lost file is re-indexed on load, then the same document is saved back —
-    // the reclaimed file must be kept, not pruned as an orphan.
+    // A lost reference is re-indexed on load, then the same document is saved
+    // back — the reclaimed file must be kept, not pruned as an orphan.
     const store = memPhotoStore();
-    store.files.set(
-      "photos/ada-lovelace-c1-ph1.jpg",
-      dataUrlToBytes(DISPLAY)!.bytes,
-    );
+    store.files.set(DISPLAY_PATH, dataUrlToBytes(DISPLAY)!.bytes);
     const inner = fakeInner();
-    await inner.save(
-      doc([{ id: "c1", firstName: "Ada", lastName: "Lovelace", photos: [] }]),
-    );
+    await inner.save(doc([withPhoto({})]));
 
     const adapter = withExternalPhotos(inner, store);
     const snap = await adapter.load();
     await adapter.save(snap!.text);
 
-    expect(store.files.has("photos/ada-lovelace-c1-ph1.jpg")).toBe(true);
+    expect(store.files.has(DISPLAY_PATH)).toBe(true);
     const p = JSON.parse(inner.lastSaved()!).contacts[0].photos[0];
-    expect(p.photoPath).toBe("photos/ada-lovelace-c1-ph1.jpg");
+    expect(p.photoPath).toBe(DISPLAY_PATH);
     expect(p.photo).toBeUndefined();
   });
 
@@ -422,9 +440,7 @@ describe("withExternalPhotos", () => {
     const store = memPhotoStore();
     store.files.set("photos/ghost-cX-ph1.jpg", dataUrlToBytes(DISPLAY)!.bytes);
     const inner = fakeInner();
-    await inner.save(
-      doc([{ id: "c1", firstName: "Ada", lastName: "Lovelace", photos: [] }]),
-    );
+    await inner.save(doc([{ ...ADA, photos: [] }]));
 
     let signalled = 0;
     const adapter = withExternalPhotos(inner, store, () => (signalled += 1));
