@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import {
   BuildingIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   PersonIcon,
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
@@ -55,6 +57,53 @@ export function KindToggle({
         }`}
       >
         <Icon className="h-4 w-4" />
+      </button>
+    </span>
+  );
+}
+
+// A stacked up/down pair for hand-ordering a list of rows (the important-date
+// list uses it). The two chevrons sit tight in one column so they cost little
+// row width; each disables itself at the end of the list it can't move past, so
+// the top row can't move up and the bottom row can't move down.
+export function ReorderButtons({
+  upLabel,
+  downLabel,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
+}: {
+  upLabel: string;
+  downLabel: string;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+}) {
+  const btn =
+    "flex h-3.5 w-7 cursor-pointer items-center justify-center text-muted hover:text-fg disabled:cursor-default disabled:opacity-30 disabled:hover:text-muted";
+  return (
+    <span className="flex shrink-0 flex-col">
+      <button
+        type="button"
+        onClick={onMoveUp}
+        disabled={!canMoveUp}
+        aria-label={upLabel}
+        title={upLabel}
+        className={btn}
+      >
+        <ChevronUpIcon className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={onMoveDown}
+        disabled={!canMoveDown}
+        aria-label={downLabel}
+        title={downLabel}
+        className={btn}
+      >
+        <ChevronDownIcon className="h-4 w-4" />
       </button>
     </span>
   );

@@ -277,6 +277,8 @@ export const sv: Catalog = {
     importantDateLabel: "Tillfälle",
     importantDateLabelPlaceholder: "Årsdag",
     importantDateLabelRequired: "Ge tillfället ett namn.",
+    moveImportantDateUp: "Flytta datum uppåt",
+    moveImportantDateDown: "Flytta datum nedåt",
     removeImportantDate: "Ta bort datum",
     dateMonth: "Månad",
     dateDay: "Dag",
