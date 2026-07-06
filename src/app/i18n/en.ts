@@ -34,13 +34,14 @@ export const en = {
     conflictKeep: "Keep both",
   },
   toast: {
-    // The hovering "action taken — undo?" banner raised after an archive or a
-    // delete, mirroring the import result banner.
+    // The hovering "action taken — undo?" banner raised after an archive, a
+    // delete, or unstarring a favorite — the same pill the import result rides.
     contactArchived: "Contact archived",
     contactCreated: "Contact created",
     contactDeleted: "Contact deleted",
     contactsArchived: "{n} contacts archived",
     contactsDeleted: "{n} contacts deleted",
+    favoriteRemoved: "Removed from favorites",
     folderArchived: "Folder archived",
     folderDeleted: "Folder deleted",
     undo: "Undo",

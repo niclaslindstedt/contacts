@@ -40,6 +40,7 @@ import {
   rangeBetween,
   reorderIds,
 } from "./contactList.ts";
+import { toastStore, UNDO_TOAST_MS } from "./toast.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { Contact, Phone } from "./types.ts";
 import { displayName, methodKind } from "./types.ts";
@@ -122,8 +123,25 @@ export function ContactListScreen({
   );
   // Star / unstar a card. Reuses the same field-patch path every other edit
   // takes, so a favorite toggle is one undoable step and syncs like any change.
-  const toggleFavorite = (contact: Contact) =>
+  // Unstarring on the Favorites page drops the card out of view, so it raises
+  // the shared undo toast (as archive / delete do) to make the removal one tap
+  // to reverse — everywhere else the heart just fills / empties in place.
+  const toggleFavorite = (contact: Contact) => {
+    const removing = !!contact.favorite;
     updateContact(contact.id, { favorite: !contact.favorite });
+    if (favoritesOnly && removing) {
+      toastStore.clear();
+      toastStore.push({
+        message: t("toast.favoriteRemoved"),
+        icon: <FavoriteIcon className="h-4 w-4" filled />,
+        durationMs: UNDO_TOAST_MS,
+        action: {
+          label: t("toast.undo"),
+          onAction: () => store.undo(),
+        },
+      });
+    }
+  };
 
   // Which sections are collapsed. Default-expanded — local view state, it
   // doesn't travel with the document.
@@ -765,6 +783,7 @@ function ContactRowActions({
   actions,
   menuLabel,
   archiveLabel,
+  swipe = true,
   children,
 }: {
   actions: {
@@ -774,6 +793,10 @@ function ContactRowActions({
   };
   menuLabel: string;
   archiveLabel: string;
+  // Whether the row bares its swipe strip (archive right / delete left). On by
+  // default for the List page; the Favorites page turns it off — swipe is a
+  // List-page affordance, so a Favorites row only carries the right-click menu.
+  swipe?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -782,17 +805,21 @@ function ContactRowActions({
       touchLongPress={false}
       ariaLabel={menuLabel}
     >
-      <SwipeableRow
-        actions={[actions.deleteAction]}
-        leading={{
-          kind: "commit",
-          onCommit: actions.archiveAction.onSelect,
-          label: archiveLabel,
-          icon: <ArchiveIcon className="h-5 w-5" />,
-        }}
-      >
-        {children}
-      </SwipeableRow>
+      {swipe ? (
+        <SwipeableRow
+          actions={[actions.deleteAction]}
+          leading={{
+            kind: "commit",
+            onCommit: actions.archiveAction.onSelect,
+            label: archiveLabel,
+            icon: <ArchiveIcon className="h-5 w-5" />,
+          }}
+        >
+          {children}
+        </SwipeableRow>
+      ) : (
+        children
+      )}
     </RowActionMenu>
   );
 }
@@ -819,8 +846,8 @@ function FavoritesReorderList({
   settings: AppSettings;
   selecting: boolean;
   selected: ReadonlySet<string>;
-  // Builds the swipe + right-click actions for a row — the same set the List
-  // page uses, so both pages carry the side menu's row gestures.
+  // Builds the right-click actions for a row. Favorites rows don't swipe (that
+  // stays a List-page affordance), so only the menu actions are used here.
   rowActionsFor: (contact: Contact) => {
     deleteAction: RowAction;
     archiveAction: RowAction;
@@ -910,6 +937,7 @@ function FavoritesReorderList({
               actions={rowActionsFor(contact)}
               menuLabel={t("menu.contactActions")}
               archiveLabel={t("menu.archive")}
+              swipe={false}
             >
               <ContactRow
                 contact={contact}

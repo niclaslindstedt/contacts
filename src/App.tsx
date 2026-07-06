@@ -1,5 +1,12 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import {
   useApplyTheme,
@@ -12,9 +19,11 @@ import {
   useSidebarInset,
 } from "@niclaslindstedt/oss-framework/sidebar";
 import {
+  ArchiveIcon,
   Modal,
+  PersonIcon,
   SpinnerIcon,
-  ToastViewport,
+  TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
 import { UpdateToast, usePwaUpdate } from "@niclaslindstedt/oss-framework/pwa";
 import { SyncDetailsModal } from "@niclaslindstedt/oss-framework/sync";
@@ -59,12 +68,19 @@ import { useDevSeed } from "./app/dev/useDevSeed.ts";
 import { createDemoBackend, createSeedBackend } from "./app/dev/seedBackend.ts";
 import { localDocBackend, useContactStore } from "./app/useContactStore.ts";
 import { useMediaCache } from "./app/useMediaCache.ts";
+import { AppToastViewport } from "./app/AppToastViewport.tsx";
 import { toastStore, UNDO_TOAST_MS } from "./app/toast.ts";
 import { useNamespaces } from "./app/useNamespaces.ts";
 import { useSyncEngine } from "./app/useSyncEngine.ts";
 import { cacheIdForBase } from "./app/pwa.ts";
 import { displayName } from "./app/types.ts";
 import { parsePastedContact } from "./app/pasteContact.ts";
+
+// The leading glyphs on the undo toasts — one per outcome, so an archive, a
+// delete, and a create each read at a glance on the shared banner.
+const archiveGlyph = <ArchiveIcon className="h-4 w-4" />;
+const deleteGlyph = <TrashIcon className="h-4 w-4" />;
+const createGlyph = <PersonIcon className="h-4 w-4" />;
 
 // A local-first contacts PWA built from the framework's shared surface. The
 // framework `Sidebar` frames the navigation (docked on wide screens, a
@@ -268,10 +284,11 @@ export function App() {
   // Undo rewinds the archive / delete that raised it (the action's activation
   // dismisses the toast itself).
   const showUndoToast = useCallback(
-    (message: string) => {
+    (message: string, icon: ReactNode) => {
       toastStore.clear();
       toastStore.push({
         message,
+        icon,
         durationMs: UNDO_TOAST_MS,
         action: {
           label: t("toast.undo"),
@@ -298,11 +315,11 @@ export function App() {
       },
       archiveContact: (id: string) => {
         store.archiveContact(id);
-        showUndoToast(t("toast.contactArchived"));
+        showUndoToast(t("toast.contactArchived"), archiveGlyph);
       },
       deleteContact: (id: string) => {
         store.deleteContact(id);
-        showUndoToast(t("toast.contactDeleted"));
+        showUndoToast(t("toast.contactDeleted"), deleteGlyph);
       },
       archiveContacts: (ids: readonly string[]) => {
         store.archiveContacts(ids);
@@ -310,6 +327,7 @@ export function App() {
           ids.length === 1
             ? t("toast.contactArchived")
             : t("toast.contactsArchived", { n: String(ids.length) }),
+          archiveGlyph,
         );
       },
       deleteContacts: (ids: readonly string[]) => {
@@ -318,15 +336,16 @@ export function App() {
           ids.length === 1
             ? t("toast.contactDeleted")
             : t("toast.contactsDeleted", { n: String(ids.length) }),
+          deleteGlyph,
         );
       },
       archiveFolder: (id: string) => {
         store.archiveFolder(id);
-        showUndoToast(t("toast.folderArchived"));
+        showUndoToast(t("toast.folderArchived"), archiveGlyph);
       },
       deleteFolder: (id: string) => {
         store.deleteFolder(id);
-        showUndoToast(t("toast.folderDeleted"));
+        showUndoToast(t("toast.folderDeleted"), deleteGlyph);
       },
     }),
     [store, showUndoToast, t],
@@ -443,7 +462,7 @@ export function App() {
       });
       closeContactModal();
       setView("contact");
-      showUndoToast(t("toast.contactCreated"));
+      showUndoToast(t("toast.contactCreated"), createGlyph);
     };
     window.addEventListener("paste", handler);
     return () => window.removeEventListener("paste", handler);
@@ -677,15 +696,12 @@ export function App() {
         onResolve={sync.resolveSetup}
       />
 
-      {/* The hovering "archived / deleted — undo?" banner — the framework's
-          toast stack, rendered once here. The className override re-seats the
-          viewport over the content band (not the whole viewport) via the
-          sidebar-inset CSS variables, where the old app-local toast sat. */}
-      <ToastViewport
-        store={toastStore}
-        labels={{ dismiss: t("common.close") }}
-        className="pointer-events-none fixed right-[var(--app-content-right,0px)] bottom-[max(1rem,env(safe-area-inset-bottom))] left-[var(--app-content-left,0px)] z-[60] flex flex-col items-center gap-2 px-4"
-      />
+      {/* The one hovering toast banner — import results and the "archived /
+          deleted / unfavorited — undo?" confirmations all ride this single
+          pill, rendered once here. The className re-seats the viewport over the
+          content band (not the whole viewport) via the sidebar-inset CSS
+          variables. */}
+      <AppToastViewport className="pointer-events-none fixed right-[var(--app-content-right,0px)] bottom-[max(1rem,env(safe-area-inset-bottom))] left-[var(--app-content-left,0px)] z-[60] flex flex-col items-center gap-2 px-4" />
 
       {/* The framework's PWA "a new version is ready" prompt, fed from the
           real `usePwaUpdate()` state above. Once "Update" is tapped we swap the
