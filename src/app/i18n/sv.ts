@@ -33,6 +33,7 @@ export const sv: Catalog = {
     contactDeleted: "Kontakt borttagen",
     contactsArchived: "{n} kontakter arkiverade",
     contactsDeleted: "{n} kontakter borttagna",
+    favoriteRemoved: "Borttagen från favoriter",
     folderArchived: "Mapp arkiverad",
     folderDeleted: "Mapp borttagen",
     undo: "Ångra",

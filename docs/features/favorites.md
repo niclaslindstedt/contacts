@@ -25,10 +25,14 @@ The Favorites page shows only the primary number for each starred contact, so a
 favorite reads as a single tap-to-call rather than a stack of numbers. A favorite
 that has no primary marked keeps showing its usual list.
 
+Unstar a contact and it drops off the page — so unstarring here raises a
+hovering **Undo** toast, the same one archiving and deleting use, giving you one
+tap to put it back if you didn't mean it.
+
 The favorite flag and its order are stored per contact, so they ride along in the
 JSON backup and sync across your devices. The same Select / Copy / Export tools
 from the [List page](feature:list) are here too, and a card opened from Favorites
-floats over the page as a panel you swipe down to dismiss. Every row also carries
-the List page's row gestures: **swipe left** to bare a **Delete** button, **swipe
-right** to archive, and **right-click** for the **Move to folder / Archive /
-Delete** menu.
+floats over the page as a panel you swipe down to dismiss. Left/right **swipe**
+stays a [List page](feature:list) gesture — a Favorites row keeps only the
+desktop **right-click** menu (**Move to folder / Archive / Delete**), leaving the
+row free for the grip's drag-to-reorder.

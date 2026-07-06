@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useRef, type ReactNode } from "react";
 
 import { UploadIcon } from "@niclaslindstedt/oss-framework/components";
 import { useFileDrop } from "@niclaslindstedt/oss-framework/hooks";
@@ -10,8 +10,11 @@ import {
   useImportFlow,
   type ImportRunResult,
 } from "./useImportFlow.tsx";
+import { INFO_TOAST_MS, toastStore } from "./toast.ts";
 import { info, warn } from "../output.ts";
 import type { ContactStore } from "./useContactStore.ts";
+
+const importGlyph = <UploadIcon className="h-4 w-4" />;
 
 // Drag-and-drop contact import. Wraps the main content area and, whenever a
 // file drag enters it, raises a full-area overlay inviting the drop. Dropping
@@ -25,8 +28,9 @@ import type { ContactStore } from "./useContactStore.ts";
 // enter/leave depth counting that keeps the overlay from flickering as the
 // pointer crosses child elements. The nested `ContactPhotoDropZone` claims
 // image drags away from this zone, so only importable files raise it.
-
-type Banner = { kind: "ok" | "empty"; text: string };
+//
+// The result lands on the app's shared toast (`toastStore`) — the same hovering
+// pill archive / delete / favorite use — so every confirmation reads the same.
 
 export function ImportDropZone({
   store,
@@ -36,32 +40,34 @@ export function ImportDropZone({
   children: ReactNode;
 }) {
   const t = useT();
-  const [banner, setBanner] = useState<Banner | null>(null);
   const zoneRef = useRef<HTMLDivElement>(null);
-  const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showBanner = useCallback((next: Banner) => {
-    setBanner(next);
-    if (bannerTimer.current) clearTimeout(bannerTimer.current);
-    bannerTimer.current = setTimeout(() => setBanner(null), 4000);
-  }, []);
 
   const onResult = useCallback(
     (r: ImportRunResult) => {
+      // One banner at a time — clear any lingering undo toast first.
+      toastStore.clear();
       if (r.total === 0) {
         warn("import: no contacts found in the dropped file(s)");
-        showBanner({ kind: "empty", text: t("import.none") });
+        toastStore.push({
+          message: t("import.none"),
+          icon: importGlyph,
+          durationMs: INFO_TOAST_MS,
+        });
         return;
       }
       info(
         `import: filed ${r.added} new contact(s), merged ${r.merged} into existing`,
       );
-      showBanner({ kind: "ok", text: importResultText(t, r) });
+      toastStore.push({
+        message: importResultText(t, r),
+        icon: importGlyph,
+        durationMs: INFO_TOAST_MS,
+      });
       if (r.emptyFiles > 0) {
         warn(`import: ${r.emptyFiles} file(s) had no importable contacts`);
       }
     },
-    [showBanner, t],
+    [t],
   );
   const { importFiles, conflictDialog } = useImportFlow(store, onResult);
 
@@ -90,25 +96,6 @@ export function ImportDropZone({
       )}
 
       {conflictDialog}
-
-      {banner && (
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-4 z-40 flex justify-center px-4"
-          role="status"
-          aria-live="polite"
-        >
-          <div
-            className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm shadow-lg ${
-              banner.kind === "ok"
-                ? "border-accent bg-surface-2 text-fg-bright"
-                : "border-line bg-surface-2 text-muted"
-            }`}
-          >
-            <UploadIcon className="h-4 w-4 shrink-0 text-accent" />
-            <span>{banner.text}</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
