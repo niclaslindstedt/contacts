@@ -597,6 +597,14 @@ export function useSyncEngine(
           syncLog.info(
             `setup: cloud holds ${remote.contacts.length} contact(s) — asking replace-or-adopt`,
           );
+        } else if (snap) {
+          // Fill any photo / attachment bytes the local working copy shed to the
+          // storage quota (see `stripInlineMedia`) back in from this rehydrated
+          // backend copy, so a cold restart shows the photos again without a
+          // manual re-index. Additive and in-memory only — the local document
+          // stays the working copy, and a pending setup prompt is left for the
+          // user's replace-or-adopt choice to settle instead.
+          store.hydrateMedia(snap.text);
         }
         syncLog.info(
           snap
@@ -1016,13 +1024,17 @@ export function useSyncEngine(
         baseRevision.current = snap?.revision;
         setLocked(false);
         setFault("none");
+        // An encrypted copy carries its photos inside the envelope; decrypting
+        // it re-hydrates them, so fill any the local working copy shed to the
+        // storage quota back in — the same recovery the plaintext baseline does.
+        if (snap) store.hydrateMedia(snap.text);
         syncLog.info("unlock: cloud copy decrypted");
       } catch (err) {
         passwordRef.current = null;
         throw err;
       }
     },
-    [adapter, passwordRef],
+    [adapter, passwordRef, store],
   );
 
   // Re-run the backend's consent flow — the command centre's "Reconnect".

@@ -7,6 +7,7 @@ import { dueContacts, isoDate } from "./autoArchive.ts";
 import { canNestFolder, subtreeFolderIds } from "./contactList.ts";
 import type { ImportedContact } from "./import.ts";
 import { mergeContactDraft, type ImportMerge } from "./importMerge.ts";
+import { mergeInlineMedia } from "./mediaHydrate.ts";
 import { parseDoc, serializeDoc } from "./migrations.ts";
 import { starterDoc } from "./seed.ts";
 import type { AppData, Contact, Folder } from "./types.ts";
@@ -325,6 +326,35 @@ export function useContactStore(
     },
     [markPersist],
   );
+
+  // Re-hydrate inline media (photo / attachment bytes and their cloud paths)
+  // that the local working copy is missing, from a freshly-loaded backend copy.
+  // The working copy can shed its heavy image / file bytes to fit the storage
+  // quota (see `stripInlineMedia`) — keeping the entries and their cloud paths
+  // but dropping the bytes — so after a cold restart a photo entry can hold a
+  // path with no picture, and the avatar falls back to the glyph. The backend
+  // copy re-hydrated those bytes on load; this carries them the last step back
+  // onto the working document so the photo shows again. Additive (see
+  // `mergeInlineMedia`), so it never clobbers a local edit.
+  //
+  // Deliberately NOT persisted and NOT counted as an edit: the bytes already
+  // live on the backend, so this only refreshes what's shown in memory — it
+  // doesn't re-bloat the localStorage copy the quota just trimmed, mark the
+  // document dirty, or push anything back to the cloud. A no-op merge (the
+  // working copy already holds every byte) returns the same state so React
+  // skips the re-render.
+  const hydrateMedia = useCallback((text: string) => {
+    let remote: AppData;
+    try {
+      remote = parseDoc(text);
+    } catch {
+      return; // Unparseable backend bytes — nothing to hydrate from.
+    }
+    setState((cur) => {
+      const merged = mergeInlineMedia(cur.data, remote);
+      return merged ? { ...cur, data: merged } : cur;
+    });
+  }, []);
 
   const setActive = useCallback(
     (id: string) => {
@@ -896,6 +926,7 @@ export function useContactStore(
     moveFolderToNamespace,
     reload,
     adoptRemote,
+    hydrateMedia,
     undo,
     redo,
   };
