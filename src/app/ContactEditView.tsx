@@ -34,7 +34,7 @@ import {
 import { autoArchiveAction, defaultAutoArchiveDate } from "./autoArchive.ts";
 import { companyTogglePatch } from "./companyCard.ts";
 import { filesToAttachments } from "./attachmentIntake.ts";
-import { KindToggle, RemoveButton } from "./editWidgets.tsx";
+import { KindToggle, RemoveButton, ReorderButtons } from "./editWidgets.tsx";
 import { PhoneRows } from "./editPhones.tsx";
 import { IceIcon } from "./icons.tsx";
 import { isValidFlexDate, parseFlexDate } from "./importantDates.ts";
@@ -714,6 +714,17 @@ function ImportantDateRows({
   const patch = (id: string, part: Partial<ImportantDate>) =>
     onCommit(rows.map((d) => (d.id === id ? { ...d, ...part } : d)));
 
+  // Swap a row with its neighbour to nudge it up or down the list. `delta` is
+  // -1 for up, +1 for down; a move that would fall off either end is a no-op,
+  // so the caller can wire the buttons without bounds-checking.
+  const move = (index: number, delta: number) => {
+    const target = index + delta;
+    if (target < 0 || target >= rows.length) return;
+    const next = rows.slice();
+    [next[index], next[target]] = [next[target]!, next[index]!];
+    onCommit(next);
+  };
+
   const addDate = () => {
     const now = new Date();
     const md = `${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -722,7 +733,7 @@ function ImportantDateRows({
 
   return (
     <div className="flex flex-col gap-3">
-      {rows.map((row) => {
+      {rows.map((row, index) => {
         // The occasion is required — a dateless "Anniversary" is meaningless,
         // and the calendar reminder and read-view label both lean on it. Flag
         // a blank one inline; the card still commits (there is no save gate),
@@ -744,6 +755,16 @@ function ImportantDateRows({
                   onCommit={(label) => patch(row.id, { label })}
                 />
               </div>
+              {rows.length > 1 && (
+                <ReorderButtons
+                  upLabel={t("contact.moveImportantDateUp")}
+                  downLabel={t("contact.moveImportantDateDown")}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < rows.length - 1}
+                  onMoveUp={() => move(index, -1)}
+                  onMoveDown={() => move(index, 1)}
+                />
+              )}
               <RemoveButton
                 label={t("contact.removeImportantDate")}
                 onClick={() => onCommit(rows.filter((d) => d.id !== row.id))}

@@ -141,7 +141,9 @@ marked as a **company** rather than a person.
   date (month, day, and year) or **day and month only** (leave the year blank). Like the birthday, each shows a countdown chip; tapping it hands a
   yearly reminder to your calendar, titled with the occasion and the contact's
   name (e.g. "Anniversary Sarah Connor"). When a date carries a year, tapping it
-  reveals how many years have passed.
+  reveals how many years have passed. When a card holds several important dates,
+  the up/down arrows beside each one in edit mode reorder them — the read view
+  lists them in the order you set.
 - **Edit with the pencil.** The pencil in the toolbar flips the card into edit
   mode; the check flips it back. In edit mode, tap the name to rename and fill in
   the field form. Every field commits when you leave it, and each committed edit

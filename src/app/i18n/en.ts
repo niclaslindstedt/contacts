@@ -292,6 +292,8 @@ export const en = {
     importantDateLabel: "Occasion",
     importantDateLabelPlaceholder: "Anniversary",
     importantDateLabelRequired: "Give the occasion a name.",
+    moveImportantDateUp: "Move date up",
+    moveImportantDateDown: "Move date down",
     removeImportantDate: "Remove date",
     dateMonth: "Month",
     dateDay: "Day",
