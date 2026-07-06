@@ -7,7 +7,7 @@ import { dueContacts, isoDate } from "./autoArchive.ts";
 import { canNestFolder, subtreeFolderIds } from "./contactList.ts";
 import type { ImportedContact } from "./import.ts";
 import { mergeContactDraft, type ImportMerge } from "./importMerge.ts";
-import { mergeInlineMedia } from "./mediaHydrate.ts";
+import { mergeInlineMedia, type MediaSource } from "./mediaHydrate.ts";
 import { parseDoc, serializeDoc } from "./migrations.ts";
 import { starterDoc } from "./seed.ts";
 import type { AppData, Contact, Folder } from "./types.ts";
@@ -343,18 +343,25 @@ export function useContactStore(
   // document dirty, or push anything back to the cloud. A no-op merge (the
   // working copy already holds every byte) returns the same state so React
   // skips the re-render.
-  const hydrateMedia = useCallback((text: string) => {
-    let remote: AppData;
-    try {
-      remote = parseDoc(text);
-    } catch {
-      return; // Unparseable backend bytes — nothing to hydrate from.
-    }
+  const hydrateMediaFrom = useCallback((remote: MediaSource) => {
     setState((cur) => {
       const merged = mergeInlineMedia(cur.data, remote);
       return merged ? { ...cur, data: merged } : cur;
     });
   }, []);
+
+  const hydrateMedia = useCallback(
+    (text: string) => {
+      let remote: AppData;
+      try {
+        remote = parseDoc(text);
+      } catch {
+        return; // Unparseable backend bytes — nothing to hydrate from.
+      }
+      hydrateMediaFrom(remote);
+    },
+    [hydrateMediaFrom],
+  );
 
   const setActive = useCallback(
     (id: string) => {
@@ -927,6 +934,7 @@ export function useContactStore(
     reload,
     adoptRemote,
     hydrateMedia,
+    hydrateMediaFrom,
     undo,
     redo,
   };

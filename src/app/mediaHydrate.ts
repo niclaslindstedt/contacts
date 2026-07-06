@@ -25,10 +25,35 @@
 
 import type { AppData, Attachment, ContactPhoto } from "./types.ts";
 
+/** A media-only view of a document — only the id and byte fields
+ *  {@link mergeInlineMedia} reads from the source side, so a caller can supply
+ *  just the bytes without fabricating whole contacts. A full {@link AppData}
+ *  satisfies it (the cloud-copy caller), and so does a synthetic doc carrying
+ *  only the cached photo / attachment bytes per contact (the IndexedDB cache
+ *  caller). */
+export type MediaSource = {
+  contacts: ReadonlyArray<{
+    id: string;
+    photos?: ReadonlyArray<
+      Pick<
+        ContactPhoto,
+        "id" | "photo" | "photoSource" | "photoPath" | "photoSourcePath"
+      >
+    >;
+    attachments?: ReadonlyArray<Pick<Attachment, "id" | "data" | "dataPath">>;
+  }>;
+};
+
 /** Fill a working-copy photo's missing image bytes / cloud paths from the
  *  backend copy's matching entry, returning the same object when nothing was
  *  missing so the caller can detect a no-op. */
-function fillPhoto(local: ContactPhoto, remote: ContactPhoto): ContactPhoto {
+function fillPhoto(
+  local: ContactPhoto,
+  remote: Pick<
+    ContactPhoto,
+    "photo" | "photoSource" | "photoPath" | "photoSourcePath"
+  >,
+): ContactPhoto {
   const patch: Partial<ContactPhoto> = {};
   if (!local.photo && remote.photo) patch.photo = remote.photo;
   if (!local.photoSource && remote.photoSource) {
@@ -43,7 +68,10 @@ function fillPhoto(local: ContactPhoto, remote: ContactPhoto): ContactPhoto {
 
 /** The attachment counterpart of {@link fillPhoto}: fill missing file bytes /
  *  cloud path from the backend copy's matching attachment. */
-function fillAttachment(local: Attachment, remote: Attachment): Attachment {
+function fillAttachment(
+  local: Attachment,
+  remote: Pick<Attachment, "data" | "dataPath">,
+): Attachment {
   const patch: Partial<Attachment> = {};
   if (!local.data && remote.data) patch.data = remote.data;
   if (!local.dataPath && remote.dataPath) patch.dataPath = remote.dataPath;
@@ -59,7 +87,7 @@ function fillAttachment(local: Attachment, remote: Attachment): Attachment {
  *  id, so a renamed contact (whose cloud file paths change) still re-hydrates. */
 export function mergeInlineMedia(
   current: AppData,
-  remote: AppData,
+  remote: MediaSource,
 ): AppData | null {
   const remoteById = new Map(remote.contacts.map((c) => [c.id, c] as const));
   let changed = false;

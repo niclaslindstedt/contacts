@@ -58,6 +58,7 @@ import { applyBackdropVars, useAppSettings } from "./app/useAppSettings.ts";
 import { useDevSeed } from "./app/dev/useDevSeed.ts";
 import { createDemoBackend, createSeedBackend } from "./app/dev/seedBackend.ts";
 import { localDocBackend, useContactStore } from "./app/useContactStore.ts";
+import { useMediaCache } from "./app/useMediaCache.ts";
 import { toastStore, UNDO_TOAST_MS } from "./app/toast.ts";
 import { useNamespaces } from "./app/useNamespaces.ts";
 import { useSyncEngine } from "./app/useSyncEngine.ts";
@@ -104,6 +105,17 @@ export function App() {
     return localDocBackend;
   }, [devSeed.mode, devSeed.size]);
   const store = useContactStore(ns.activeSlug, backend);
+  // Mirror contact photos / attachments into an on-device IndexedDB cache and
+  // seed the working copy from it on open, so a cold restart shows the pictures
+  // immediately (and offline) instead of re-fetching them from the drive — the
+  // localStorage document is too small to hold the bytes (see `useMediaCache`).
+  // Off while a developer sample backend is in play.
+  useMediaCache(
+    devSeed.mode === "off",
+    ns.activeSlug,
+    store.data,
+    store.hydrateMediaFrom,
+  );
   const [namespacesOpen, setNamespacesOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   // What the search field opens onto: the typed character when quick find

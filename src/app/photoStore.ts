@@ -9,8 +9,8 @@
 // wraps a `StorageAdapter` so that, on save, every image in each contact's photo
 // gallery — the display crop (`photo`) and the larger original (`photoSource`)
 // of each entry — is decoded to bytes and written to a deterministic file
-// (`photos/<name>-<contactId>-<photoId>.jpg` and `…-source.jpg`, see
-// `photoPathFor` / `photoSourcePathFor`) and stripped from the synced JSON — so
+// (`photos/<name>-<tag>-<index>.jpg` and `…-source.jpg`, see `photoPathFor` /
+// `photoSourcePathFor`) and stripped from the synced JSON — so
 // the document carries no image data at all and the files are genuine,
 // previewable JPEGs — and, on load, re-hydrated back onto each gallery entry
 // from those files. A photo that arrives inline on an imported vCard rides the
@@ -24,9 +24,10 @@
 // load a reconcile pass lists the `photos/` tree and, for any file the document
 // doesn't already reference, parses its name back to the contact + photo it
 // belongs to (`parsePhotoPath`) and re-attaches it to that card. So a photo
-// whose gallery reference was lost is found and re-indexed, and a photo a user
-// hand-drops into the drive under the right `…-<contactId>-<photoId>.jpg` name
-// is adopted onto the matching contact — no edit needed.
+// whose gallery reference was lost is found and re-indexed. A copy still filed
+// under an older build's `…-<contactId>-<photoId>.jpg` naming (or a since-renamed
+// contact) is re-filed into the current `…-<tag>-<index>.jpg` layout on the next
+// save, and the stale file pruned — no edit needed.
 //
 // Two safety rules make it robust against an untested network:
 //   1. **Externalise-or-embed** — an image is only stripped from the outgoing
@@ -86,7 +87,7 @@ function scopeToPhotos(files: PhotoFileStore): PhotoStore {
 }
 
 /** The Dropbox photo store, rooted at the app folder so paths read as
- *  `photos/<name>-<id>.jpg`. */
+ *  `photos/<name>-<tag>-<number>.jpg`. */
 export function dropboxPhotoStore(
   auth: DropboxAuth,
   appKey: string | undefined,
@@ -128,30 +129,51 @@ type PhotoContact = {
 };
 type PhotoDoc = { contacts?: PhotoContact[] };
 
-/** The naming a deterministic photo path is built from — the contact's identity
- *  plus the photo's own id, since one card can carry several photos. */
-type PhotoNamed = PhotoContact & { photoId: string };
-
 /** One externalisable image on a gallery photo: the data-URI field to file out,
- *  the deterministic path builder, and the doc field the path maps to. */
+ *  the deterministic path builder (keyed on the photo's 1-based gallery
+ *  position), and the doc field the path maps to. */
 type Slot = {
   data: "photo" | "photoSource";
   path: "photoPath" | "photoSourcePath";
-  pathFor: (c: PhotoNamed) => string;
+  pathFor: (c: PhotoContact, index: number) => string;
 };
 
 const SLOTS: Slot[] = [
   {
     data: "photo",
     path: "photoPath",
-    pathFor: (c) => photoPathFor(c, c.photoId),
+    pathFor: (c, index) => photoPathFor(c, index),
   },
   {
     data: "photoSource",
     path: "photoSourcePath",
-    pathFor: (c) => photoSourcePathFor(c, c.photoId),
+    pathFor: (c, index) => photoSourcePathFor(c, index),
   },
 ];
+
+/** Whether a *stored* document references any photo file under an outdated
+ *  path — one filed by an older build's `<contactId>-<photoId>` scheme, or one
+ *  whose contact was since renamed (so the name slug no longer matches). Run on
+ *  load, a true result is the "re-file these into the current
+ *  `<tag>-<index>` layout" signal the sweep keys off: the next save writes each
+ *  photo to its current path and prunes the stale file. A fully up-to-date copy
+ *  reads false. */
+function needsRefile(doc: PhotoDoc): boolean {
+  const contacts = Array.isArray(doc.contacts) ? doc.contacts : null;
+  if (!contacts) return false;
+  return contacts.some((c) => {
+    const photos = c.photos ?? [];
+    return photos.some((entry, i) => {
+      const index = i + 1;
+      return (
+        (entry.photoPath != null &&
+          entry.photoPath !== photoPathFor(c, index)) ||
+        (entry.photoSourcePath != null &&
+          entry.photoSourcePath !== photoSourcePathFor(c, index))
+      );
+    });
+  });
+}
 
 /** A cheap 32-bit fingerprint (djb2) of a source data URI, so an unchanged
  *  photo isn't re-uploaded on every debounced save — only a genuinely new
@@ -222,12 +244,14 @@ export function withExternalPhotos(
     if (!contacts) return { text, desired };
 
     for (const c of contacts) {
-      for (const entry of c.photos ?? []) {
-        const named: PhotoNamed = { ...c, photoId: entry.id };
+      const gallery = c.photos ?? [];
+      for (let i = 0; i < gallery.length; i += 1) {
+        const entry = gallery[i]!;
+        const index = i + 1;
         for (const slot of SLOTS) {
           const inline = entry[slot.data];
           if (inline) {
-            const path = slot.pathFor(named);
+            const path = slot.pathFor(c, index);
             const bytes = dataUrlToBytes(inline);
             if (!bytes) {
               // Not a decodable data URI — leave it inline rather than lose it.
@@ -337,10 +361,25 @@ export function withExternalPhotos(
         continue;
       }
       const gallery = (contact.photos ??= []);
-      let entry = gallery.find((p) => p.id === parsed.photoId);
+      let entry: PhotoEntry | undefined;
+      if (parsed.photoId != null) {
+        // Legacy `<contactId>-<photoId>` file: re-attach to the entry with that
+        // id, minting one if the document lost the entry itself (a photo a user
+        // hand-dropped into the drive under the old naming).
+        entry = gallery.find((p) => p.id === parsed.photoId);
+        if (!entry) {
+          entry = { id: parsed.photoId };
+          gallery.push(entry);
+        }
+      } else if (parsed.index != null) {
+        // Current `<tag>-<index>` file: the index is the entry's 1-based gallery
+        // position. Re-attach to that entry; a file that names a position the
+        // gallery doesn't have is left unattached rather than guessed at.
+        entry = gallery[parsed.index - 1];
+      }
       if (!entry) {
-        entry = { id: parsed.photoId };
-        gallery.push(entry);
+        unmatched.push(path);
+        continue;
       }
       const field = parsed.source ? "photoSourcePath" : "photoPath";
       if (entry[field] !== path) {
@@ -423,7 +462,18 @@ export function withExternalPhotos(
       // Re-index any filed photo the document doesn't reference (lost or
       // hand-dropped), then rehydrate reads the reclaimed paths' bytes too.
       const { text, changed } = await reindex(snap.text);
-      if (onPhotosNeedResave && (inline || changed)) onPhotosNeedResave();
+      // A copy that still points at outdated file paths (an older build's naming,
+      // or a since-renamed contact) needs re-filing into the current layout — the
+      // sweep's save rewrites each photo to its current path and prunes the old.
+      let stale = false;
+      try {
+        stale = needsRefile(JSON.parse(text) as PhotoDoc);
+      } catch {
+        stale = false;
+      }
+      if (onPhotosNeedResave && (inline || changed || stale)) {
+        onPhotosNeedResave();
+      }
       return { ...snap, text: await rehydrate(text) };
     },
     async save(text, baseRevision) {
