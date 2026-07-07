@@ -23,6 +23,7 @@ import {
   useDragDrop,
   type DragHandleProps,
 } from "@niclaslindstedt/oss-framework/sidebar";
+import { SyncStatus } from "@niclaslindstedt/oss-framework/sync";
 
 import { Avatar } from "./Avatar.tsx";
 import { FavoriteIcon, SectionsToggleIcon } from "./icons.tsx";
@@ -42,6 +43,7 @@ import {
 } from "./contactList.ts";
 import { toastStore, UNDO_TOAST_MS } from "./toast.ts";
 import type { ContactStore } from "./useContactStore.ts";
+import type { SyncEngine } from "./useSyncEngine.ts";
 import type { Contact, Phone } from "./types.ts";
 import { displayName, methodKind } from "./types.ts";
 
@@ -76,11 +78,18 @@ const UNGROUPED = "__ungrouped__";
 export function ContactListScreen({
   store,
   settings,
+  sync,
+  onOpenSyncDetails,
   onOpenContact,
   variant = "all",
 }: {
   store: ContactStore;
   settings: AppSettings;
+  // The app's sync engine — drives the header `SyncStatus` glyph, the same one
+  // the card screen shows, so the save state stays in reach while browsing.
+  sync: SyncEngine;
+  // Open the framework `SyncDetailsModal` (mounted by the app shell).
+  onOpenSyncDetails: () => void;
   // Open a contact on its card (sets it active and returns to the card view).
   onOpenContact: (id: string) => void;
   // "all" is the List page (every active contact); "favorites" is the
@@ -501,6 +510,30 @@ export function ContactListScreen({
           >
             <CheckSquareIcon className="h-5 w-5" />
           </button>
+        )}
+        {/* The framework sync glyph — the same one the card header carries, so
+            the save state stays visible (and the command centre one tap away)
+            while browsing the List / Favorites pages. Hidden while a selection
+            is being made: select mode fills this rail with its own batch
+            actions, so the sync glyph steps aside until it's dismissed. */}
+        {!selecting && (
+          <SyncStatus
+            providerName={sync.providerName}
+            status={sync.status}
+            dirty={sync.dirty}
+            offline={sync.offline}
+            onOpenDetails={onOpenSyncDetails}
+            labels={{
+              saving: t("sync.saving"),
+              syncedTo: (n) => t("sync.syncedTo", { name: n }),
+              saveUnsaved: t("sync.saveUnsaved"),
+              failed: t("sync.failed"),
+              throttled: t("sync.throttled"),
+              reauthRequired: t("sync.reauthRequired"),
+              syncConflict: t("sync.syncConflict"),
+              offline: t("sync.offline"),
+            }}
+          />
         )}
       </header>
 
