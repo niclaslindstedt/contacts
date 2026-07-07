@@ -625,6 +625,8 @@ export function App() {
             <ContactListScreen
               store={screenStore}
               settings={settings}
+              sync={sync}
+              onOpenSyncDetails={() => setSyncDetailsOpen(true)}
               variant={view === "favorites" ? "favorites" : "all"}
               // Tapping a row floats the card up in the swipe-down modal over
               // the browse page, rather than replacing it — closing returns
