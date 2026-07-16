@@ -34,7 +34,12 @@ import {
 import { autoArchiveAction, defaultAutoArchiveDate } from "./autoArchive.ts";
 import { companyTogglePatch } from "./companyCard.ts";
 import { filesToAttachments } from "./attachmentIntake.ts";
-import { KindToggle, RemoveButton, ReorderButtons } from "./editWidgets.tsx";
+import {
+  KindToggle,
+  LabeledDateInput,
+  RemoveButton,
+  ReorderButtons,
+} from "./editWidgets.tsx";
 import { PhoneRows } from "./editPhones.tsx";
 import { IceIcon } from "./icons.tsx";
 import { isValidFlexDate, parseFlexDate } from "./importantDates.ts";
@@ -147,10 +152,9 @@ export function ContactEditView({
           {/* A company has no birthday — that field is only meaningful for a
               person, so it drops out when the card is a company. */}
           {!contact.isCompany && (
-            <LabeledInput
+            <LabeledDateInput
               label={t("contact.birthday")}
               value={contact.birthday ?? ""}
-              type="date"
               onCommit={(birthday) => updateContact(contact.id, { birthday })}
             />
           )}
@@ -283,10 +287,9 @@ function AutoArchiveRow({
       />
       {enabled && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <LabeledInput
+          <LabeledDateInput
             label={t("contact.autoArchiveDate")}
             value={contact.autoArchiveDate ?? ""}
-            type="date"
             onCommit={(date) =>
               updateContact(contact.id, {
                 autoArchiveDate: date.trim() || undefined,
