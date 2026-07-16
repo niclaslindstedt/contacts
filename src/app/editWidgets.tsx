@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+import { useEffect, useRef, type InputHTMLAttributes } from "react";
+
 import {
   BuildingIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  LABELED_FIELD_CLASS,
   PersonIcon,
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
@@ -106,6 +109,54 @@ export function ReorderButtons({
         <ChevronDownIcon className="h-4 w-4" />
       </button>
     </span>
+  );
+}
+
+// A labelled native date field that survives iOS's native date picker. The
+// framework's `LabeledInput` is a *controlled* input: every change re-assigns
+// the element's `value`, and on iOS Safari re-assigning an `<input type="date">`
+// value while its wheel picker is open dismisses the picker — so spinning to a
+// month closed it and you had to tap the field again to get to the day. This
+// variant leaves the input *uncontrolled* (`defaultValue` + a ref, committing on
+// blur like the rest of the form), so React never re-assigns `value`
+// mid-interaction and the picker stays up through month → day → year. Value
+// changes from outside the field (seeding a default, undo/redo, switching cards)
+// sync in through the ref, but only while the field isn't focused so an active
+// edit is never yanked out from under the user.
+export function LabeledDateInput({
+  label,
+  value,
+  onCommit,
+  ...inputProps
+}: {
+  label: string;
+  value: string;
+  onCommit: (next: string) => void;
+} & Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "value" | "defaultValue" | "onChange" | "onBlur" | "type"
+>) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (el && el.value !== value && document.activeElement !== el) {
+      el.value = value;
+    }
+  }, [value]);
+  return (
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className="text-xs text-muted">{label}</span>
+      <input
+        {...inputProps}
+        ref={ref}
+        type="date"
+        defaultValue={value}
+        onBlur={(e) => {
+          if (e.target.value !== value) onCommit(e.target.value);
+        }}
+        className={LABELED_FIELD_CLASS}
+      />
+    </label>
   );
 }
 
