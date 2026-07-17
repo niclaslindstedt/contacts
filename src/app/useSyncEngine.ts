@@ -53,6 +53,7 @@ import {
 } from "./backup.ts";
 import {
   evaluateCloudSetup,
+  shouldAutoSave,
   summarizeDoc,
   type CloudDocSummary,
 } from "./cloudSetup.ts";
@@ -330,6 +331,15 @@ export function useSyncEngine(
   // The edit counter that has been pushed to the backend. Anything newer is
   // unsaved — that's `dirty`.
   const [savedVersion, setSavedVersion] = useState(store.version);
+  // False until the mount baseline read has learned the backend's current
+  // revision. Auto-save is held until it flips true so the first push after
+  // opening never carries an unknown base revision — which the adapter would
+  // reject as a conflict once a document exists, silently threatening an edit
+  // made moments after opening on a slow connection (the contacts analog of the
+  // sibling checklist app's "keep edits made while the mount load is still in
+  // flight" fix). Reset on every backend swap; the local working copy holds the
+  // edit safely until the baseline resolves and the push follows.
+  const [baselineReady, setBaselineReady] = useState(false);
 
   // Keep the live edit counter and document reachable from inside async saves
   // without making the debounce depend on them.
@@ -572,6 +582,9 @@ export function useSyncEngine(
   useEffect(() => {
     if (!adapter) return;
     let cancelled = false;
+    // A new adapter needs a fresh baseline before its first push — hold
+    // auto-save until this read resolves (see `baselineReady`).
+    setBaselineReady(false);
     // Consume the fresh-connect marker: only a baseline read triggered by the
     // user just connecting gets to raise the replace-or-adopt prompt.
     const fresh = justConnected.current;
@@ -620,6 +633,12 @@ export function useSyncEngine(
             `baseline: load failed — ${err instanceof Error ? err.message : String(err)}`,
           );
         }
+      } finally {
+        // The baseline is settled either way — release the auto-save hold. On a
+        // clean read `baseRevision` now reflects the backend, so the first push
+        // carries the right base; a failed read leaves the pre-existing blocking
+        // fault (auth / offline / locked) to gate saves instead.
+        if (!cancelled) setBaselineReady(true);
       }
     })();
     return () => {
@@ -709,12 +728,23 @@ export function useSyncEngine(
   }, [adapter, encrypted, passwordRef, paused]);
 
   // Debounced auto-save: a settled edit on a connected cloud backend pushes
-  // itself, unless a blocking fault stands in the way.
+  // itself, unless a blocking fault, an open connect prompt, or an unresolved
+  // mount baseline stands in the way (see `shouldAutoSave`).
   useEffect(() => {
-    if (!isRemote || !connected || !adapter || !dirty || blocked || locked)
+    if (!adapter) return;
+    if (
+      !shouldAutoSave({
+        isRemote,
+        connected,
+        dirty,
+        blocked,
+        locked,
+        pendingSetup: pendingSetup !== null,
+        baselineReady,
+      })
+    ) {
       return;
-    // Hold auto-save while the connect-time prompt is open.
-    if (pendingSetup) return;
+    }
     const timer = window.setTimeout(() => void doSave(), SAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [
@@ -725,6 +755,7 @@ export function useSyncEngine(
     blocked,
     locked,
     pendingSetup,
+    baselineReady,
     store.version,
     doSave,
   ]);

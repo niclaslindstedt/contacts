@@ -27,8 +27,12 @@ until you choose, and the prompt only appears at connect time.
 
 Once connected, saves are guarded by **optimistic concurrency**: if another
 device saved a newer copy, the header glyph flags a **conflict** and you choose
-which copy wins. The **Open in {provider}** button on the sync command centre
-jumps to the drive's own web UI, straight onto the synced files.
+which copy wins. The first save after opening waits for the app's initial read
+of the backend to finish before pushing, so editing the moment the app opens on
+a slow connection can't trip a spurious conflict — your edit waits safely on this
+device and syncs as soon as that read lands. The **Open in {provider}** button on
+the sync command centre jumps to the drive's own web UI, straight onto the synced
+files.
 
 ## Encryption at rest
 

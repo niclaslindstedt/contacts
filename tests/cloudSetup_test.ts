@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { describe, expect, it } from "vitest";
 
-import { evaluateCloudSetup, summarizeDoc } from "../src/app/cloudSetup.ts";
+import {
+  evaluateCloudSetup,
+  shouldAutoSave,
+  summarizeDoc,
+  type AutoSaveGate,
+} from "../src/app/cloudSetup.ts";
 import { serializeDoc } from "../src/app/migrations.ts";
 import type { AppData } from "../src/app/types.ts";
 
@@ -27,6 +32,55 @@ const local: AppData = {
 describe("summarizeDoc", () => {
   it("counts contacts and folders", () => {
     expect(summarizeDoc(local)).toEqual({ contacts: 1, folders: 1 });
+  });
+});
+
+describe("shouldAutoSave", () => {
+  // A connected remote backend with a settled edit and a resolved baseline —
+  // the one combination that pushes. Each test flips a single field off it.
+  const ready: AutoSaveGate = {
+    isRemote: true,
+    connected: true,
+    dirty: true,
+    blocked: false,
+    locked: false,
+    pendingSetup: false,
+    baselineReady: true,
+  };
+
+  it("pushes a settled edit once every gate is clear", () => {
+    expect(shouldAutoSave(ready)).toBe(true);
+  });
+
+  it("holds the write until the mount baseline read has resolved", () => {
+    // The race this guards: an edit made moments after opening, before the slow
+    // cloud read has learned the backend's revision. Pushing now would carry an
+    // unknown base and the adapter would reject it as a phantom conflict.
+    expect(shouldAutoSave({ ...ready, baselineReady: false })).toBe(false);
+  });
+
+  it("never pushes a local-only document", () => {
+    expect(shouldAutoSave({ ...ready, isRemote: false })).toBe(false);
+  });
+
+  it("waits for the backend to be connected", () => {
+    expect(shouldAutoSave({ ...ready, connected: false })).toBe(false);
+  });
+
+  it("does nothing when there's no unsaved edit", () => {
+    expect(shouldAutoSave({ ...ready, dirty: false })).toBe(false);
+  });
+
+  it("holds while a blocking fault (offline / auth / conflict) stands", () => {
+    expect(shouldAutoSave({ ...ready, blocked: true })).toBe(false);
+  });
+
+  it("holds while the encrypted copy is locked", () => {
+    expect(shouldAutoSave({ ...ready, locked: true })).toBe(false);
+  });
+
+  it("holds while a connect-time replace-or-adopt prompt is open", () => {
+    expect(shouldAutoSave({ ...ready, pendingSetup: true })).toBe(false);
   });
 });
 
