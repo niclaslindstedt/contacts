@@ -16,7 +16,11 @@ keeps a copy in sync:
 Saves are debounced, retried with backoff on transient failures, and guarded by
 optimistic concurrency — if another device (or another tool editing the same
 folder) saved a newer copy, the header glyph flags a conflict and you choose
-which copy wins.
+which copy wins. The very first save after opening waits for the initial read of
+the backend to finish, so it always pushes against the copy that's really there;
+your edit stays safe on this device in the meantime and syncs the moment that
+read lands. (Without the wait, editing on a slow connection right as the app
+opened could push against an unknown copy and trip a spurious conflict.)
 
 ## Local folder
 
