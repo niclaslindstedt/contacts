@@ -1,10 +1,11 @@
 # Contact cards
 
 Every contact is a card: a name, any number of phone numbers and email
-addresses (each typed **Private** or **Work**), a company, a website, any number
-of postal addresses (each with a free-text title), a birthday, other important
-dates, notes, one or more photos, and any files you attach. A card can also be
-marked as a **company** rather than a person.
+addresses (each typed **Private** or **Work**), a company, a website, a
+**relationship** and any number of free-form **tags**, any number of postal
+addresses (each with a free-text title), a birthday, other important dates,
+notes, one or more photos, and any files you attach. A card can also be marked
+as a **company** rather than a person.
 
 - **Read mode by default.** Opening a contact shows it laid out to be read —
   the avatar and name lead the card, phone numbers and emails become tap-to-call
@@ -107,6 +108,21 @@ marked as a **company** rather than a person.
   into the company name when that is still blank), the birthday, the extra
   important dates, and the emergency flag — rather than just hiding them; undo
   brings the whole card back if the flip was a mistake.
+- **Relationship.** A single **Relationship** field records how you know the
+  contact. A dropdown offers five built-ins — **Family**, **Partner**,
+  **Friend**, **Colleague**, **Business** — whose label follows the app
+  language, plus an **Add custom…** entry that lets you coin your own ("Neighbour",
+  "Mentor"). A custom value you add once is remembered and offered on every other
+  card. The built-ins are stored as stable keys so they translate; a custom value
+  is stored and shown verbatim.
+- **Tags.** Beyond the single relationship, a card can carry any number of
+  free-form **tags** — "Boat club", "Board games", whatever you file people
+  under. The tag field is a chip list with a text box that suggests
+  (typeahead) tags already used elsewhere as you type, but never limits you to
+  them; press **Enter** to add the one you typed, or **Backspace** on the empty
+  box to lift the last chip. Tags are deduped case-insensitively per card. Both
+  the relationship and tags are app-local — they round-trip through a JSON
+  backup but aren't written to a vCard or CSV.
 - **Phone numbers are stored clean.** A phone number is kept as **plain
   national digits** — no spaces, no hyphens, no country code baked into the
   digits. Its **country code** is a separate **dropdown** on the row (a flag and

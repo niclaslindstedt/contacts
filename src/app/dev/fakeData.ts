@@ -252,6 +252,8 @@ function curatedContacts(): Contact[] {
       firstName: "Ada",
       lastName: "Lovelace",
       company: "Analytical Engines Ltd",
+      relation: "family",
+      tags: ["Boat club", "Board games"],
       phones: [
         // The private number is flagged primary — so the Favorites page shows
         // just this one for Ada, not both.
@@ -305,6 +307,8 @@ function curatedContacts(): Contact[] {
       firstName: "",
       lastName: "",
       company: "Globex Corporation",
+      relation: "business",
+      tags: ["Vendor"],
       phones: [phone("+1 (555) 010-0100", "work")],
       emails: [email("hello@globex.example", "work")],
       addresses: [address({ label: "Head office", city: "Springfield" })],
@@ -318,6 +322,8 @@ function curatedContacts(): Contact[] {
       id: "seed-c-firstonly",
       firstName: "Cher",
       lastName: "",
+      relation: "friend",
+      tags: ["Board games"],
       phones: [phone("555-0142")],
       emails: [],
       addresses: [],

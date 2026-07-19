@@ -266,6 +266,27 @@ export const en = {
       "Titled by one company name and shown with a building icon. Person-only fields — the name, birthday, and important dates — are removed.",
     homepage: "Website",
     homepagePlaceholder: "https://example.com",
+    // How you know a contact — a single value: one of the built-ins below or a
+    // custom label. `relations.*` are the built-in labels (a per-value key is
+    // built at the call site, so `t` is cast there).
+    relation: "Relationship",
+    relationPlaceholder: "Choose a relationship",
+    relationNone: "None",
+    relations: {
+      family: "Family",
+      partner: "Partner",
+      friend: "Friend",
+      colleague: "Colleague",
+      business: "Business",
+    },
+    relationCustomAdd: "Add custom…",
+    relationCustomLabel: "New relationship",
+    relationCustomPlaceholder: "e.g. Neighbour",
+    // Free-form tags — many per card, typeahead over the ones already in use.
+    tags: "Tags",
+    tagAdd: "Add a tag",
+    tagPlaceholder: "Type a tag and press Enter",
+    removeTag: "Remove tag {tag}",
     address: "Address",
     addresses: "Addresses",
     addAddress: "Add address",

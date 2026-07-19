@@ -1,8 +1,9 @@
 # Contact cards
 
 Every contact is a **card** — a name (or a single company name), any number of
-phone numbers and email addresses, a company, a website, one or more postal
-addresses, a birthday, other important dates, notes, photos, and attachments.
+phone numbers and email addresses, a company, a website, a relationship and any
+number of tags, one or more postal addresses, a birthday, other important dates,
+notes, photos, and attachments.
 
 ## Read mode and edit mode
 
@@ -39,6 +40,10 @@ field commits when you leave it, and each committed edit is one undo step.
   an organisation: it's named by a single company name, wears a building icon,
   clears the person-only fields (the name split, birthday, important dates),
   and exports as a company.
+- **Relationship & tags.** Record how you know someone with a single
+  **Relationship** — Family, Partner, Friend, Colleague, Business, or a custom
+  value you add — and file them under any number of free-form **tags**. See
+  [Relationship](feature:relationship) and [Tags](feature:tags).
 
 Photos and files have their own read-mores — see [Photos](feature:photos) and
 [Attachments](feature:attachments). For the full reference, see

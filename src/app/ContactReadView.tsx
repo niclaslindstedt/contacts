@@ -14,6 +14,7 @@ import {
   MailIcon,
   MapPinIcon,
   PencilIcon,
+  PersonIcon,
   PhoneIcon,
   Section,
   StarIcon,
@@ -48,6 +49,9 @@ import {
   isValidFlexDate,
 } from "./importantDates.ts";
 import { primaryPhone } from "./primaryPhone.ts";
+import { relationLabel } from "./relation.ts";
+import { contactTags } from "./tags.ts";
+import { TagIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { formatDate, phoneDialString } from "./format.ts";
 import { formatStoredPhone, formatPostalValue } from "./countries/index.ts";
@@ -90,9 +94,11 @@ export function ContactReadView({
   // don't repeat it as a detail row; a person still shows their company here.
   const company = contact.isCompany ? "" : contact.company?.trim();
   const homepage = contact.homepage?.trim();
+  const relation = relationLabel(contact.relation, t);
   const birthday = contact.birthday?.trim();
   const addresses = contact.addresses.filter(hasAddress);
   const dates = contact.importantDates.filter((d) => isValidFlexDate(d.date));
+  const tags = contactTags(contact);
   const notes = contact.notes?.trim();
   const attachments = attachmentList(contact);
   // A valid, full-ISO auto-archive date drives the schedule banner; a
@@ -104,11 +110,13 @@ export function ContactReadView({
       : null;
 
   const hasContactMethods = phones.length > 0 || emails.length > 0;
-  const hasDetails = !!company || !!homepage || !!birthday || dates.length > 0;
+  const hasDetails =
+    !!company || !!homepage || !!relation || !!birthday || dates.length > 0;
   const isEmpty =
     !hasContactMethods &&
     !hasDetails &&
     addresses.length === 0 &&
+    tags.length === 0 &&
     !notes &&
     attachments.length === 0 &&
     !scheduled;
@@ -173,6 +181,13 @@ export function ContactReadView({
                 value={company}
               />
             )}
+            {relation && (
+              <InfoRow
+                icon={<PersonIcon className="h-4 w-4" />}
+                label={t("contact.relation")}
+                value={relation}
+              />
+            )}
             {homepage && (
               <ActionRow
                 href={normalizeUrl(homepage)}
@@ -198,6 +213,22 @@ export function ContactReadView({
               />
             ))}
           </div>
+        </Section>
+      )}
+
+      {tags.length > 0 && (
+        <Section title={t("contact.tags")}>
+          <ul className="flex flex-wrap gap-1.5 px-2 py-1">
+            {tags.map((tag) => (
+              <li
+                key={tag}
+                className="flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-sm text-fg"
+              >
+                <TagIcon className="h-3.5 w-3.5 text-muted" />
+                <span className="[overflow-wrap:anywhere]">{tag}</span>
+              </li>
+            ))}
+          </ul>
         </Section>
       )}
 
