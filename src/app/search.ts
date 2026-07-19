@@ -7,6 +7,7 @@ import {
 
 import { formatAddress } from "./address.ts";
 import { attachmentList } from "./attachments.ts";
+import { contactTags } from "./tags.ts";
 import type { AppData } from "./types.ts";
 import { displayName } from "./types.ts";
 
@@ -15,10 +16,21 @@ import { displayName } from "./types.ts";
 // chrome; this file owns the *corpus* — what gets indexed and how the hits are
 // grouped (per contact). A card contributes **everything textual it carries**:
 // its display name, company, homepage, every phone number and email address,
-// each address (title + parts), the birthday and each important date, every
-// attachment's file name and description, and its notes (long texts clipped
-// to a snippet) — so quick find surfaces a card no matter which corner of it
-// holds the term.
+// each address (title + parts), the birthday and each important date, its
+// relationship and every tag, every attachment's file name and description,
+// and its notes (long texts clipped to a snippet) — so quick find surfaces a
+// card no matter which corner of it holds the term.
+//
+// The relationship is stored as a key for the five built-ins ("family", …) but
+// shown as a localized label, so the corpus indexes the *label*: the overlay
+// (which has `t`) passes a resolver; a bare call (e.g. a test) falls back to the
+// stored value verbatim.
+
+/** How to render a stored relationship value as the searchable text — the
+ *  localized label for a built-in key, the verbatim text for a custom one. */
+export type SearchOptions = {
+  relationLabel?: (value: string) => string;
+};
 
 /** One matched field within a contact group. */
 export type FieldHit = {
@@ -50,7 +62,11 @@ export type SearchOutcome = {
  * fills `titleRanges` (and surfaces the card a little higher); field hits fill
  * `fields`. Archived contacts are skipped — a result navigates to a live card.
  */
-export function runSearch(data: AppData, raw: string): SearchOutcome {
+export function runSearch(
+  data: AppData,
+  raw: string,
+  options: SearchOptions = {},
+): SearchOutcome {
   const q = compileQuery(raw);
   if (q.isEmpty) return { results: [], invalidRegex: false };
   if (q.invalidRegex) return { results: [], invalidRegex: true };
@@ -95,6 +111,17 @@ export function runSearch(data: AppData, raw: string): SearchOutcome {
         [d.label?.trim(), d.date].filter(Boolean).join(" "),
       );
     }
+
+    // Relationship: index the label the read view shows — the localized name of
+    // a built-in ("family" → "Family" / "Familj"), or a custom value verbatim.
+    if (contact.relation) {
+      const resolve = options.relationLabel ?? ((v) => v);
+      tryField("relation", resolve(contact.relation));
+    }
+
+    // Tags: each free-form tag indexes on its own, so "boat club" surfaces the
+    // card no matter how many other tags it carries.
+    contactTags(contact).forEach((tag, i) => tryField(`tag-${i}`, tag));
 
     // Attachments: the file name and its free-text description both index, so
     // "menu.pdf" and "lunch menu" alike surface the card carrying the file.

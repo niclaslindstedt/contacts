@@ -39,6 +39,8 @@ const data: AppData = {
       notes: "Met at the difference engine meetup.",
       homepage: "https://adalovelace.example",
       birthday: "1815-12-10",
+      relation: "colleague",
+      tags: ["Boat club", "Board games"],
       attachments: [
         {
           id: "att1",
@@ -100,6 +102,32 @@ describe("runSearch", () => {
     expect(runSearch(data, "translated").results[0]!.fields[0]!.key).toBe(
       "attachment-desc-att1",
     );
+  });
+
+  it("matches a tag as a field", () => {
+    const { results } = runSearch(data, "board games");
+    expect(results[0]!.contactId).toBe("ada");
+    expect(results[0]!.fields[0]!.key).toMatch(/^tag-/);
+  });
+
+  it("matches the stored relationship value by default", () => {
+    expect(runSearch(data, "colleague").results[0]!.fields[0]!.key).toBe(
+      "relation",
+    );
+  });
+
+  it("indexes the relationship through the supplied label resolver", () => {
+    const label = { colleague: "Kollega" };
+    const resolve = (v: string) => label[v as keyof typeof label] ?? v;
+    // The localized label matches...
+    expect(
+      runSearch(data, "Kollega", { relationLabel: resolve }).results[0]!
+        .fields[0]!.key,
+    ).toBe("relation");
+    // ...and the raw key no longer does, since the label is what's indexed.
+    expect(
+      runSearch(data, "colleague", { relationLabel: resolve }).results,
+    ).toHaveLength(0);
   });
 
   it("skips archived contacts", () => {

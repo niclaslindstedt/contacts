@@ -9,10 +9,11 @@ while you're editing.
 
 Quick find searches **everything a card carries**: names and company, phone
 numbers, email addresses, street addresses, the homepage, the birthday and
-other important dates, notes, and even the file name and description of every
-attachment. If it's written somewhere on a card, typing it will surface that
-card — a restaurant found by the "menu.pdf" you attached, a plumber found by a
-word in your note about them.
+other important dates, the relationship and every tag, notes, and even the file
+name and description of every attachment. If it's written somewhere on a card,
+typing it will surface that card — a restaurant found by the "menu.pdf" you
+attached, a plumber found by a word in your note about them, your whole rowing
+crew found by the "Boat club" tag they share.
 
 Each result shows _why_ it matched, with the matching characters highlighted —
 pick one and you land on that contact. The search button in the side menu
