@@ -12,6 +12,7 @@ import {
 import { unlock } from "@niclaslindstedt/oss-framework/achievements";
 
 import { runSearch, type ContactResult, type FieldHit } from "./search.ts";
+import { relationLabel } from "./relation.ts";
 import { useT } from "./i18n/index.ts";
 import type { ContactStore } from "./useContactStore.ts";
 
@@ -44,8 +45,13 @@ export function SearchOverlay({
   const data = store.data;
 
   // Memoise on the document so `SearchModal` keeps a stable `search` ref and
-  // doesn't recompute the index every keystroke.
-  const search = useCallback((query: string) => runSearch(data, query), [data]);
+  // doesn't recompute the index every keystroke. The relationship is stored as
+  // a key for the built-ins, so hand `runSearch` the localized label to index.
+  const search = useCallback(
+    (query: string) =>
+      runSearch(data, query, { relationLabel: (v) => relationLabel(v, t) }),
+    [data, t],
+  );
 
   return (
     <SearchModal<ContactResult>
