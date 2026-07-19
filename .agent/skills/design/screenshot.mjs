@@ -202,6 +202,33 @@ export async function openList(page) {
     .waitFor();
 }
 
+// Enter the List page's multi-select mode, tick the whole list via the
+// "Select all" row, and open the bulk-edit ("Edit selected") modal from the
+// header's pencil button. Waits on the modal's "Add tags" section heading so
+// the screenshot lands on the fully-rendered dialog.
+export async function openMassEdit(page) {
+  await openList(page);
+  await page
+    .getByRole("button", { name: /^Select$/ })
+    .first()
+    .click();
+  // The select-all row leads the list while selecting — ticks every card.
+  await page
+    .getByRole("checkbox", { name: /^Select all$/ })
+    .first()
+    .click();
+  await page
+    .getByRole("button", { name: /^Edit selected$/ })
+    .first()
+    .click();
+  // The modal's own title is the only real heading — the Section titles are
+  // aria-labelled groups, not headings.
+  await page
+    .getByRole("heading", { name: /^Edit \d+ contacts$/ })
+    .first()
+    .waitFor();
+}
+
 // Open the Favorites page from the side-menu action grid. Same shape as
 // `openList` — the button and the page heading share the "Favorites" name, so
 // match the heading role to confirm the page (not the button) rendered.

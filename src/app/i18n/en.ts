@@ -137,6 +137,7 @@ export const en = {
     selectUngrouped: "Select everyone with no folder",
     selectedCount: "{n} selected",
     exitSelect: "Exit selection",
+    massEdit: "Edit selected",
     copy: "Copy selected",
     export: "Export selected",
     exportVCard: "Export as vCard",
@@ -150,6 +151,21 @@ export const en = {
       "The selected contact is removed from the address book. Undo can bring it right back.",
     deleteConfirmBody:
       "The selected contacts are removed from the address book. Undo can bring them right back.",
+  },
+  // The bulk-edit modal reached from select mode's "Edit selected" button —
+  // apply tags, a relationship, or a card type across every ticked contact.
+  massEdit: {
+    title: "Edit {n} contacts",
+    hint: "Pick what to change. Anything left as “Leave unchanged” stays as it is on each card.",
+    leaveUnchanged: "Leave unchanged",
+    addTags: "Add tags",
+    setRelation: "Set relationship",
+    setCardType: "Card type",
+    person: "Person",
+    company: "Company",
+    companyHint:
+      "Switching a person to a company removes their name, birthday, and important dates.",
+    apply: "Apply to {n}",
   },
   search: {
     title: "Search",
