@@ -24,6 +24,8 @@ import type { ContactStore } from "./useContactStore.ts";
 import type { SyncEngine } from "./useSyncEngine.ts";
 import { hasAddress } from "./address.ts";
 import { hasAttachments } from "./attachments.ts";
+import { allTags, contactTags } from "./tags.ts";
+import { customRelationsInUse } from "./relation.ts";
 import { hasPhoto } from "./contactPhotos.ts";
 import { contactStamp } from "./contactTimestamps.ts";
 import { isValidFlexDate } from "./importantDates.ts";
@@ -63,6 +65,11 @@ export function ContactScreen({
   inModal?: boolean;
 }) {
   const { activeContact, updateContact, reload } = store;
+  // The relationship picker and tag field suggest values already in use across
+  // the whole address book, so a custom relationship or tag added once is
+  // reusable on any other card. Derived from the live document, not stored.
+  const relations = customRelationsInUse(store.data.contacts);
+  const tags = allTags(store.data.contacts);
 
   // Read/edit mode lives here, above the per-card remount, so switching to
   // another contact keeps you in edit mode instead of dropping back to read —
@@ -124,6 +131,8 @@ export function ContactScreen({
         editing={editing}
         setEditing={setEditing}
         updateContact={updateContact}
+        relations={relations}
+        tags={tags}
         sync={sync}
         settings={settings}
         onOpenSyncDetails={onOpenSyncDetails}
@@ -140,6 +149,8 @@ function ContactCard({
   editing,
   setEditing,
   updateContact,
+  relations,
+  tags,
   sync,
   settings,
   onOpenSyncDetails,
@@ -148,6 +159,9 @@ function ContactCard({
   editing: boolean;
   setEditing: (next: boolean | ((v: boolean) => boolean)) => void;
   updateContact: (id: string, patch: Partial<Contact>) => void;
+  // Relationships / tags already in use — the edit view's picker suggestions.
+  relations: string[];
+  tags: string[];
   sync: SyncEngine;
   settings: AppSettings;
   onOpenSyncDetails: () => void;
@@ -272,6 +286,8 @@ function ContactCard({
           <ContactEditView
             contact={contact}
             home={settings.country}
+            relations={relations}
+            tags={tags}
             updateContact={updateContact}
           />
         ) : (
@@ -320,8 +336,10 @@ function isEmptyContact(c: Contact): boolean {
     !c.company?.trim() &&
     !c.homepage?.trim() &&
     !c.addresses.some(hasAddress) &&
+    !c.relation?.trim() &&
     !c.birthday?.trim() &&
     !c.importantDates.some((d) => isValidFlexDate(d.date)) &&
+    contactTags(c).length === 0 &&
     !c.notes?.trim() &&
     !hasPhoto(c) &&
     !hasAttachments(c)

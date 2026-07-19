@@ -23,8 +23,8 @@ selection to a vCard / CSV file:
   can always read it back. This is the only format that keeps everything at full
   fidelity — every titled address, day-and-month-only important dates that
   vCard 3.0 can't express, the **in-case-of-emergency** flag, the favorites
-  order, and **attachments** (none of which have a vCard or CSV field, so they
-  survive only in a JSON backup).
+  order, the **relationship** and **tags**, and **attachments** (none of which
+  have a vCard or CSV field, so they survive only in a JSON backup).
 
 ## Import
 

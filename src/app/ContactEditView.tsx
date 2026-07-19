@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useRef, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 
 import {
   ArchiveIcon,
@@ -19,6 +19,8 @@ import {
   PlusIcon,
   Section,
   SegmentedControl,
+  SelectPicker,
+  type SelectOption,
   ToggleRow,
   UploadIcon,
 } from "@niclaslindstedt/oss-framework/components";
@@ -41,8 +43,14 @@ import {
   ReorderButtons,
 } from "./editWidgets.tsx";
 import { PhoneRows } from "./editPhones.tsx";
-import { IceIcon } from "./icons.tsx";
+import { IceIcon, TagIcon } from "./icons.tsx";
 import { isValidFlexDate, parseFlexDate } from "./importantDates.ts";
+import {
+  DEFAULT_RELATIONS,
+  isDefaultRelation,
+  normalizeRelationInput,
+} from "./relation.ts";
+import { withTagAdded, withTagRemoved } from "./tags.ts";
 import { log } from "./log.ts";
 import { useLang, useT } from "./i18n/index.ts";
 import { freshId } from "./useContactStore.ts";
@@ -67,11 +75,20 @@ import { methodKind } from "./types.ts";
 export function ContactEditView({
   contact,
   home,
+  relations,
+  tags,
   updateContact,
 }: {
   contact: Contact;
   /** The home country — the phone editor's default calling code. */
   home: CountryCode;
+  /** Custom relationships already used elsewhere in the address book — offered
+   *  in the relationship picker below the built-ins so one added once is
+   *  reusable. */
+  relations: string[];
+  /** Every tag already used across the address book — the typeahead
+   *  suggestions the tag field offers as you type. */
+  tags: string[];
   updateContact: (id: string, patch: Partial<Contact>) => void;
 }) {
   const t = useT();
@@ -149,6 +166,17 @@ export function ContactEditView({
             placeholder={t("contact.homepagePlaceholder")}
             onCommit={(homepage) => updateContact(contact.id, { homepage })}
           />
+          {/* How you know this person — a picker of the built-in relationships
+              plus any custom ones in use, and an "Add custom…" entry to coin a
+              new label. Meaningful for a company too (Business, Colleague), so
+              it isn't gated on the person/company switch. */}
+          <RelationField
+            value={contact.relation ?? ""}
+            known={relations}
+            onChange={(relation) =>
+              updateContact(contact.id, { relation: relation || undefined })
+            }
+          />
           {/* A company has no birthday — that field is only meaningful for a
               person, so it drops out when the card is a company. */}
           {!contact.isCompany && (
@@ -159,6 +187,17 @@ export function ContactEditView({
             />
           )}
         </div>
+      </Section>
+
+      <Section
+        icon={<TagIcon className="h-3.5 w-3.5" />}
+        title={t("contact.tags")}
+      >
+        <TagsField
+          tags={contact.tags ?? []}
+          known={tags}
+          onCommit={(next) => updateContact(contact.id, { tags: next })}
+        />
       </Section>
 
       {/* Extra important dates are a person's affair (name days, anniversaries)
@@ -244,6 +283,185 @@ export function ContactEditView({
       >
         <AutoArchiveRow contact={contact} updateContact={updateContact} />
       </Section>
+    </div>
+  );
+}
+
+// The sentinel option that opens the "type a new relationship" input. A
+// NUL-prefixed string can't collide with a real relationship value.
+const RELATION_ADD = "\u0000add";
+
+// The relationship picker: a dropdown of the built-in relationships (Family,
+// Partner, …) plus any custom values already used in the address book, a
+// "None" entry to clear it, and an "Add custom…" entry that swaps the trigger
+// for a text field to coin a brand-new label. A committed custom value is
+// stored verbatim on the card (and, being now "in use", shows up for other
+// contacts too); a typed value that names a built-in folds onto it.
+function RelationField({
+  value,
+  known,
+  onChange,
+}: {
+  value: string;
+  known: string[];
+  onChange: (next: string) => void;
+}) {
+  const t = useT();
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  const current = value.trim();
+  // Offer the custom values in use, and the card's own custom value if it isn't
+  // among them yet, so the current selection always has a matching option.
+  const customs = [...known];
+  if (
+    current &&
+    !isDefaultRelation(current) &&
+    !customs.some((c) => c.toLowerCase() === current.toLowerCase())
+  ) {
+    customs.push(current);
+  }
+
+  const options: SelectOption<string>[] = [
+    { value: "", label: t("contact.relationNone") },
+    ...DEFAULT_RELATIONS.map((key) => ({
+      value: key as string,
+      label: t(`contact.relations.${key}` as Parameters<typeof t>[0]),
+    })),
+    ...customs.map((c) => ({ value: c, label: c })),
+    { value: RELATION_ADD, label: t("contact.relationCustomAdd") },
+  ];
+
+  const commitDraft = () => {
+    const next = normalizeRelationInput(draft);
+    setAdding(false);
+    setDraft("");
+    if (next !== current) onChange(next);
+  };
+
+  return (
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className="text-xs text-muted">{t("contact.relation")}</span>
+      {adding ? (
+        <input
+          type="text"
+          autoFocus
+          value={draft}
+          placeholder={t("contact.relationCustomPlaceholder")}
+          aria-label={t("contact.relationCustomLabel")}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commitDraft}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            if (e.key === "Escape") {
+              setAdding(false);
+              setDraft("");
+            }
+          }}
+          className={LABELED_FIELD_CLASS}
+        />
+      ) : (
+        <SelectPicker<string>
+          value={current}
+          options={options}
+          ariaLabel={t("contact.relation")}
+          onChange={(next) => {
+            if (next === RELATION_ADD) {
+              setDraft("");
+              setAdding(true);
+            } else {
+              onChange(next);
+            }
+          }}
+          renderValue={(opt) =>
+            opt && opt.value ? (
+              opt.label
+            ) : (
+              <span className="text-muted">
+                {t("contact.relationPlaceholder")}
+              </span>
+            )
+          }
+        />
+      )}
+    </label>
+  );
+}
+
+// The tag editor: the card's tags as removable chips over a text field that
+// commits a tag on Enter (or blur) and offers typeahead over every tag already
+// in the address book via a native `<datalist>` — so a value can be reused with
+// a tap or coined fresh by typing it. Backspace on an empty field lifts the
+// last chip. Each commit writes the whole tag list as one undoable store step.
+function TagsField({
+  tags,
+  known,
+  onCommit,
+}: {
+  tags: string[];
+  known: string[];
+  onCommit: (next: string[]) => void;
+}) {
+  const t = useT();
+  const [draft, setDraft] = useState("");
+  const listId = useId();
+
+  const add = (raw: string) => {
+    setDraft("");
+    const next = withTagAdded(tags, raw);
+    // `withTagAdded` returns the same reference for a blank / duplicate tag.
+    if (next !== tags) onCommit(next);
+  };
+
+  // Suggest only tags not already on this card.
+  const applied = new Set(tags.map((x) => x.toLowerCase()));
+  const suggestions = known.filter((k) => !applied.has(k.toLowerCase()));
+
+  return (
+    <div className="flex flex-col gap-2">
+      {tags.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5">
+          {tags.map((tag) => (
+            <li key={tag}>
+              <span className="flex items-center gap-1 rounded-full border border-line bg-surface-2 py-1 pr-1 pl-2.5 text-sm text-fg">
+                <span className="[overflow-wrap:anywhere]">{tag}</span>
+                <button
+                  type="button"
+                  onClick={() => onCommit(withTagRemoved(tags, tag))}
+                  aria-label={t("contact.removeTag", { tag })}
+                  title={t("contact.removeTag", { tag })}
+                  className="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted hover:bg-surface-1 hover:text-fg"
+                >
+                  <PlusIcon className="h-3.5 w-3.5 rotate-45" />
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <input
+        type="text"
+        list={listId}
+        value={draft}
+        placeholder={t("contact.tagPlaceholder")}
+        aria-label={t("contact.tagAdd")}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => add(draft)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            add(draft);
+          } else if (e.key === "Backspace" && !draft && tags.length > 0) {
+            onCommit(withTagRemoved(tags, tags[tags.length - 1]!));
+          }
+        }}
+        className={LABELED_FIELD_CLASS}
+      />
+      <datalist id={listId}>
+        {suggestions.map((s) => (
+          <option key={s} value={s} />
+        ))}
+      </datalist>
     </div>
   );
 }

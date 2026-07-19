@@ -160,6 +160,22 @@ export type Contact = {
   /** The contact's website — a full URL ("https://example.com"). Shown as a
    *  tap-to-open link in the read view and mapped onto the vCard `URL`. */
   homepage?: string;
+  /** How you know this person — Family, Partner, Friend, Colleague, Business,
+   *  or any custom label you add. A single free-text value: the five built-ins
+   *  are stored as stable lowercase keys ("family", …) so their display label
+   *  follows the UI language, while a custom relationship is stored verbatim
+   *  (see `relation.ts`). Absent means none set. Kept app-local — like the
+   *  {@link ice} and {@link favorite} flags it isn't written to a vCard or CSV,
+   *  but it does round-trip through the JSON backup. */
+  relation?: string;
+  /** Free-form tags for filing the card any way the owner likes — many per
+   *  card, each any text ("Boat club", "Board games"). Unlike the single-valued
+   *  {@link relation}, tags are an open set the user grows as they go; the edit
+   *  form suggests tags already in use as you type. Absent or empty means none.
+   *  Access it through the helpers in `tags.ts` rather than reaching in
+   *  directly. Kept app-local — not written to a vCard or CSV, but it
+   *  round-trips through the JSON backup. */
+  tags?: string[];
   phones: Phone[];
   emails: Email[];
   /** Postal addresses, each split into street / postal code / city (see
