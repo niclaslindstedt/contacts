@@ -12,7 +12,6 @@ import {
   FolderOpenIcon,
   GripIcon,
   ListIcon,
-  PencilIcon,
   PersonIcon,
   RowActionMenu,
   SwipeableRow,
@@ -477,9 +476,18 @@ export function ContactListScreen({
             <ListIcon className="h-5 w-5" />
           )}
         </span>
-        <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-wide text-fg-bright">
+        {/* While selecting, the batch-action buttons fill this rail, so the
+            page title's text would crowd them — drop it to just the leading
+            glyph and let an empty flex spacer keep the actions pushed right.
+            The heading stays in the DOM (sr-only) so the page keeps its H1. */}
+        <h1
+          className={`min-w-0 flex-1 truncate text-lg font-bold tracking-wide text-fg-bright ${
+            selecting ? "sr-only" : ""
+          }`}
+        >
           {favoritesOnly ? t("favorites.title") : t("list.title")}
         </h1>
+        {selecting && <div className="flex-1" aria-hidden />}
         {/* The collapse-all button stays in the top menu while selecting. */}
         {collapsibleKeys.length > 0 && (
           <button
@@ -500,34 +508,17 @@ export function ContactListScreen({
             <SectionsToggleIcon className="h-5 w-5" collapsed={allCollapsed} />
           </button>
         )}
-        {/* Batch edit / copy / export / delete, shown only while a selection is
+        {/* Batch copy / export / edit / delete, shown only while a selection is
             being made. The pencil opens the bulk-edit modal (assign tags, a
             relationship, or a card type to the whole selection); the trash hands
             the ticked ids to the same confirmation the row menu's multi-delete
             uses. All stay inert until at least one card is ticked. */}
         {selecting && (
-          <>
-            <button
-              type="button"
-              onClick={() => setMassEditOpen(true)}
-              disabled={selectedContacts.length === 0}
-              aria-label={t("list.massEdit")}
-              title={t("list.massEdit")}
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line ${
-                selectedContacts.length > 0
-                  ? "cursor-pointer text-muted hover:bg-surface-2 hover:text-fg"
-                  : "cursor-not-allowed text-muted opacity-40"
-              }`}
-            >
-              <PencilIcon className="h-4 w-4" />
-            </button>
-            <SelectActions
-              contacts={selectedContacts}
-              onDelete={() =>
-                setConfirmDelete(selectedContacts.map((c) => c.id))
-              }
-            />
-          </>
+          <SelectActions
+            contacts={selectedContacts}
+            onEdit={() => setMassEditOpen(true)}
+            onDelete={() => setConfirmDelete(selectedContacts.map((c) => c.id))}
+          />
         )}
         {total > 0 && (
           <button

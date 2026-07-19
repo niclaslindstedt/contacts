@@ -6,6 +6,7 @@ import {
   CopyIcon,
   DownloadIcon,
   FloatingPanel,
+  PencilIcon,
   TrashIcon,
   type FloatingPlacement,
 } from "@niclaslindstedt/oss-framework/components";
@@ -31,16 +32,20 @@ const EXPORT_MENU_PLACEMENT: FloatingPlacement = {
 
 // The batch actions that live in the List header's top menu while selecting —
 // a copy-as-vCard button, a download button that opens the vCard / CSV export
-// menu, and a trash button that hands off to the caller's delete confirmation
-// (`onDelete` opens the dialog; nothing is removed until it's confirmed). All
-// act over the ticked selection and stay inert until at least one card is
-// ticked. The buttons are sized to match the header's other glyph buttons
-// (`h-9 w-9`, bordered) so the row reads as one toolbar.
+// menu, an edit button that opens the bulk-edit modal (`onEdit`), and a trash
+// button that hands off to the caller's delete confirmation (`onDelete` opens
+// the dialog; nothing is removed until it's confirmed). All act over the ticked
+// selection and stay inert until at least one card is ticked. The buttons are
+// sized to match the header's other glyph buttons (`h-9 w-9`, bordered) so the
+// row reads as one toolbar. The edit button sits just before the trash, so the
+// destructive action stays at the far end of the row.
 export function SelectActions({
   contacts,
+  onEdit,
   onDelete,
 }: {
   contacts: Contact[];
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const t = useT();
@@ -93,6 +98,20 @@ export function SelectActions({
         }`}
       >
         <DownloadIcon className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={onEdit}
+        disabled={!has}
+        aria-label={t("list.massEdit")}
+        title={t("list.massEdit")}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line ${
+          has
+            ? "cursor-pointer text-muted hover:bg-surface-2 hover:text-fg"
+            : "cursor-not-allowed text-muted opacity-40"
+        }`}
+      >
+        <PencilIcon className="h-4 w-4" />
       </button>
       <button
         type="button"
