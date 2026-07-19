@@ -44,6 +44,16 @@ all of them too: its labels turn into **Move 5 contacts to folder**, **Archive 5
 contacts**, and **Delete 5 contacts**, with the multi-card delete behind the
 same confirmation.
 
+With a selection made, the header's **Edit selected** button (the pencil) opens a
+bulk editor — a centred dialog on a wide screen, a full-screen sheet on a phone.
+Pick any mix of three changes and they apply to every ticked card at once, as a
+single **Undo**-able step: **add tags** (folded onto each card, skipping any it
+already has), **set a relationship** (or clear it), and **switch the card type**
+to person or company. Each control starts at **Leave unchanged**, so the edit
+only touches the facets you actually set — the rest of every card is left exactly
+as it was. Switching people to companies removes their person-only fields (name,
+birthday, and important dates), just like the switch on a single card.
+
 Picking a run of contacts is quick: tick one, then **Shift-click** another and
 every card between them is ticked as well. The range follows what's on screen,
 so it sweeps straight across folder headings — a Shift-click that starts in one

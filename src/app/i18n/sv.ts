@@ -125,6 +125,7 @@ export const sv: Catalog = {
     selectUngrouped: "Välj alla utan mapp",
     selectedCount: "{n} valda",
     exitSelect: "Avsluta markering",
+    massEdit: "Redigera valda",
     copy: "Kopiera valda",
     export: "Exportera valda",
     exportVCard: "Exportera som vCard",
@@ -136,6 +137,21 @@ export const sv: Catalog = {
       "Den valda kontakten tas bort från adressboken. Ångra kan hämta tillbaka den.",
     deleteConfirmBody:
       "De valda kontakterna tas bort från adressboken. Ångra kan hämta tillbaka dem.",
+  },
+  // Massredigeringsdialogen som nås via ”Redigera valda” i markeringsläget —
+  // tillämpa taggar, en relation eller en korttyp på alla markerade kontakter.
+  massEdit: {
+    title: "Redigera {n} kontakter",
+    hint: "Välj vad som ska ändras. Allt som lämnas som ”Lämna oförändrat” behålls som det är på varje kort.",
+    leaveUnchanged: "Lämna oförändrat",
+    addTags: "Lägg till taggar",
+    setRelation: "Ange relation",
+    setCardType: "Korttyp",
+    person: "Person",
+    company: "Företag",
+    companyHint:
+      "Att göra om en person till ett företag tar bort namn, födelsedag och viktiga datum.",
+    apply: "Tillämpa på {n}",
   },
   search: {
     title: "Sök",

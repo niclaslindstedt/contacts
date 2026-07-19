@@ -5,6 +5,7 @@ import { DEFAULT_NAMESPACE_SLUG } from "@niclaslindstedt/oss-framework/namespace
 
 import { dueContacts, isoDate } from "./autoArchive.ts";
 import { canNestFolder, subtreeFolderIds } from "./contactList.ts";
+import { massEditPatch, type MassEdit } from "./massEdit.ts";
 import type { ImportedContact } from "./import.ts";
 import { mergeContactDraft, type ImportMerge } from "./importMerge.ts";
 import { mergeInlineMedia, type MediaSource } from "./mediaHydrate.ts";
@@ -796,6 +797,32 @@ export function useContactStore(
     [commit, data],
   );
 
+  // Apply one bulk edit — tags to add, a relationship, a card type — to several
+  // contacts in one undoable step, the batch behind select mode's "Edit
+  // selected" modal. Each card gets the patch `massEditPatch` computes for it
+  // (see `massEdit.ts`); a card the edit wouldn't touch is left exactly as it
+  // was, `updatedAt` and all, and the whole thing is a no-op (no empty undo
+  // step) when nothing actually changes. Editing card by card would stack N
+  // undo steps and clobber each other (each call reads the same pre-edit
+  // `data`), so the whole set changes in a single commit.
+  const bulkEditContacts = useCallback(
+    (ids: readonly string[], edit: MassEdit) => {
+      const set = new Set(ids);
+      const updatedAt = new Date().toISOString();
+      let changed = false;
+      const contacts = data.contacts.map((c) => {
+        if (!set.has(c.id)) return c;
+        const patch = massEditPatch(c, edit);
+        if (!patch) return c;
+        changed = true;
+        return { ...c, ...patch, updatedAt };
+      });
+      if (!changed) return;
+      commit({ ...data, contacts });
+    },
+    [commit, data],
+  );
+
   // Move a contact into *another* namespace — dropping it onto a workspace row
   // in the side menu. The target document lives under a different backend key,
   // so we read it, append a fresh-id copy (reset to the root — the target has
@@ -929,6 +956,7 @@ export function useContactStore(
     deleteArchivedFolder,
     moveContactToFolder,
     moveContactsToFolder,
+    bulkEditContacts,
     moveContactToNamespace,
     moveFolderToNamespace,
     reload,

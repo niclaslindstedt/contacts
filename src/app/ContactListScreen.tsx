@@ -12,6 +12,7 @@ import {
   FolderOpenIcon,
   GripIcon,
   ListIcon,
+  PencilIcon,
   PersonIcon,
   RowActionMenu,
   SwipeableRow,
@@ -27,8 +28,11 @@ import { SyncStatus } from "@niclaslindstedt/oss-framework/sync";
 
 import { Avatar } from "./Avatar.tsx";
 import { FavoriteIcon, SectionsToggleIcon } from "./icons.tsx";
+import { MassEditModal } from "./MassEditModal.tsx";
 import { MoveToFolderMenu } from "./MoveToFolderMenu.tsx";
 import { SelectActions, SelectCountBar } from "./SelectToast.tsx";
+import { allTags } from "./tags.ts";
+import { customRelationsInUse } from "./relation.ts";
 import { useT } from "./i18n/index.ts";
 import { formatPhoneValue } from "./countries/index.ts";
 import { phoneOptions, type AppSettings } from "./useAppSettings.ts";
@@ -102,6 +106,7 @@ export function ContactListScreen({
     updateContact,
     reorderFavorites,
     moveContactsToFolder,
+    bulkEditContacts,
     archiveContact,
     archiveContacts,
     deleteContact,
@@ -332,6 +337,15 @@ export function ContactListScreen({
   // Both drop the acted-on ids from the selection so the ticked set never
   // carries ghosts of cards that just left the list.
   const [confirmDelete, setConfirmDelete] = useState<string[] | null>(null);
+  // The bulk-edit modal — open while the "Edit selected" toolbar button has
+  // raised it. Its typeahead sources (relationships and tags already in use)
+  // come from the whole document, the same way the single-card editor's do.
+  const [massEditOpen, setMassEditOpen] = useState(false);
+  const knownRelations = useMemo(
+    () => customRelationsInUse(data.contacts),
+    [data.contacts],
+  );
+  const knownTags = useMemo(() => allTags(data.contacts), [data.contacts]);
   const dropFromSelection = (ids: readonly string[]) =>
     setSelected((prev) => {
       const next = new Set(prev);
@@ -486,14 +500,34 @@ export function ContactListScreen({
             <SectionsToggleIcon className="h-5 w-5" collapsed={allCollapsed} />
           </button>
         )}
-        {/* Batch copy / export / delete, shown only while a selection is being
-            made. The trash hands the ticked ids to the same confirmation the
-            row menu's multi-delete uses. */}
+        {/* Batch edit / copy / export / delete, shown only while a selection is
+            being made. The pencil opens the bulk-edit modal (assign tags, a
+            relationship, or a card type to the whole selection); the trash hands
+            the ticked ids to the same confirmation the row menu's multi-delete
+            uses. All stay inert until at least one card is ticked. */}
         {selecting && (
-          <SelectActions
-            contacts={selectedContacts}
-            onDelete={() => setConfirmDelete(selectedContacts.map((c) => c.id))}
-          />
+          <>
+            <button
+              type="button"
+              onClick={() => setMassEditOpen(true)}
+              disabled={selectedContacts.length === 0}
+              aria-label={t("list.massEdit")}
+              title={t("list.massEdit")}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line ${
+                selectedContacts.length > 0
+                  ? "cursor-pointer text-muted hover:bg-surface-2 hover:text-fg"
+                  : "cursor-not-allowed text-muted opacity-40"
+              }`}
+            >
+              <PencilIcon className="h-4 w-4" />
+            </button>
+            <SelectActions
+              contacts={selectedContacts}
+              onDelete={() =>
+                setConfirmDelete(selectedContacts.map((c) => c.id))
+              }
+            />
+          </>
         )}
         {total > 0 && (
           <button
@@ -720,6 +754,25 @@ export function ContactListScreen({
           setMovePicker(null);
         }}
         onClose={() => setMovePicker(null)}
+      />
+
+      {/* The bulk-edit modal — raised by the header's pencil button. Applies one
+          set of changes (tags to add, a relationship, a card type) across the
+          whole ticked selection in a single undoable step, then closes; the
+          selection is left intact so more can be done with it. */}
+      <MassEditModal
+        open={massEditOpen}
+        count={selectedContacts.length}
+        relations={knownRelations}
+        tags={knownTags}
+        onApply={(edit) => {
+          bulkEditContacts(
+            selectedContacts.map((c) => c.id),
+            edit,
+          );
+          setMassEditOpen(false);
+        }}
+        onClose={() => setMassEditOpen(false)}
       />
 
       {/* The batch-delete confirmation — raised by the header's trash button
