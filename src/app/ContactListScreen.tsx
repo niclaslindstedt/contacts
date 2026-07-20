@@ -95,6 +95,8 @@ export function ContactListScreen({
   onOpenSyncDetails,
   onOpenContact,
   variant = "all",
+  pendingTag = null,
+  onPendingTagApplied,
 }: {
   store: ContactStore;
   settings: AppSettings;
@@ -108,6 +110,12 @@ export function ContactListScreen({
   // "all" is the List page (every active contact); "favorites" is the
   // Favorites page (only starred cards), same layout over a filtered set.
   variant?: "all" | "favorites";
+  // A tag the app wants applied as the active filter — set when the user
+  // presses a tag chip on a contact card, which navigates here. Consumed once
+  // (the effect applies it and calls `onPendingTagApplied` to clear it), so it
+  // reads as a one-shot request rather than a controlled filter value.
+  pendingTag?: string | null;
+  onPendingTagApplied?: () => void;
 }) {
   const t = useT();
   const {
@@ -131,6 +139,17 @@ export function ContactListScreen({
   const [filter, setFilter] = useState<ContactFilter>(EMPTY_FILTER);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filterActive = isFilterActive(filter);
+  // A tag pressed on a contact card navigates here asking for that tag as the
+  // active filter. Apply it once: set the tag facet (leaving any relationship /
+  // card-type facet in place), reveal the filter bar so the applied filter is
+  // visible and adjustable, then tell the app it's been consumed so the same
+  // request doesn't re-fire on every later render.
+  useEffect(() => {
+    if (pendingTag === null) return;
+    setFilter((prev) => ({ ...prev, tag: pendingTag }));
+    setFiltersOpen(true);
+    onPendingTagApplied?.();
+  }, [pendingTag, onPendingTagApplied]);
   // The document the list groups over, with the filter applied to its contacts.
   // Grouping and the favorites shortlist both read this, so a folder whose cards
   // all fall outside the filter drops out just like an empty one. The relation /

@@ -299,6 +299,7 @@ export const sv: Catalog = {
     tagAdd: "Lägg till en tagg",
     tagPlaceholder: "Skriv en tagg och tryck Enter",
     removeTag: "Ta bort taggen {tag}",
+    filterByTag: "Visa kontakter med taggen {tag}",
     address: "Adress",
     addresses: "Adresser",
     addAddress: "Lägg till adress",

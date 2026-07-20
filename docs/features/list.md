@@ -50,6 +50,10 @@ all in one tap. The filter is a view of your list — it never changes or remove
 a contact, and entering **Select** mode acts on exactly the cards the filter
 leaves showing.
 
+You can also reach for the tag filter straight from a card: **press a
+[tag](feature:tags)** on an open contact and the List page opens filtered to
+just the contacts sharing it, with that facet already applied in the bar.
+
 ## Select mode
 
 The **Select** button turns the list into a multi-select — or **Ctrl / Cmd-click**

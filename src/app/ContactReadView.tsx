@@ -76,12 +76,16 @@ export function ContactReadView({
   contact,
   settings,
   onEdit,
+  onFilterByTag,
 }: {
   contact: Contact;
   // The app settings — supply the phone and date display formats.
   settings: AppSettings;
   // Jump straight into edit mode — used by the empty-card call to action.
   onEdit: () => void;
+  // Pressing a tag chip leaves the card and opens the List page filtered to
+  // that tag. Optional — when absent the chips render as plain, inert labels.
+  onFilterByTag?: (tag: string) => void;
 }) {
   const t = useT();
 
@@ -220,12 +224,28 @@ export function ContactReadView({
         <Section title={t("contact.tags")}>
           <ul className="flex flex-wrap gap-1.5 px-2 py-1">
             {tags.map((tag) => (
-              <li
-                key={tag}
-                className="flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-sm text-fg"
-              >
-                <TagIcon className="h-3.5 w-3.5 text-muted" />
-                <span className="[overflow-wrap:anywhere]">{tag}</span>
+              <li key={tag} className="flex">
+                {/* Each tag is a button: pressing it leaves the card and opens
+                    the List page filtered to that tag. Without the handler
+                    (which the caller may not wire) it falls back to a plain,
+                    non-interactive chip so the tags still read. */}
+                {onFilterByTag ? (
+                  <button
+                    type="button"
+                    onClick={() => onFilterByTag(tag)}
+                    title={t("contact.filterByTag", { tag })}
+                    aria-label={t("contact.filterByTag", { tag })}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-sm text-fg transition-colors hover:border-accent hover:bg-accent/10 hover:text-accent"
+                  >
+                    <TagIcon className="h-3.5 w-3.5 text-muted" />
+                    <span className="[overflow-wrap:anywhere]">{tag}</span>
+                  </button>
+                ) : (
+                  <span className="flex items-center gap-1.5 rounded-full border border-line bg-surface-2 px-2.5 py-1 text-sm text-fg">
+                    <TagIcon className="h-3.5 w-3.5 text-muted" />
+                    <span className="[overflow-wrap:anywhere]">{tag}</span>
+                  </span>
+                )}
               </li>
             ))}
           </ul>
