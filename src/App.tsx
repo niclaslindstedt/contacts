@@ -163,6 +163,16 @@ export function App() {
     (document.activeElement as HTMLElement | null)?.blur?.();
     setContactModalOpen(false);
   }, []);
+  // A tag pressed on a contact card opens the List page filtered to that tag.
+  // Held here (not in the list screen) so the request survives the view switch:
+  // pressing the tag closes the card, lands on the List page, and hands the tag
+  // to `ContactListScreen`, which applies it as the active filter and clears
+  // this back to `null`.
+  const [pendingTagFilter, setPendingTagFilter] = useState<string | null>(null);
+  const clearPendingTagFilter = useCallback(
+    () => setPendingTagFilter(null),
+    [],
+  );
   // The "What's new" dialog, opened from the side menu's About dropdown.
   const [changelogOpen, setChangelogOpen] = useState(false);
   const { settings, setSettings } = useAppSettings();
@@ -198,6 +208,17 @@ export function App() {
     "contacts:menu-position",
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Pressing a tag on a contact card: close the card, land on the List page,
+  // and stash the tag for `ContactListScreen` to apply as the active filter.
+  const filterByTag = useCallback(
+    (tag: string) => {
+      closeContactModal();
+      setPendingTagFilter(tag);
+      setView("list");
+      if (!pinned) setDrawerOpen(false);
+    },
+    [closeContactModal, pinned],
+  );
   // Achievements (Settings → General toggles the feature off). The store is
   // the app's — the framework owns the engine, the bus, and the trophy UI.
   const achievementsEnabled = !settings.disableAchievements;
@@ -628,6 +649,8 @@ export function App() {
               sync={sync}
               onOpenSyncDetails={() => setSyncDetailsOpen(true)}
               variant={view === "favorites" ? "favorites" : "all"}
+              pendingTag={pendingTagFilter}
+              onPendingTagApplied={clearPendingTagFilter}
               // Tapping a row floats the card up in the swipe-down modal over
               // the browse page, rather than replacing it — closing returns
               // here with the scroll position intact.
@@ -643,6 +666,7 @@ export function App() {
               sync={sync}
               settings={settings}
               onOpenSyncDetails={() => setSyncDetailsOpen(true)}
+              onFilterByTag={filterByTag}
               // Suppress pull-to-refresh while a sidebar drag owns the pointer,
               // and while the phone drawer covers the screen.
               pullEnabled={!sidebarDragging && (pinned || !drawerOpen)}
@@ -672,6 +696,7 @@ export function App() {
           sync={sync}
           settings={settings}
           onOpenSyncDetails={() => setSyncDetailsOpen(true)}
+          onFilterByTag={filterByTag}
           pullEnabled={false}
           inModal
         />

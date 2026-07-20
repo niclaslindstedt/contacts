@@ -321,6 +321,9 @@ export const en = {
     tagAdd: "Add a tag",
     tagPlaceholder: "Type a tag and press Enter",
     removeTag: "Remove tag {tag}",
+    // The read-view tag chips are buttons: pressing one leaves the card and
+    // opens the List page filtered to that tag.
+    filterByTag: "Show contacts tagged {tag}",
     address: "Address",
     addresses: "Addresses",
     addAddress: "Add address",

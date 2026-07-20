@@ -43,6 +43,7 @@ export function ContactScreen({
   sync,
   settings,
   onOpenSyncDetails,
+  onFilterByTag,
   pullEnabled = true,
   inModal = false,
 }: {
@@ -53,6 +54,9 @@ export function ContactScreen({
   settings: AppSettings;
   // Open the framework `SyncDetailsModal` (mounted by the app shell).
   onOpenSyncDetails: () => void;
+  // Pressing a tag chip in the read view opens the List page filtered to that
+  // tag (the app closes this card and switches views).
+  onFilterByTag?: (tag: string) => void;
   // Gate the pull-to-refresh gesture. The shell drops this to false while a
   // sidebar drag owns the pointer or the phone drawer covers the screen — and
   // whenever the card rides inside the swipe-to-dismiss modal, whose own
@@ -136,6 +140,7 @@ export function ContactScreen({
         sync={sync}
         settings={settings}
         onOpenSyncDetails={onOpenSyncDetails}
+        onFilterByTag={onFilterByTag}
       />
     </ContactPhotoDropZone>
   );
@@ -154,6 +159,7 @@ function ContactCard({
   sync,
   settings,
   onOpenSyncDetails,
+  onFilterByTag,
 }: {
   contact: Contact;
   editing: boolean;
@@ -165,6 +171,8 @@ function ContactCard({
   sync: SyncEngine;
   settings: AppSettings;
   onOpenSyncDetails: () => void;
+  // Forwarded to the read view's tag chips — see `ContactScreen`.
+  onFilterByTag?: (tag: string) => void;
 }) {
   const t = useT();
 
@@ -295,6 +303,7 @@ function ContactCard({
             contact={contact}
             settings={settings}
             onEdit={() => setEditing(true)}
+            onFilterByTag={onFilterByTag}
           />
         )}
         <ContactTimestamps contact={contact} settings={settings} />
