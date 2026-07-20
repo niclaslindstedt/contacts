@@ -137,6 +137,21 @@ export const sv: Catalog = {
       "Den valda kontakten tas bort från adressboken. Ångra kan hämta tillbaka den.",
     deleteConfirmBody:
       "De valda kontakterna tas bort från adressboken. Ångra kan hämta tillbaka dem.",
+    filter: {
+      title: "Filtrera",
+      show: "Filtrera kontakter",
+      hide: "Dölj filter",
+      relationAll: "Alla relationer",
+      tagAll: "Alla taggar",
+      cardTypeAll: "Alla typer",
+      cardTypePrivate: "Privat",
+      cardTypeBusiness: "Företag",
+      relationLabel: "Filtrera på relation",
+      tagLabel: "Filtrera på tagg",
+      cardTypeLabel: "Filtrera på korttyp",
+      clear: "Rensa ({n})",
+      empty: "Inga kontakter matchar filtren.",
+    },
   },
   // Massredigeringsdialogen som nås via ”Redigera valda” i markeringsläget —
   // tillämpa taggar, en relation eller en korttyp på alla markerade kontakter.

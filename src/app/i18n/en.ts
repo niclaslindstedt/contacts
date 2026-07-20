@@ -151,6 +151,24 @@ export const en = {
       "The selected contact is removed from the address book. Undo can bring it right back.",
     deleteConfirmBody:
       "The selected contacts are removed from the address book. Undo can bring them right back.",
+    // The filter bar the header's filter button reveals — narrow the list to one
+    // relationship, one tag, and/or one card type. `{n}` on `clear` is the
+    // number of facets currently set.
+    filter: {
+      title: "Filter",
+      show: "Filter contacts",
+      hide: "Hide filters",
+      relationAll: "All relationships",
+      tagAll: "All tags",
+      cardTypeAll: "All types",
+      cardTypePrivate: "Private",
+      cardTypeBusiness: "Business",
+      relationLabel: "Filter by relationship",
+      tagLabel: "Filter by tag",
+      cardTypeLabel: "Filter by card type",
+      clear: "Clear ({n})",
+      empty: "No contacts match these filters.",
+    },
   },
   // The bulk-edit modal reached from select mode's "Edit selected" button —
   // apply tags, a relationship, or a card type across every ticked contact.
