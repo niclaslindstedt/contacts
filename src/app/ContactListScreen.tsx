@@ -14,6 +14,7 @@ import {
   ListIcon,
   PersonIcon,
   RowActionMenu,
+  SlidersIcon,
   SwipeableRow,
   TrashIcon,
   type FloatingPoint,
@@ -26,6 +27,15 @@ import {
 import { SyncStatus } from "@niclaslindstedt/oss-framework/sync";
 
 import { Avatar } from "./Avatar.tsx";
+import { ContactListFilters } from "./ContactListFilters.tsx";
+import {
+  EMPTY_FILTER,
+  filterContacts,
+  isFilterActive,
+  activeFilterCount,
+  relationsInUse,
+  type ContactFilter,
+} from "./contactFilter.ts";
 import { FavoriteIcon, SectionsToggleIcon } from "./icons.tsx";
 import { MassEditModal } from "./MassEditModal.tsx";
 import { MoveToFolderMenu } from "./MoveToFolderMenu.tsx";
@@ -114,6 +124,37 @@ export function ContactListScreen({
     deleteFolder,
   } = store;
   const favoritesOnly = variant === "favorites";
+
+  // The active list filter — narrow the shown cards to one relationship, one
+  // tag, and/or one card type. Local view state (like collapse / select), it
+  // doesn't travel with the document. `filtersOpen` reveals the dropdown bar.
+  const [filter, setFilter] = useState<ContactFilter>(EMPTY_FILTER);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterActive = isFilterActive(filter);
+  // The document the list groups over, with the filter applied to its contacts.
+  // Grouping and the favorites shortlist both read this, so a folder whose cards
+  // all fall outside the filter drops out just like an empty one. The relation /
+  // tag option lists and folder machinery still read the unfiltered `data`.
+  const filteredData = useMemo(
+    () =>
+      filterActive
+        ? { ...data, contacts: filterContacts(data.contacts, filter) }
+        : data,
+    [data, filter, filterActive],
+  );
+  // The relationship and tag choices the filter bar offers — the values actually
+  // in use across the active (non-archived) cards, so a filter never lists an
+  // option that would match nothing.
+  const activeContacts = useMemo(
+    () => data.contacts.filter((c) => !c.archived),
+    [data.contacts],
+  );
+  const relationChoices = useMemo(
+    () => relationsInUse(activeContacts),
+    [activeContacts],
+  );
+  const tagChoices = useMemo(() => allTags(activeContacts), [activeContacts]);
+
   // The folders a card can be filed into — the non-archived set, shared by the
   // drag-and-drop drop zones and the "Move to folder" right-click submenu.
   const activeFolders = useMemo(
@@ -127,12 +168,14 @@ export function ContactListScreen({
     () =>
       favoritesOnly
         ? []
-        : groupContactsByFolder(data, { folderSort: settings.folderSort }),
-    [data, favoritesOnly, settings.folderSort],
+        : groupContactsByFolder(filteredData, {
+            folderSort: settings.folderSort,
+          }),
+    [filteredData, favoritesOnly, settings.folderSort],
   );
   const favorites = useMemo(
-    () => (favoritesOnly ? favoriteContacts(data) : []),
-    [data, favoritesOnly],
+    () => (favoritesOnly ? favoriteContacts(filteredData) : []),
+    [filteredData, favoritesOnly],
   );
   // Star / unstar a card. Reuses the same field-patch path every other edit
   // takes, so a favorite toggle is one undoable step and syncs like any change.
@@ -488,6 +531,37 @@ export function ContactListScreen({
           {favoritesOnly ? t("favorites.title") : t("list.title")}
         </h1>
         {selecting && <div className="flex-1" aria-hidden />}
+        {/* The filter toggle — reveals the dropdown bar (relationship, tag, card
+            type). A little accent dot marks it when a filter is applied, so an
+            active filter reads even with the bar folded away. Hidden while
+            selecting, where the header fills with batch actions; the filter
+            stays applied and the bar returns on leaving select mode. */}
+        {!selecting && (activeContacts.length > 0 || filterActive) && (
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((v) => !v)}
+            aria-pressed={filtersOpen}
+            aria-label={
+              filtersOpen ? t("list.filter.hide") : t("list.filter.show")
+            }
+            title={filtersOpen ? t("list.filter.hide") : t("list.filter.show")}
+            className={`relative flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border ${
+              filtersOpen || filterActive
+                ? "border-accent bg-accent/10 text-accent hover:bg-accent/15"
+                : "border-line text-muted hover:bg-surface-2 hover:text-fg"
+            }`}
+          >
+            <SlidersIcon className="h-5 w-5" />
+            {filterActive && (
+              <span
+                aria-hidden
+                className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[0.625rem] font-bold text-page-bg"
+              >
+                {activeFilterCount(filter)}
+              </span>
+            )}
+          </button>
+        )}
         {/* The collapse-all button stays in the top menu while selecting. */}
         {collapsibleKeys.length > 0 && (
           <button
@@ -562,6 +636,19 @@ export function ContactListScreen({
         )}
       </header>
 
+      {/* The filter dropdown bar — revealed by the header's filter button, kept
+          above the scrolling list so it stays put while browsing. Hidden while
+          selecting (the header is busy with batch actions then), though any
+          applied filter still narrows the ticked set. */}
+      {filtersOpen && !selecting && (
+        <ContactListFilters
+          filter={filter}
+          relations={relationChoices}
+          tags={tagChoices}
+          onChange={setFilter}
+        />
+      )}
+
       <div
         ref={scrollRef}
         className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto [overscroll-behavior:contain] ${
@@ -575,7 +662,11 @@ export function ContactListScreen({
         )}
         {total === 0 ? (
           <p className="px-2 py-10 text-center text-sm text-muted">
-            {favoritesOnly ? t("favorites.empty") : t("list.empty")}
+            {filterActive
+              ? t("list.filter.empty")
+              : favoritesOnly
+                ? t("favorites.empty")
+                : t("list.empty")}
           </p>
         ) : favoritesOnly ? (
           <FavoritesReorderList

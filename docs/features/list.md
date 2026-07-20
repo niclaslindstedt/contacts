@@ -31,6 +31,25 @@ Archiving or deleting a contact or folder raises a brief **Undo** toast, so an
 action taken by mistake is one tap to reverse. The same swipe actions and
 right-click menu ride along on the [Favorites](feature:favorites) page rows.
 
+## Filter the List
+
+The **filter** button in the header (the sliders icon) reveals a bar of
+dropdowns that narrow the list to just the contacts you want to see:
+
+- **Relationship** — keep only the cards filed under one
+  [relationship](feature:relationship), like Family or a custom label.
+- **Tag** — keep only the cards carrying one [tag](feature:tags).
+- **Card type** — keep only **Private** (people) or **Business** (companies).
+
+Each dropdown offers the values actually in use, and starts at **All** so it
+adds no constraint until you pick one. Set several at once and a card has to
+match them all to show; a folder whose cards all fall outside the filter drops
+out just like an empty one. A little count on the filter button marks how many
+facets are set even with the bar folded away, and a **Clear** button drops them
+all in one tap. The filter is a view of your list — it never changes or removes
+a contact, and entering **Select** mode acts on exactly the cards the filter
+leaves showing.
+
 ## Select mode
 
 The **Select** button turns the list into a multi-select — or **Ctrl / Cmd-click**
