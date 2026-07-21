@@ -565,7 +565,7 @@ export function App() {
   }, [active, activeNamespace]);
 
   return (
-    <div className="flex h-[100svh] overflow-hidden bg-page-bg text-fg">
+    <div className="flex h-[var(--app-height,100svh)] overflow-hidden bg-page-bg text-fg">
       <Sidebar
         pinned={pinned}
         open={drawerOpen}
