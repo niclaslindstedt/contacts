@@ -188,6 +188,32 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* Installed iOS PWA edge-to-edge under the home indicator. iOS only extends the
+   page under the home indicator when the *root* element carries a fixed `100vh`
+   height; with `100svh` (or any percentage height) the document stops at the
+   letterboxed viewport and iOS paints the remainder as a dead black band below
+   the shell — leaving the side-menu footer / collapse rail floating above a
+   black gap instead of sitting at the bottom of the screen. Force the root to
+   `100vh` in the installed iOS PWA so the app paints the full height, and lift
+   `--app-height` to match: the app shell and the framework's side-menu drawer
+   both size to `var(--app-height, 100svh)`, so this fills them edge to edge.
+   The bottom controls stay clear of the home indicator because they already pad
+   with env(safe-area-inset-bottom). Scoped to iOS via the -webkit-touch-callout
+   probe (no other engine supports it) and to display-mode: standalone so a
+   plain iOS Safari tab keeps `100svh`. */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    html,
+    body {
+      height: 100vh;
+    }
+
+    :root {
+      --app-height: 100vh;
+    }
+  }
+}
+
 /* Native `<input type="date">` carries an intrinsic min width in WebKit that
    ignores `width: 100%`, so on a narrow screen the field spills past its card
    and drags a horizontal scrollbar in with it. Let it shrink to its box and

@@ -846,9 +846,13 @@ export function SideMenuContent({
 
       {/* Footer — fixed. Donate (an external link), the trophy, an About
           dropdown, the framework's "check for updates" row, and Settings
-          pinned last under the thumb. Foldable away via the rail above. */}
+          pinned last under the thumb. Foldable away via the rail above. Now the
+          PWA paints fullscreen (no bottom safe-area inset lifting the panel),
+          Settings would otherwise sit right on the screen's edge, so the bottom
+          breathing room carries an extra 10px to keep the last row a
+          comfortable reach for the thumb. */}
       {!footerHidden && (
-        <div className="flex shrink-0 flex-col border-t border-line [padding-top:calc(1.25rem-var(--density-row-py))] [padding-bottom:calc(1.25rem-var(--density-row-py))]">
+        <div className="flex shrink-0 flex-col border-t border-line [padding-top:calc(1.25rem-var(--density-row-py))] [padding-bottom:calc(1.25rem-var(--density-row-py)+10px)]">
           <FooterLink
             icon={<FavoriteIcon filled className="h-5 w-5 text-danger" />}
             href={DONATE_URL}
