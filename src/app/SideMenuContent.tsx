@@ -666,26 +666,33 @@ export function SideMenuContent({
       {/* Namespace switcher — fixed. The framework component owns the
           collapsible section, the switchable rows, and the per-row drop
           targets (a contact or folder dragged onto another workspace's row
-          moves into it); the cog opens the full namespaces manager. */}
-      <NamespaceSwitcher
-        namespaces={namespaces}
-        activeNamespace={activeNamespace.slug}
-        onSwitch={(slug) => {
-          onSwitchNamespace(slug);
-          onNavigate();
-        }}
-        onManage={onOpenNamespaces}
-        dropZone={(slug) =>
-          dnd.dropZone(`ns:${slug}`, { kind: "namespace", slug })
-        }
-        labels={{
-          heading: t("menu.namespaces"),
-          manage: t("namespaces.open"),
-          switchTo: (name) => t("menu.switchToNamespace", { name }),
-          expand: t("menu.showNamespaces"),
-          collapse: t("menu.hideNamespaces"),
-        }}
-      />
+          moves into it); the cog opens the full namespaces manager.
+
+          The `-mt-1.5` trims the switcher heading's built-in top padding
+          (`pt-3`) down by 6px so the "Namespaces" row sits closer to the
+          status bar, matching the tighter top margin used elsewhere in the
+          sidebar rather than floating a notch lower. */}
+      <div className="-mt-1.5">
+        <NamespaceSwitcher
+          namespaces={namespaces}
+          activeNamespace={activeNamespace.slug}
+          onSwitch={(slug) => {
+            onSwitchNamespace(slug);
+            onNavigate();
+          }}
+          onManage={onOpenNamespaces}
+          dropZone={(slug) =>
+            dnd.dropZone(`ns:${slug}`, { kind: "namespace", slug })
+          }
+          labels={{
+            heading: t("menu.namespaces"),
+            manage: t("namespaces.open"),
+            switchTo: (name) => t("menu.switchToNamespace", { name }),
+            expand: t("menu.showNamespaces"),
+            collapse: t("menu.hideNamespaces"),
+          }}
+        />
+      </div>
 
       <SectionHeader
         label={t("menu.contacts")}
