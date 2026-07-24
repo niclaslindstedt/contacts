@@ -525,7 +525,7 @@ export function ContactListScreen({
   } | null>(null);
 
   return (
-    <div className="relative mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-[calc(1.25rem+env(safe-area-inset-top))]">
+    <div className="relative mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-[calc(0.75rem+env(safe-area-inset-top))]">
       {/* The title stays put — select mode no longer replaces it. The batch
           copy / export actions join the collapse and Select buttons in this top
           menu while selecting; the running count lives in the floating

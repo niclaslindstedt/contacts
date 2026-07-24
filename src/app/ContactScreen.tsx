@@ -110,7 +110,7 @@ export function ContactScreen({
       contact={activeContact}
       updateContact={updateContact}
       className={`relative mx-auto flex h-full w-full max-w-2xl flex-col px-4 ${
-        inModal ? "pt-3" : "pt-[calc(1.25rem+env(safe-area-inset-top))]"
+        inModal ? "pt-3" : "pt-[calc(0.75rem+env(safe-area-inset-top))]"
       }`}
     >
       {/* Grab handle — the swipe-down-to-dismiss affordance the modal offers on

@@ -73,7 +73,7 @@ export function ArchiveScreen({ store }: { store: ContactStore }) {
     archivedFolders.length + data.contacts.filter((c) => c.archived).length;
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-[calc(1.25rem+env(safe-area-inset-top))]">
+    <div className="mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-[calc(0.75rem+env(safe-area-inset-top))]">
       <header className="mb-2 flex items-center gap-3 border-b border-line px-1 pb-3">
         <ArchiveIcon className="h-5 w-5 shrink-0 text-muted" />
         <h1 className="min-w-0 flex-1 truncate text-lg font-bold tracking-wide text-fg-bright">
