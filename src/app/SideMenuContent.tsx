@@ -668,11 +668,11 @@ export function SideMenuContent({
           targets (a contact or folder dragged onto another workspace's row
           moves into it); the cog opens the full namespaces manager.
 
-          The `-mt-1.5` trims the switcher heading's built-in top padding
-          (`pt-3`) down by 6px so the "Namespaces" row sits closer to the
-          status bar, matching the tighter top margin used elsewhere in the
-          sidebar rather than floating a notch lower. */}
-      <div className="-mt-1.5">
+          The `mt-1.5` nudges the switcher heading down by 6px so its cog
+          (the namespaces-manager button) lines up vertically with the browse
+          page's top toolbar buttons on the right — both then sit the same
+          distance below the status bar / Dynamic Island. */}
+      <div className="mt-1.5">
         <NamespaceSwitcher
           namespaces={namespaces}
           activeNamespace={activeNamespace.slug}
