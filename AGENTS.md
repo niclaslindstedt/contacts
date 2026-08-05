@@ -113,6 +113,10 @@ The app owns the domain and the stores ("store stays in the app"):
   storage adapters (debounced push, conflict/auth/throttle handling, optional
   `withEncryption` of the cloud copy).
 - `src/app/export.ts` — pure renderers to vCard 3.0 / Outlook CSV / JSON.
+- `src/app/route.ts` + `useAppRoute.ts` — the hand-rolled hash router: the
+  route model (screen + open card) and its `#/…` spelling, plus the hook that
+  mirrors it into the browser's history so Back / Forward step between cards.
+  App state stays the source of truth; the hook only reflects it.
 - `src/app/ContactScreen.tsx`, `SideMenuContent.tsx`, `ArchiveScreen.tsx`,
   `SearchOverlay.tsx`, `SettingsModal.tsx` + `settings/` — the screens.
 - `src/output.ts` — the §19.4 central output module (semantic log helpers over

@@ -492,6 +492,10 @@ export const sv: Catalog = {
         name: "Sökaren",
         condition: "Sök bland dina kontakter.",
       },
+      backtracker: {
+        name: "Bakåtsträvaren",
+        condition: "Gå tillbaka till en tidigare kontakt med bakåtknappen.",
+      },
       birthday: {
         name: "Grattis på dagen",
         condition: "Lägg till en kontakts födelsedag.",

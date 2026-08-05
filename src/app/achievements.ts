@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import {
   ArchiveIcon,
+  ArrowLeftIcon,
   BuildingIcon,
   CalendarIcon,
   CheckIcon,
@@ -160,6 +161,14 @@ export const SPECS: readonly Spec[] = [
     glyph: SearchIcon,
     // Searching is a gesture, not a document change, so it fires through the
     // manual bus from the search overlay.
+    trigger: manual,
+  },
+  {
+    id: "backtracker",
+    tier: "intermediate",
+    glyph: ArrowLeftIcon,
+    // Stepping back through the history moves the app without touching the
+    // document, so it fires through the manual bus from the app's route hook.
     trigger: manual,
   },
   {

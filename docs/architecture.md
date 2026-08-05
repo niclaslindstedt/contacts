@@ -18,7 +18,7 @@ The framework owns the **mechanics and the UI kit**; the app owns the
 │ SearchOverlay · SettingsModal + tabs · Avatar · appearance popover   │
 │        │                                                             │
 │ useContactStore (doc + undo/redo)   useNamespaces   useAppSettings   │
-│ useSyncEngine (real sync)           useAchievements                  │
+│ useSyncEngine (real sync)           useAchievements  useAppRoute     │
 │ types.ts · export.ts (vCard/CSV/JSON) · search.ts · migrations.ts    │
 └──────────┬───────────────────────────────────────────────┬──────────┘
            │ published subpaths only                       │
@@ -41,6 +41,24 @@ pointer. `useContactStore` holds it in memory, persists every change to
 history. The bytes at rest carry a `version`; `migrations.ts` runs older
 documents forward on load (`createMigrator`), so the same JSON is safe coming
 from localStorage, a cloud backend, or an imported backup.
+
+## Navigation
+
+There is no router library. `route.ts` defines the whole navigation contract —
+a screen (`list` / `favorites` / `archive` / `contact`) plus the open card —
+and its `#/…` spelling; `useAppRoute` mirrors that route into the browser's
+history and hands popped routes back to `App`, which applies them as state. The
+app state stays the source of truth: the screens go on calling `setView` /
+`setActive`, and the hook only reflects where that lands.
+
+The route rides in the **hash**, not the path. The pathname is already spoken
+for — the build serves the same bundle at `/privacy/` and `/home/` (see
+`main.tsx` and the alias plugins in `vite.config.ts`) — and GitHub Pages would
+404 a made-up path like `/contact/abc` on reload, while a hash always reaches
+`index.html`. Each move writes one history entry (`pushState`), so Back steps
+to the previously open card; a move the user didn't make — the pointer stepping
+off a card that was just deleted or archived — rewrites the current entry
+(`replaceState`) instead, so Back never lands on a card that is gone.
 
 ## Sync
 

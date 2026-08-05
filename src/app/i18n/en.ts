@@ -524,6 +524,10 @@ export const en = {
         name: "Seeker",
         condition: "Search your contacts.",
       },
+      backtracker: {
+        name: "Backtracker",
+        condition: "Step back to an earlier contact with the Back button.",
+      },
       birthday: {
         name: "Many Happy Returns",
         condition: "Add a contact's birthday.",

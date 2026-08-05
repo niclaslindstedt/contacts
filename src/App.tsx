@@ -68,6 +68,7 @@ import { useDevSeed } from "./app/dev/useDevSeed.ts";
 import { createDemoBackend, createSeedBackend } from "./app/dev/seedBackend.ts";
 import { localDocBackend, useContactStore } from "./app/useContactStore.ts";
 import { useMediaCache } from "./app/useMediaCache.ts";
+import { useNavigation } from "./app/useNavigation.ts";
 import { AppToastViewport } from "./app/AppToastViewport.tsx";
 import { toastStore, UNDO_TOAST_MS } from "./app/toast.ts";
 import { useNamespaces } from "./app/useNamespaces.ts";
@@ -137,32 +138,6 @@ export function App() {
   // What the search field opens onto: the typed character when quick find
   // opened it by just starting to type, "" from the menu button / Cmd+K.
   const [searchSeed, setSearchSeed] = useState("");
-  // The top-level view the main area shows: the active contact, the overview
-  // List page, the Favorites page, or the Archive page (all reached from the
-  // side menu's action grid). The app opens on the **List** page — the overview
-  // of every contact — so a fresh launch always lands on the full address book
-  // rather than a single card.
-  const [view, setView] = useState<
-    "contact" | "archive" | "list" | "favorites"
-  >("list");
-  // A card opened by tapping a row on the List or Favorites page rides in a
-  // swipe-down-to-dismiss modal that floats over that page — closing it drops
-  // straight back to the browse list underneath. A card reached from the
-  // sidebar or a search hit takes over the main area as a full page (`view ===
-  // "contact"`) instead, so those two paths never set this.
-  const [contactModalOpen, setContactModalOpen] = useState(false);
-  // Close the browse-page card modal, saving whatever field the user was
-  // mid-edit in. The framework inputs commit on blur, and React fires no blur
-  // when the card unmounts, so a swipe- or Escape-close would otherwise drop
-  // the in-progress field — blur the active element ourselves first to force
-  // its commit. Closing then unmounts the card, which also drops its edit mode:
-  // reopening a card lands in read mode. The sidebar full page is deliberately
-  // different — it keeps edit mode across contact switches so you can edit one
-  // card after another — so only this modal path resets it.
-  const closeContactModal = useCallback(() => {
-    (document.activeElement as HTMLElement | null)?.blur?.();
-    setContactModalOpen(false);
-  }, []);
   // A tag pressed on a contact card opens the List page filtered to that tag.
   // Held here (not in the list screen) so the request survives the view switch:
   // pressing the tag closes the card, lands on the List page, and hands the tag
@@ -208,6 +183,32 @@ export function App() {
     "contacts:menu-position",
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Where the app is: the top-level screen the main area shows (the active
+  // contact, the List page, Favorites, or Archive — all reached from the side
+  // menu's action grid), and whether the open card is floating in the modal
+  // over a browse page. Kept in step with the browser's history, so opening one
+  // contact then another leaves Back stepping to the previous card and a
+  // `#/contact/<id>` link is bookmarkable (see `useNavigation`).
+  const { view, setView, contactModalOpen, setContactModalOpen } =
+    useNavigation({
+      store,
+      closeDrawer: () => {
+        if (!pinned) setDrawerOpen(false);
+      },
+    });
+  // Close the browse-page card modal, saving whatever field the user was
+  // mid-edit in. The framework inputs commit on blur, and React fires no blur
+  // when the card unmounts, so a swipe- or Escape-close would otherwise drop
+  // the in-progress field — blur the active element ourselves first to force
+  // its commit. Closing then unmounts the card, which also drops its edit mode:
+  // reopening a card lands in read mode. The sidebar full page is deliberately
+  // different — it keeps edit mode across contact switches so you can edit one
+  // card after another — so only this modal path resets it.
+  const closeContactModal = useCallback(() => {
+    (document.activeElement as HTMLElement | null)?.blur?.();
+    setContactModalOpen(false);
+  }, [setContactModalOpen]);
   // Pressing a tag on a contact card: close the card, land on the List page,
   // and stash the tag for `ContactListScreen` to apply as the active filter.
   const filterByTag = useCallback(
@@ -217,8 +218,9 @@ export function App() {
       setView("list");
       if (!pinned) setDrawerOpen(false);
     },
-    [closeContactModal, pinned],
+    [closeContactModal, setView, pinned],
   );
+
   // Achievements (Settings → General toggles the feature off). The store is
   // the app's — the framework owns the engine, the bus, and the trophy UI.
   const achievementsEnabled = !settings.disableAchievements;
@@ -487,7 +489,7 @@ export function App() {
     };
     window.addEventListener("paste", handler);
     return () => window.removeEventListener("paste", handler);
-  }, [pinned, store, closeContactModal, showUndoToast, t]);
+  }, [pinned, store, closeContactModal, setView, showUndoToast, t]);
 
   // Publish the docked sidebar's footprint as CSS variables so viewport-fixed
   // overlays (the `UpdateToast`) centre over the content band.
