@@ -309,6 +309,17 @@ export function useContactStore(
   // active namespace's key and make it the present. History is cleared — the
   // remote copy is a new baseline, not an edit. Bumps the version counter by
   // exactly one (the sync engine relies on that to re-baseline `dirty`).
+  //
+  // Media bytes the working copy already holds are carried across (see
+  // `mergeInlineMedia`), because a backend copy arrives with its photos and
+  // attachments filed *out* — the externaliser re-hydrates them on load, and any
+  // file it couldn't fetch (a throttled drive, a dropped connection) leaves its
+  // entry holding a path and no picture. Adopting that verbatim would swap a
+  // photo this device still has for a placeholder, which the on-device media
+  // cache would then mirror — deleting the last copy over a momentary network
+  // failure. The merge is additive and keyed by entry id, so a photo genuinely
+  // removed or re-cropped elsewhere still wins: it is either absent from the
+  // adopted copy (and stays gone) or present with its own bytes.
   const adoptRemote = useCallback(
     (text: string) => {
       let doc: AppData;
@@ -321,7 +332,7 @@ export function useContactStore(
       setState((cur) => {
         past.current = [];
         future.current = [];
-        return { ...cur, data: doc };
+        return { ...cur, data: mergeInlineMedia(doc, cur.data) ?? doc };
       });
       setVersion((v) => v + 1);
     },

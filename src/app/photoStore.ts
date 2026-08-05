@@ -39,6 +39,20 @@
 //      reconcile pass runs on load *before* any save, so a re-indexed or
 //      hand-dropped file is referenced by the document before prune could ever
 //      see it as an orphan.
+//   3. **Only prune from a complete picture** — "orphan" means "no contact wants
+//      this file", and that judgement is only sound when the outgoing document
+//      was fully understood. If any image failed to file out, or the document
+//      couldn't be parsed at all, the desired set is short through no fault of
+//      the photos it is missing — so the whole prune is skipped for that save
+//      rather than deleting files a working document still references. This is
+//      the rule that keeps a throttled upload from costing a photo: a failed
+//      write used to leave its path out of the desired set, and prune then
+//      deleted the perfectly good file already sitting at that path.
+//
+// The load and prune sweeps are also *bounded* (see `cloudRetry.ts`): a few
+// files are in flight at a time rather than the whole gallery at once. Firing
+// several hundred content-API requests in one tick is what provoked the
+// throttling and the browser-level connection failures in the first place.
 //
 // Encrypted documents skip this layer entirely (they keep photos inside the
 // AES-GCM envelope rather than leak plaintext image files onto the drive), so
@@ -53,6 +67,7 @@ import {
   type StorageAdapter,
 } from "@niclaslindstedt/oss-framework/storage";
 
+import { MEDIA_CONCURRENCY, mapLimit } from "./cloudRetry.ts";
 import { logStore } from "./log.ts";
 import { parsePhotoPath } from "./photo.ts";
 import { photoPathFor, photoSourcePathFor } from "./photo.ts";
@@ -228,20 +243,25 @@ export function withExternalPhotos(
   const written = new Map<string, string>();
 
   // Save side: write each contact's images to their files and strip them from
-  // the outgoing JSON. Returns the stripped text and the set of paths the
-  // document still wants (for the post-commit prune).
-  async function externalise(
-    text: string,
-  ): Promise<{ text: string; desired: Set<string> }> {
+  // the outgoing JSON. Returns the stripped text, the set of paths the document
+  // still wants, and whether that set is a *complete* account of the document —
+  // only a complete one may drive the post-commit prune (see rule 3 above).
+  async function externalise(text: string): Promise<{
+    text: string;
+    desired: Set<string>;
+    complete: boolean;
+  }> {
     const desired = new Set<string>();
     let doc: PhotoDoc;
     try {
       doc = JSON.parse(text) as PhotoDoc;
     } catch {
-      return { text, desired };
+      // Nothing was understood, so nothing may be judged an orphan.
+      return { text, desired, complete: false };
     }
     const contacts = Array.isArray(doc.contacts) ? doc.contacts : null;
-    if (!contacts) return { text, desired };
+    if (!contacts) return { text, desired, complete: false };
+    let complete = true;
 
     for (const c of contacts) {
       const gallery = c.photos ?? [];
@@ -269,6 +289,11 @@ export function withExternalPhotos(
               desired.add(path);
             } catch (err) {
               // Externalise-or-embed: keep the image inline so it still syncs.
+              // The path is still *wanted* — a copy may already be filed there
+              // from an earlier save — so claim it and stand the prune down, or
+              // a throttled upload would delete the photo it failed to replace.
+              desired.add(path);
+              complete = false;
               log.warn(
                 `could not externalise ${path} — keeping it inline (${errMsg(err)})`,
               );
@@ -281,12 +306,21 @@ export function withExternalPhotos(
         }
       }
     }
-    return { text: JSON.stringify(doc), desired };
+    return { text: JSON.stringify(doc), desired, complete };
   }
 
   // Remove photo files no surviving contact references. Best-effort and only
-  // after the document save commits.
-  async function prune(desired: Set<string>): Promise<void> {
+  // after the document save commits — and only when `externalise` returned a
+  // complete account of the document, since a short desired set would make
+  // perfectly good files look like orphans (see rule 3 in the module note).
+  async function prune(desired: Set<string>, complete: boolean): Promise<void> {
+    if (!complete) {
+      log.warn(
+        "skipping the orphan prune — some photos could not be filed out, " +
+          "so a file this save didn't account for is not an orphan",
+      );
+      return;
+    }
     let existing: string[];
     try {
       existing = await photos.list();
@@ -297,15 +331,15 @@ export function withExternalPhotos(
     const orphans = existing.filter((p) => !desired.has(p));
     if (orphans.length === 0) return;
     log.info(`pruning ${orphans.length} orphaned photo file(s)`);
-    await Promise.all(
-      orphans.map((p) =>
-        photos
-          .remove(p)
-          .then(() => written.delete(p))
-          .catch((err: unknown) =>
-            log.warn(`could not remove ${p} (${errMsg(err)})`),
-          ),
-      ),
+    await mapLimit(orphans, MEDIA_CONCURRENCY, (p) =>
+      photos
+        .remove(p)
+        .then(() => {
+          written.delete(p);
+        })
+        .catch((err: unknown) => {
+          log.warn(`could not remove ${p} (${errMsg(err)})`);
+        }),
     );
   }
 
@@ -415,40 +449,63 @@ export function withExternalPhotos(
     return { text: changed ? JSON.stringify(doc) : text, changed };
   }
 
-  // Load side: fetch each filed image back onto its contact.
-  async function rehydrate(text: string): Promise<string> {
+  // Load side: fetch each filed image back onto its contact, a few at a time.
+  // A read that fails leaves the entry's path in place and its bytes absent —
+  // the loaded copy is then *incomplete*, which the caller must know about
+  // before it adopts the copy over a working document that still holds those
+  // bytes (see the `missing` count in `load`).
+  async function rehydrate(
+    text: string,
+  ): Promise<{ text: string; missing: number }> {
     let doc: PhotoDoc;
     try {
       doc = JSON.parse(text) as PhotoDoc;
     } catch {
-      return text;
+      return { text, missing: 0 };
     }
     const contacts = Array.isArray(doc.contacts) ? doc.contacts : null;
-    if (!contacts) return text;
+    if (!contacts) return { text, missing: 0 };
+
+    // Flatten to one job per filed image so the whole load — not each contact —
+    // is what gets rate-limited.
+    const jobs: { entry: PhotoEntry; slot: Slot; path: string }[] = [];
+    for (const c of contacts) {
+      for (const entry of c.photos ?? []) {
+        for (const slot of SLOTS) {
+          const path = entry[slot.path];
+          if (path && !entry[slot.data]) jobs.push({ entry, slot, path });
+        }
+      }
+    }
+    if (jobs.length === 0) return { text, missing: 0 };
+
     let changed = false;
-    await Promise.all(
-      contacts.flatMap((c) =>
-        (c.photos ?? []).map(async (entry) => {
-          for (const slot of SLOTS) {
-            const path = entry[slot.path];
-            if (path && !entry[slot.data]) {
-              try {
-                const bytes = await photos.read(path);
-                if (bytes) {
-                  const url = bytesToDataUrl("image/jpeg", bytes);
-                  entry[slot.data] = url;
-                  written.set(path, fingerprint(url));
-                  changed = true;
-                }
-              } catch (err) {
-                log.warn(`could not read ${path} (${errMsg(err)})`);
-              }
-            }
-          }
-        }),
-      ),
-    );
-    return changed ? JSON.stringify(doc) : text;
+    let missing = 0;
+    await mapLimit(jobs, MEDIA_CONCURRENCY, async ({ entry, slot, path }) => {
+      try {
+        const bytes = await photos.read(path);
+        if (bytes) {
+          const url = bytesToDataUrl("image/jpeg", bytes);
+          entry[slot.data] = url;
+          written.set(path, fingerprint(url));
+          changed = true;
+        } else {
+          // The file is genuinely gone from the backend — not a read failure,
+          // so it doesn't hold the copy back; the reference is simply stale.
+          log.warn(`no file at ${path} — the reference is stale`);
+        }
+      } catch (err) {
+        missing += 1;
+        log.warn(`could not read ${path} (${errMsg(err)})`);
+      }
+    });
+    if (missing > 0) {
+      log.warn(
+        `${missing} of ${jobs.length} photo file(s) could not be read — ` +
+          "the loaded copy is incomplete",
+      );
+    }
+    return { text: changed ? JSON.stringify(doc) : text, missing };
   }
 
   return {
@@ -474,12 +531,13 @@ export function withExternalPhotos(
       if (onPhotosNeedResave && (inline || changed || stale)) {
         onPhotosNeedResave();
       }
-      return { ...snap, text: await rehydrate(text) };
+      const hydrated = await rehydrate(text);
+      return { ...snap, text: hydrated.text };
     },
     async save(text, baseRevision) {
-      const { text: stripped, desired } = await externalise(text);
+      const { text: stripped, desired, complete } = await externalise(text);
       const snap = await inner.save(stripped, baseRevision);
-      await prune(desired);
+      await prune(desired, complete);
       return snap;
     },
   };

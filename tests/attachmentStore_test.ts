@@ -92,6 +92,53 @@ describe("attachmentPathFor", () => {
   });
 });
 
+describe("withExternalAttachments — a failed upload never costs a file", () => {
+  it("keeps the already-filed copy when the re-upload fails", async () => {
+    const path = "attachments/ada-lovelace-c1-a1.pdf";
+    const { adapter: inner, state } = fakeInner();
+    const { store, files } = fakeStore();
+    // A copy filed by an earlier session, and a write that fails this time.
+    files.set(path, new Uint8Array([1, 2, 3]));
+    const removed: string[] = [];
+    const flaky: AttachmentStore = {
+      ...store,
+      write: () => Promise.reject(new TypeError("Load failed")),
+      remove: (p) => {
+        removed.push(p);
+        return store.remove(p);
+      },
+    };
+    const wrapped = withExternalAttachments(inner, flaky);
+
+    await wrapped.save(
+      docWith({
+        id: "a1",
+        name: "menu.pdf",
+        mime: "application/pdf",
+        data: HELLO,
+        dataPath: path,
+      }),
+      undefined,
+    );
+
+    expect(removed).toEqual([]);
+    expect(files.has(path)).toBe(true);
+    // Externalise-or-embed: the bytes ride along inline so they still sync.
+    expect(JSON.parse(state.text!).contacts[0].attachments[0].data).toBe(HELLO);
+  });
+
+  it("never prunes when the outgoing document can't be parsed", async () => {
+    const { adapter: inner } = fakeInner();
+    const { store, files } = fakeStore();
+    files.set("attachments/ada-lovelace-c1-a1.pdf", new Uint8Array([1]));
+    const wrapped = withExternalAttachments(inner, store);
+
+    await wrapped.save("not json at all", undefined);
+
+    expect(files.size).toBe(1);
+  });
+});
+
 describe("withExternalAttachments", () => {
   it("files bytes out on save and strips them from the stored document", async () => {
     const { adapter: inner, state } = fakeInner();

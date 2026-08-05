@@ -191,3 +191,52 @@ describe("mergeInlineMedia — attachments", () => {
     expect(mergeInlineMedia(current, remote)).toBeNull();
   });
 });
+
+// The same merge, run the other way round: `adoptRemote` fills the *incoming*
+// backend copy from the working document before making it the present, so a
+// photo file the loader couldn't fetch (a throttled drive, a dropped
+// connection) doesn't replace a picture this device still holds.
+describe("mergeInlineMedia — adopting a backend copy", () => {
+  it("carries a local photo across when the backend copy couldn't fetch it", () => {
+    const working = doc([
+      contact({
+        photos: [
+          {
+            id: "p1",
+            photo: "data:image/jpeg;base64,MINE",
+            photoPath: "photos/ada-abcd-1.jpg",
+          },
+        ],
+      }),
+    ]);
+    // What the loader produced: the reference survived, the bytes didn't.
+    const incoming = doc([
+      contact({ photos: [{ id: "p1", photoPath: "photos/ada-abcd-1.jpg" }] }),
+    ]);
+    const adopted = mergeInlineMedia(incoming, working);
+    expect(adopted?.contacts[0]?.photos?.[0]?.photo).toBe(
+      "data:image/jpeg;base64,MINE",
+    );
+  });
+
+  it("still lets a photo re-cropped elsewhere win", () => {
+    const working = doc([
+      contact({ photos: [{ id: "p1", photo: "data:image/jpeg;base64,OLD" }] }),
+    ]);
+    const incoming = doc([
+      contact({ photos: [{ id: "p1", photo: "data:image/jpeg;base64,NEW" }] }),
+    ]);
+    const adopted = mergeInlineMedia(incoming, working);
+    expect(adopted).toBeNull(); // nothing was missing — the incoming copy stands
+  });
+
+  it("does not resurrect a photo deleted on another device", () => {
+    const working = doc([
+      contact({ photos: [{ id: "p1", photo: "data:image/jpeg;base64,MINE" }] }),
+    ]);
+    const incoming = doc([contact({ photos: [] })]);
+    const adopted = mergeInlineMedia(incoming, working);
+    expect(adopted).toBeNull();
+    expect(incoming.contacts[0]?.photos).toEqual([]);
+  });
+});

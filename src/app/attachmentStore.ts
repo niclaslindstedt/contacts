@@ -13,10 +13,15 @@
 // attachment's own stored MIME type.
 //
 // It reuses the byte-level transport (`photoFileStore.ts`) the photos use — the
-// `write` there now carries a MIME type so a filed PDF lands as a PDF. The two
-// safety rules match the photo layer: an attachment is stripped from the
-// document only *after* its file write succeeds (never lost, only un-filed), and
-// orphaned files are pruned only once the document save commits.
+// `write` there now carries a MIME type so a filed PDF lands as a PDF, and every
+// operation rides the shared media retry (`cloudRetry.ts`) so a throttle is
+// waited out rather than reported as a broken file. The safety rules match the
+// photo layer: an attachment is stripped from the document only *after* its file
+// write succeeds (never lost, only un-filed); orphaned files are pruned only
+// once the document save commits; and the prune is skipped entirely for a save
+// that couldn't file everything out, since a desired set short of the truth
+// would make good files look like orphans. Both sweeps are bounded rather than
+// firing every file at the network in one tick.
 //
 // Unlike photos there is no one-time "inline sweep": attachments are a new
 // feature, so no pre-existing cloud copy embeds them — the first edit-triggered
@@ -33,6 +38,7 @@ import {
   type StorageAdapter,
 } from "@niclaslindstedt/oss-framework/storage";
 
+import { MEDIA_CONCURRENCY, mapLimit } from "./cloudRetry.ts";
 import { exportFileStem } from "./export.ts";
 import { logStore } from "./log.ts";
 import {
@@ -161,18 +167,25 @@ export function withExternalAttachments(
   // a debounced re-save doesn't re-upload unchanged bytes.
   const written = new Map<string, string>();
 
-  async function externalise(
-    text: string,
-  ): Promise<{ text: string; desired: Set<string> }> {
+  // Returns the stripped text, the paths the document still wants, and whether
+  // that set is a *complete* account of it — only a complete one may drive the
+  // post-commit prune.
+  async function externalise(text: string): Promise<{
+    text: string;
+    desired: Set<string>;
+    complete: boolean;
+  }> {
     const desired = new Set<string>();
     let doc: AttachmentDoc;
     try {
       doc = JSON.parse(text) as AttachmentDoc;
     } catch {
-      return { text, desired };
+      // Nothing was understood, so nothing may be judged an orphan.
+      return { text, desired, complete: false };
     }
     const contacts = Array.isArray(doc.contacts) ? doc.contacts : null;
-    if (!contacts) return { text, desired };
+    if (!contacts) return { text, desired, complete: false };
+    let complete = true;
 
     for (const c of contacts) {
       for (const entry of c.attachments ?? []) {
@@ -200,6 +213,11 @@ export function withExternalAttachments(
             desired.add(path);
           } catch (err) {
             // Externalise-or-embed: keep the bytes inline so they still sync.
+            // The path stays *wanted* (a copy may already be filed there) and
+            // the prune stands down, so a throttled upload can't delete the
+            // file it failed to replace.
+            desired.add(path);
+            complete = false;
             log.warn(
               `could not externalise ${path} — keeping it inline (${errMsg(err)})`,
             );
@@ -211,10 +229,17 @@ export function withExternalAttachments(
         }
       }
     }
-    return { text: JSON.stringify(doc), desired };
+    return { text: JSON.stringify(doc), desired, complete };
   }
 
-  async function prune(desired: Set<string>): Promise<void> {
+  async function prune(desired: Set<string>, complete: boolean): Promise<void> {
+    if (!complete) {
+      log.warn(
+        "skipping the orphan prune — some attachments could not be filed " +
+          "out, so a file this save didn't account for is not an orphan",
+      );
+      return;
+    }
     let existing: string[];
     try {
       existing = await attachments.list();
@@ -225,15 +250,15 @@ export function withExternalAttachments(
     const orphans = existing.filter((p) => !desired.has(p));
     if (orphans.length === 0) return;
     log.info(`pruning ${orphans.length} orphaned attachment file(s)`);
-    await Promise.all(
-      orphans.map((p) =>
-        attachments
-          .remove(p)
-          .then(() => written.delete(p))
-          .catch((err: unknown) =>
-            log.warn(`could not remove ${p} (${errMsg(err)})`),
-          ),
-      ),
+    await mapLimit(orphans, MEDIA_CONCURRENCY, (p) =>
+      attachments
+        .remove(p)
+        .then(() => {
+          written.delete(p);
+        })
+        .catch((err: unknown) => {
+          log.warn(`could not remove ${p} (${errMsg(err)})`);
+        }),
     );
   }
 
@@ -246,29 +271,38 @@ export function withExternalAttachments(
     }
     const contacts = Array.isArray(doc.contacts) ? doc.contacts : null;
     if (!contacts) return text;
-    let changed = false;
-    await Promise.all(
-      contacts.flatMap((c) =>
-        (c.attachments ?? []).map(async (entry) => {
-          if (entry.dataPath && !entry.data) {
-            try {
-              const bytes = await attachments.read(entry.dataPath);
-              if (bytes) {
-                const url = bytesToDataUrl(
-                  entry.mime || "application/octet-stream",
-                  bytes,
-                );
-                entry.data = url;
-                written.set(entry.dataPath, fingerprint(url));
-                changed = true;
-              }
-            } catch (err) {
-              log.warn(`could not read ${entry.dataPath} (${errMsg(err)})`);
-            }
-          }
-        }),
-      ),
+    // Flatten to one job per filed attachment so the whole load is what gets
+    // rate-limited, a few files at a time, rather than each contact.
+    const jobs = contacts.flatMap((c) =>
+      (c.attachments ?? []).filter((entry) => entry.dataPath && !entry.data),
     );
+    if (jobs.length === 0) return text;
+    let changed = false;
+    let missing = 0;
+    await mapLimit(jobs, MEDIA_CONCURRENCY, async (entry) => {
+      const path = entry.dataPath!;
+      try {
+        const bytes = await attachments.read(path);
+        if (bytes) {
+          const url = bytesToDataUrl(
+            entry.mime || "application/octet-stream",
+            bytes,
+          );
+          entry.data = url;
+          written.set(path, fingerprint(url));
+          changed = true;
+        }
+      } catch (err) {
+        missing += 1;
+        log.warn(`could not read ${path} (${errMsg(err)})`);
+      }
+    });
+    if (missing > 0) {
+      log.warn(
+        `${missing} of ${jobs.length} attachment file(s) could not be read — ` +
+          "the loaded copy is incomplete",
+      );
+    }
     return changed ? JSON.stringify(doc) : text;
   }
 
@@ -280,9 +314,9 @@ export function withExternalAttachments(
       return { ...snap, text: await rehydrate(snap.text) };
     },
     async save(text, baseRevision) {
-      const { text: stripped, desired } = await externalise(text);
+      const { text: stripped, desired, complete } = await externalise(text);
       const snap = await inner.save(stripped, baseRevision);
-      await prune(desired);
+      await prune(desired, complete);
       return snap;
     },
   };
