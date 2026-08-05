@@ -119,6 +119,10 @@ Enter — and start filling in the card.
   keyboard) just start typing; matches everything on a card — names, numbers,
   emails, addresses, homepage, dates, notes, and attachment names and
   descriptions (`*`/`?` wildcards, `/regex/`).
+- **Back & forward** — the browser's Back button (and the phone's back gesture)
+  steps to the contact you were looking at before; Forward retraces. Every card
+  has its own address, so you can bookmark one or share the link and land
+  straight back on it.
 - **Export** — the download button in the card header (single vCard) or
   Settings → Storage (all contacts as `.vcf`, CSV, or JSON).
 - **Import** — drag a `.vcf` (or CSV / JSON backup) straight onto the contact
