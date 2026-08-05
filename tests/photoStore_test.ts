@@ -271,7 +271,7 @@ describe("withExternalPhotos — load", () => {
 
 // The tiered (cloud) shape: the render tier covers the faces on open, and the
 // kept originals are left for `photoSource.ts` to fetch when something asks.
-// See `docs/design/photo-atlas.md`.
+// See the module note on `atlas.ts`.
 describe("withExternalPhotos — tiered", () => {
   it("does not read kept originals on open", async () => {
     const { store, files, reads } = fakeStore();

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-// The photo atlas: the *render tier* of the cloud photo layout (see
-// `docs/design/photo-atlas.md`).
+// The photo atlas: the *render tier* of the cloud photo layout.
 //
 // One file per photo is a lovely layout to browse and a hostile one to sync:
 // a 300-contact book is ~840 files, and asking a cloud drive for them all on
@@ -30,6 +29,14 @@
 //   - A missing, stale, or corrupt tile is therefore never an error: it
 //     degrades to a lazy read of that photo's archival file. The avatar is
 //     never broken, only occasionally slower.
+//
+// Immutability has one cost, and it is the usual log-structured one: deleting or
+// re-cropping a photo leaves a tile nothing reads inside a pack that is never
+// rewritten. Two mechanisms clear it, both driven from the save path and both
+// expressed here as pure set arithmetic — {@link deadPacks} drops a pack once
+// nothing in it is live, and {@link sparsePacks} re-files the survivors of a
+// pack that has gone mostly cold, which supersedes the rest of it and hands it
+// to the first mechanism.
 //
 // This module is the pure half — paths, the index shape, building and parsing a
 // pack, and deriving the wanted/dead sets — so it is node-testable end to end.
@@ -324,26 +331,129 @@ export function staleTiles(
   return out;
 }
 
-/** Packs that hold nothing any surviving contact still wants — every tile in
- *  them names a gallery entry the document no longer has.
+/** Whether one of a pack's tiles is *the* tile a reader would use: its gallery
+ *  entry still exists, and no later pack has superseded it. This is the unit of
+ *  liveness the prune and the rebuild both count.
  *
- *  Deliberately conservative: a pack keeps its place as long as *one* of its
- *  tiles is still live, so a superseded tile only costs a few KB until a
- *  rebuild. And "live" is judged from the document's gallery entries alone —
- *  never from which bytes this device happens to hold — so a device that opened
- *  the book without its photos can't prune anything. */
+ *  Note what it does *not* consult: which bytes this device happens to hold.
+ *  Liveness comes from the document's gallery entries and the packs' own
+ *  indexes, so a device that opened the book without its photos computes the
+ *  same answer as the one that took them. */
+function isLiveTile(
+  pack: AtlasPack,
+  hash: string,
+  tile: AtlasTile,
+  live: ReadonlySet<string>,
+  current: ReadonlyMap<string, { hash: string; path: string }>,
+): boolean {
+  const key = tileKey(tile.contactId, tile.entryId);
+  if (!live.has(key)) return false;
+  const winner = current.get(key);
+  return winner?.path === pack.path && winner.hash === hash;
+}
+
+/** How much of each pack is still worth keeping: the share of its tiles that
+ *  are live (see {@link isLiveTile}). Tiles are near-uniform in size — one
+ *  288 px JPEG each — so counting them is a good enough stand-in for bytes, and
+ *  it needs nothing the pack indexes don't already carry. */
+export function packLiveness(
+  entries: readonly GalleryEntry[],
+  packs: readonly AtlasPack[],
+): Map<string, { live: number; total: number; fraction: number }> {
+  const live = new Set(entries.map((e) => tileKey(e.contactId, e.entryId)));
+  const current = currentTiles(packs);
+  const out = new Map<
+    string,
+    { live: number; total: number; fraction: number }
+  >();
+  for (const pack of packs) {
+    const tiles = Object.entries(pack.index.tiles);
+    const alive = tiles.filter(([hash, tile]) =>
+      isLiveTile(pack, hash, tile, live, current),
+    ).length;
+    out.set(pack.path, {
+      live: alive,
+      total: tiles.length,
+      fraction: tiles.length === 0 ? 0 : alive / tiles.length,
+    });
+  }
+  return out;
+}
+
+/** Packs nothing would read any more: every tile in them either names a gallery
+ *  entry the document no longer has, or has been superseded by a later pack's
+ *  tile for the same entry.
+ *
+ *  A pack keeps its place while *one* of its tiles is still the live one, so
+ *  this only ever removes whole packs that have gone completely cold — the
+ *  partially-superseded ones are the rebuild's business ({@link sparsePacks}). */
 export function deadPacks(
   entries: readonly GalleryEntry[],
   packs: readonly AtlasPack[],
 ): string[] {
-  const live = new Set(entries.map((e) => tileKey(e.contactId, e.entryId)));
+  const liveness = packLiveness(entries, packs);
   return packs
-    .filter((pack) => {
-      const tiles = Object.values(pack.index.tiles);
-      if (tiles.length === 0) return true;
-      return !tiles.some((t) => live.has(tileKey(t.contactId, t.entryId)));
-    })
+    .filter((pack) => (liveness.get(pack.path)?.live ?? 0) === 0)
     .map((pack) => pack.path);
+}
+
+/** Rebuild a pack once this share of its tiles has gone cold. Half is a
+ *  deliberately lazy threshold: a rebuild costs an upload and a delete, and a
+ *  superseded tile costs ~15 KB nobody ever reads, so there is no hurry. */
+export const COMPACT_BELOW = 0.5;
+
+/** Packs worth rebuilding, and the crops to rebuild them from.
+ *
+ *  A pack is never rewritten in place — it is immutable, which is what makes it
+ *  collision-proof. "Compaction" is therefore just *re-filing* the live tiles of
+ *  a mostly-cold pack into a fresh one: that supersedes every tile the old pack
+ *  held, which makes it dead, and {@link deadPacks} then removes it on the same
+ *  save. So the whole rebuild is expressed as extra work for the existing write
+ *  path, and nothing has to download a pack to repack it.
+ *
+ *  Two rules keep it from ever being a net loss:
+ *
+ *    - **Only a pack this device can wholly replace.** Every one of its live
+ *      tiles must have an inline crop here to re-bake from. Re-filing only some
+ *      of them would leave the rest live, so the old pack would survive and the
+ *      new bytes would be pure addition. A device that hydrated tiles rather
+ *      than crops therefore compacts nothing at all.
+ *    - **Only a pack that has actually gone cold**, below
+ *      {@link COMPACT_BELOW}. */
+export function sparsePacks(
+  entries: readonly GalleryEntry[],
+  inline: readonly InlineCrop[],
+  packs: readonly AtlasPack[],
+): { paths: string[]; refile: InlineCrop[] } {
+  const live = new Set(entries.map((e) => tileKey(e.contactId, e.entryId)));
+  const current = currentTiles(packs);
+  const byKey = new Map(
+    inline.map((c) => [tileKey(c.contactId, c.entryId), c] as const),
+  );
+  const liveness = packLiveness(entries, packs);
+  const paths: string[] = [];
+  const refile: InlineCrop[] = [];
+
+  for (const pack of packs) {
+    const stats = liveness.get(pack.path);
+    // A pack with nothing live is the prune's job, not the rebuild's.
+    if (!stats || stats.live === 0 || stats.fraction >= COMPACT_BELOW) continue;
+    const crops: InlineCrop[] = [];
+    let replaceable = true;
+    for (const [hash, tile] of Object.entries(pack.index.tiles)) {
+      if (!isLiveTile(pack, hash, tile, live, current)) continue;
+      const crop = byKey.get(tileKey(tile.contactId, tile.entryId));
+      if (!crop) {
+        replaceable = false;
+        break;
+      }
+      crops.push(crop);
+    }
+    if (!replaceable) continue;
+    paths.push(pack.path);
+    refile.push(...crops);
+  }
+  return { paths, refile };
 }
 
 /** Split tiles into packs of at most {@link PACK_TARGET_BYTES}, so one pack is
