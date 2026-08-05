@@ -57,6 +57,29 @@
 // Encrypted documents skip this layer entirely (they keep photos inside the
 // AES-GCM envelope rather than leak plaintext image files onto the drive), so
 // the wrapper is composed only for the plaintext cloud path in `useSyncEngine`.
+//
+// ## Tiering (the `tiered` option)
+//
+// Filing one image per file is right for a *local folder* — a browsable tree is
+// that backend's whole point, and a directory on your own disk has no rate
+// limit. It is wrong for a cloud drive, where reading ~840 files on open is
+// what provokes the throttling in the first place. So a cloud backend passes
+// `tiered`, which splits what this module reads into two tiers:
+//
+//   - **Render tier** — every crop, downscaled to a 288 px tile and batched
+//     into a few ZIP packs (`atlas.ts`, `atlasStore.ts`). Read on open, in a
+//     handful of requests, and hung on `photoTile`. It is derived and
+//     disposable, so it is never written back over an archival file and never
+//     enters the synced document.
+//   - **Archival tier** — the files this module has always written, unchanged.
+//     The crop is now only read when the atlas didn't cover it, and the kept
+//     original is not read on open at all: `photoSource.ts` fetches one when a
+//     lightbox or the cropper actually asks.
+//
+// Everything the archival tier does — the safety rules above, the deterministic
+// names, the reconcile, the prune — is untouched by this. The atlas is purely
+// additive: if every pack failed to read, the tiered path would simply fall
+// back to reading crops the way it always did.
 
 import {
   bytesToDataUrl,
@@ -67,6 +90,8 @@ import {
   type StorageAdapter,
 } from "@niclaslindstedt/oss-framework/storage";
 
+import { isAtlasPath, type AtlasInput } from "./atlas.ts";
+import { applyTiles, createAtlas } from "./atlasStore.ts";
 import { MEDIA_CONCURRENCY, mapLimit } from "./cloudRetry.ts";
 import { logStore } from "./log.ts";
 import { parsePhotoPath } from "./photo.ts";
@@ -132,6 +157,7 @@ type PhotoEntry = {
   id: string;
   photo?: string | null;
   photoSource?: string | null;
+  photoTile?: string | null;
   photoPath?: string | null;
   photoSourcePath?: string | null;
 };
@@ -237,10 +263,15 @@ export function withExternalPhotos(
   inner: StorageAdapter,
   photos: PhotoStore,
   onPhotosNeedResave?: () => void,
+  options: { tiered?: boolean } = {},
 ): StorageAdapter {
   // Paths this session has already written, keyed to the source fingerprint, so
   // a re-crop (same original) or a debounced re-save doesn't re-upload.
   const written = new Map<string, string>();
+  // The render tier, on the backends that want it (see the module note). Held
+  // across the adapter's life so a save reuses the pack indexes the load read.
+  const tiered = options.tiered === true;
+  const atlas = tiered ? createAtlas(photos) : null;
 
   // Save side: write each contact's images to their files and strip them from
   // the outgoing JSON. Returns the stripped text, the set of paths the document
@@ -250,17 +281,21 @@ export function withExternalPhotos(
     text: string;
     desired: Set<string>;
     complete: boolean;
+    atlas: AtlasInput;
   }> {
     const desired = new Set<string>();
+    // Collected in this same walk rather than by re-parsing the document, which
+    // for a book full of inline photos is megabytes of work.
+    const atlasInput: AtlasInput = { entries: [], inline: [] };
     let doc: PhotoDoc;
     try {
       doc = JSON.parse(text) as PhotoDoc;
     } catch {
       // Nothing was understood, so nothing may be judged an orphan.
-      return { text, desired, complete: false };
+      return { text, desired, complete: false, atlas: atlasInput };
     }
     const contacts = Array.isArray(doc.contacts) ? doc.contacts : null;
-    if (!contacts) return { text, desired, complete: false };
+    if (!contacts) return { text, desired, complete: false, atlas: atlasInput };
     let complete = true;
 
     for (const c of contacts) {
@@ -268,6 +303,16 @@ export function withExternalPhotos(
       for (let i = 0; i < gallery.length; i += 1) {
         const entry = gallery[i]!;
         const index = i + 1;
+        // Note the entry before the slots below strip its bytes: every entry
+        // keeps its pack alive, and one holding a crop can have a tile baked.
+        atlasInput.entries.push({ contactId: c.id, entryId: entry.id });
+        if (entry.photo) {
+          atlasInput.inline.push({
+            contactId: c.id,
+            entryId: entry.id,
+            dataUrl: entry.photo,
+          });
+        }
         for (const slot of SLOTS) {
           const inline = entry[slot.data];
           if (inline) {
@@ -306,7 +351,7 @@ export function withExternalPhotos(
         }
       }
     }
-    return { text: JSON.stringify(doc), desired, complete };
+    return { text: JSON.stringify(doc), desired, complete, atlas: atlasInput };
   }
 
   // Remove photo files no surviving contact references. Best-effort and only
@@ -328,7 +373,10 @@ export function withExternalPhotos(
       log.warn(`could not list photos to prune (${errMsg(err)})`);
       return;
     }
-    const orphans = existing.filter((p) => !desired.has(p));
+    // Atlas packs are the render tier's business, not the archival tier's — no
+    // contact ever "wants" one by path, so they would look like orphans to
+    // every save. `atlasStore.ts` owns their lifecycle.
+    const orphans = existing.filter((p) => !isAtlasPath(p) && !desired.has(p));
     if (orphans.length === 0) return;
     log.info(`pruning ${orphans.length} orphaned photo file(s)`);
     await mapLimit(orphans, MEDIA_CONCURRENCY, (p) =>
@@ -374,7 +422,9 @@ export function withExternalPhotos(
       }
     }
 
-    const unreferenced = existing.filter((p) => !referenced.has(p));
+    const unreferenced = existing.filter(
+      (p) => !isAtlasPath(p) && !referenced.has(p),
+    );
     if (unreferenced.length === 0) return false;
     // Log the shape of the reconcile so the Developer → Logs tab can show why a
     // photo did (or didn't) reconnect — the per-file lines below name the
@@ -456,15 +506,21 @@ export function withExternalPhotos(
   // bytes (see the `missing` count in `load`).
   async function rehydrate(
     text: string,
-  ): Promise<{ text: string; missing: number }> {
+  ): Promise<{ text: string; missing: number; atlasGap: boolean }> {
     let doc: PhotoDoc;
     try {
       doc = JSON.parse(text) as PhotoDoc;
     } catch {
-      return { text, missing: 0 };
+      return { text, missing: 0, atlasGap: false };
     }
     const contacts = Array.isArray(doc.contacts) ? doc.contacts : null;
-    if (!contacts) return { text, missing: 0 };
+    if (!contacts) return { text, missing: 0, atlasGap: false };
+
+    // The render tier first: one listing plus a handful of pack downloads gives
+    // every contact a face. Anything it covers needs no archival read at all,
+    // which is where the request saving comes from.
+    let applied = 0;
+    if (atlas) applied = applyTiles(doc, await atlas.read());
 
     // Flatten to one job per filed image so the whole load — not each contact —
     // is what gets rate-limited.
@@ -472,14 +528,26 @@ export function withExternalPhotos(
     for (const c of contacts) {
       for (const entry of c.photos ?? []) {
         for (const slot of SLOTS) {
+          // On a tiered backend the kept original is never read on open — it is
+          // fetched on demand when a lightbox or the cropper asks for it (see
+          // `photoSource.ts`), which is most of the cold-start traffic gone.
+          if (tiered && slot.data === "photoSource") continue;
+          // A crop the atlas already covered needs no archival read either.
+          if (slot.data === "photo" && entry.photoTile) continue;
           const path = entry[slot.path];
           if (path && !entry[slot.data]) jobs.push({ entry, slot, path });
         }
       }
     }
-    if (jobs.length === 0) return { text, missing: 0 };
+    if (jobs.length === 0) {
+      return {
+        text: applied > 0 ? JSON.stringify(doc) : text,
+        missing: 0,
+        atlasGap: atlasGap(contacts),
+      };
+    }
 
-    let changed = false;
+    let changed = applied > 0;
     let missing = 0;
     await mapLimit(jobs, MEDIA_CONCURRENCY, async ({ entry, slot, path }) => {
       try {
@@ -505,7 +573,27 @@ export function withExternalPhotos(
           "the loaded copy is incomplete",
       );
     }
-    return { text: changed ? JSON.stringify(doc) : text, missing };
+    return {
+      text: changed ? JSON.stringify(doc) : text,
+      missing,
+      atlasGap: atlasGap(contacts),
+    };
+  }
+
+  /** Whether the render tier is missing a tile for a photo this copy is now
+   *  holding the crop of — the "the atlas hasn't caught up with this book yet"
+   *  signal.
+   *
+   *  Tiles are only ever *written* on save, so without this a device that
+   *  adopted a cloud copy and never edited it would never build the atlas, and
+   *  every future open would keep paying for the archival reads. Asking for one
+   *  sweep converges it: the save files the tiles, and the next open reads them
+   *  instead. Untiered backends never report a gap. */
+  function atlasGap(contacts: PhotoContact[]): boolean {
+    if (!tiered) return false;
+    return contacts.some((c) =>
+      (c.photos ?? []).some((entry) => entry.photo && !entry.photoTile),
+    );
   }
 
   return {
@@ -528,16 +616,31 @@ export function withExternalPhotos(
       } catch {
         stale = false;
       }
-      if (onPhotosNeedResave && (inline || changed || stale)) {
+      const hydrated = await rehydrate(text);
+      // The same one-time sweep also builds the render tier for a book that
+      // predates it (see `atlasGap`) — tiles are only ever written on save, so
+      // without a nudge a copy nobody edits would never get an atlas.
+      if (
+        onPhotosNeedResave &&
+        (inline || changed || stale || hydrated.atlasGap)
+      ) {
         onPhotosNeedResave();
       }
-      const hydrated = await rehydrate(text);
       return { ...snap, text: hydrated.text };
     },
     async save(text, baseRevision) {
-      const { text: stripped, desired, complete } = await externalise(text);
+      const {
+        text: stripped,
+        desired,
+        complete,
+        atlas: atlasInput,
+      } = await externalise(text);
       const snap = await inner.save(stripped, baseRevision);
       await prune(desired, complete);
+      // The render tier last, and best-effort: the archival files are already
+      // committed, so a pack that won't build or won't upload costs a few
+      // contacts a lazy fetch on the next device and nothing more.
+      if (atlas) await atlas.sync(atlasInput);
       return snap;
     },
   };

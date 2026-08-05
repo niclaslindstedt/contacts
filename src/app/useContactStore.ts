@@ -74,6 +74,7 @@ function stripInlineMedia(doc: AppData): AppData {
           ...p,
           photo: undefined,
           photoSource: undefined,
+          photoTile: undefined,
         }));
       }
       if (next.attachments) {

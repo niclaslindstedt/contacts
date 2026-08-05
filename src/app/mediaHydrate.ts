@@ -37,7 +37,12 @@ export type MediaSource = {
     photos?: ReadonlyArray<
       Pick<
         ContactPhoto,
-        "id" | "photo" | "photoSource" | "photoPath" | "photoSourcePath"
+        | "id"
+        | "photo"
+        | "photoSource"
+        | "photoTile"
+        | "photoPath"
+        | "photoSourcePath"
       >
     >;
     attachments?: ReadonlyArray<Pick<Attachment, "id" | "data" | "dataPath">>;
@@ -51,11 +56,12 @@ function fillPhoto(
   local: ContactPhoto,
   remote: Pick<
     ContactPhoto,
-    "photo" | "photoSource" | "photoPath" | "photoSourcePath"
+    "photo" | "photoSource" | "photoTile" | "photoPath" | "photoSourcePath"
   >,
 ): ContactPhoto {
   const patch: Partial<ContactPhoto> = {};
   if (!local.photo && remote.photo) patch.photo = remote.photo;
+  if (!local.photoTile && remote.photoTile) patch.photoTile = remote.photoTile;
   if (!local.photoSource && remote.photoSource) {
     patch.photoSource = remote.photoSource;
   }

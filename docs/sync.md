@@ -116,6 +116,39 @@ on the drive to render offline; the drive files are written on save and re-read
 when a fresh device loads the document. If a file write can't complete, the
 photo simply stays inline in the document that save — it is never lost.
 
+### The photo atlas
+
+Reading those files back one at a time is fine for a handful of photos and
+punishing for a few hundred — it is exactly the burst of requests a cloud drive
+answers by throttling. So on **Dropbox and Google Drive** the app also keeps a
+small **photo atlas**: every contact's picture, shrunk to avatar size, bundled
+into a few `.zip` packs under `photos/atlas/`. Opening the address book on a new
+device reads those handful of packs instead of hundreds of image files, and the
+faces are simply there.
+
+The atlas holds only what the app needs to _draw_ a contact. The full-size
+originals stay exactly where they were — one real, previewable JPEG per photo —
+and are fetched **only when you actually want one**: when you tap a photo to
+view it full-screen, or re-open the cropper to re-frame it. Two things follow:
+
+- Opening a big address book on a fresh device is dramatically quicker, and far
+  less likely to run into the drive's rate limits.
+- The first time you tap a photo on that device, there is a brief moment while
+  the original is fetched — the picture is already on screen at avatar quality,
+  and sharpens when the original lands. If you are offline, you keep the
+  avatar-sized copy.
+
+The atlas is a **convenience copy, never the only copy**. Every picture in it is
+also filed as a full-resolution image, so a pack that can't be written, read, or
+understood costs a little speed and nothing else — the app falls back to
+fetching the original files. It is also kept up to date automatically: packs
+nothing points at any more are cleaned up, and a photo you re-crop gets a fresh
+tile on the next save.
+
+The **local folder** backend has no atlas. A folder on your own disk has no rate
+limit to run into, and a browsable tree of real image files is the whole point
+of that backend — so it keeps filing and reading every photo individually.
+
 ### When the drive pushes back
 
 An address book with a lot of photographed contacts means a lot of image files,

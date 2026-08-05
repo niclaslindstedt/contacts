@@ -1,11 +1,12 @@
 # Design note — the photo atlas
 
-> **Status: proposal.** Nothing here is shipped. This is a design sketch for
-> replacing the one-file-per-photo cloud layout with a two-tier scheme: a small
-> **atlas** of downscaled crops that every device fetches on open, and
-> full-resolution originals that are fetched only when something actually needs
-> them. Written up so the trade-offs can be argued about before any code moves.
-> The behaviour users have today is described in [sync](../sync.md#photo-files).
+> **Status: phases 1–3 implemented; phase 4 (compaction) outstanding.** This is
+> the design record for the two-tier cloud photo layout — a small **atlas** of
+> downscaled crops that every device fetches on open, and full-resolution
+> originals fetched only when something actually needs them. The code lives in
+> `atlas.ts`, `atlasTile.ts`, `atlasStore.ts`, `photoSource.ts`, and the
+> `tiered` option on `withExternalPhotos`. The user-facing description is in
+> [sync](../sync.md#the-photo-atlas).
 
 ## The problem
 
@@ -78,42 +79,32 @@ Every contact's display crop, downscaled to **288 px** (96 CSS px × 3 DPR —
 exactly enough for the largest avatar on the densest phone), batched into a
 handful of files under `photos/atlas/`.
 
-### Sheet or pack?
+### A ZIP pack
 
-The crops are uniform squares of identical dimensions, which is the one case
-where a literal sprite sheet is genuinely easy — no rect packing, the index is
-an ordinal.
+A pack is a **ZIP of 288 px JPEGs named by content hash**, built with the
+framework's `createZip` / `readZip` (already used by `backup.ts`). JPEGs do not
+deflate, so the entries are stored — a pack is a concatenation plus a central
+directory.
 
-**A. A sprite sheet** — one big JPEG, tiles in a grid, sliced with
-`createImageBitmap(blob, sx, sy, sw, sh)`.
+- No canvas, no slicing, no decode ceiling, no re-encoding of neighbours.
+- Incremental: new photos go into a new small pack rather than rewriting a
+  shared artifact.
+- Content-addressed, so packs are immutable and two devices can never collide.
+- The entries are ordinary JPEGs — unzip and you have previewable files.
 
-- One decode paints the whole list.
-- Shared Huffman tables across tiles buy maybe 10–20% over separate JPEGs.
-- **It is a contact sheet you can look at** — open `atlas/1.jpg` in the drive
-  and see everybody. That fits this app's photos-are-real-files philosophy.
-- Bounded by canvas area: iOS Safari caps at 16.7 Mpx, so a sheet is at most
-  ~200 tiles at 288 px (14×14 = 196, a 4032×4032 image). Three sheets for the
-  book above.
-- Updating one photo means re-encoding a sheet of 196.
+**Considered and rejected: a literal sprite sheet.** The crops are uniform
+squares, so a grid needs no rect packing, one decode paints the whole list, and
+`atlas/1.jpg` would be a contact sheet you could open in the drive and see
+everybody — genuinely appealing for an app built on photos-as-real-files. But
+it lands at the same ~3 requests and ~6 MB, so it buys no performance, and it
+costs: canvas area caps (iOS Safari's 16.7 Mpx ceiling means ~196 tiles per
+sheet), slicing code on every read, and a re-encode of 196 neighbours every
+time one photo changes. Not worth it for a tier that is meant to be cheap to
+update and boring to maintain.
 
-**B. A pack** — a ZIP of 288 px JPEGs named by content hash (the framework
-already ships `createZip`/`readZip`, and `backup.ts` uses them).
-
-- No canvas, no slicing, no decode ceiling, no re-encode of neighbours.
-- Incremental: a new photo can go into a new small pack.
-- Content-addressable, so packs are immutable and never collide.
-- Individual entries stay previewable if you unzip.
-
-**Both land at ~3 requests and ~6 MB — the choice is ergonomics, not
-performance.** Recommendation: **B (packs)**, because incremental updates
-matter more day-to-day than the contact-sheet party trick, and because
-immutability makes the concurrency story trivial (below). If the browsable
-contact sheet is worth more to you than incremental writes, A is defensible and
-the rest of this design is unchanged.
-
-Either way the crop is **re-encoded down to 288 px** for this tier. That is
-lossy, and it is fine — the tier is a derived render cache, and the
-full-resolution bytes live in the archival tier untouched.
+The crop is **re-encoded down to 288 px** for this tier. That is lossy, and it
+is fine — the tier is a derived render cache, and the full-resolution bytes
+live in the archival tier untouched.
 
 ### The atlas is derived and disposable
 
@@ -121,8 +112,10 @@ This is the property that makes everything else easy. A pack holds nothing that
 cannot be regenerated from the archival tier. So:
 
 - **It stays out of the document.** Each pack carries its own `index.json`
-  (`ordinal / hash → {contactId, entryId}`), so the atlas is self-describing.
-  The document does not gain a field, and a rebuild touches no contact record.
+  (`hash → {contactId, entryId, src}`, where `src` fingerprints the crop the
+  tile was baked from), so the atlas is self-describing and a device can tell a
+  current tile from one that predates a re-crop without downloading it. The
+  synced document gains no field, and a rebuild touches no contact record.
 - **A missing, stale, or corrupt tile is not an error.** It degrades to a
   lazy fetch of that photo's archival file — the same path a photo added on
   another device takes before the next atlas write. The avatar is never broken,
@@ -142,21 +135,33 @@ Any photo entry with no tile in any pack falls through to the archival tier.
 
 ### Write path
 
+The render tier is written **after** the document save commits, and after the
+archival prune — last, because it is the only step nothing depends on.
+
 ```mermaid
 flowchart TD
-  A[save] --> B{crop changed<br/>or new?}
-  B -- no --> C[nothing to do]
-  B -- yes --> D[re-encode to 288 px, hash]
-  D --> E[add to the pending pack]
-  E --> F[seal + PUT photos/atlas/p-&lt;id&gt;.zip]
-  F -- ok --> G[save the document]
-  F -- failed --> H[log it — the tile is simply absent,<br/>readers fall back to the archival file]
-  H --> G
-  G -- committed --> I[prune packs whose tiles are all dead]
+  A[save] --> B[file the archival JPEGs, strip them from the document]
+  B --> C[save the document]
+  C -- committed --> D[prune orphaned archival files]
+  D --> E{crops whose filed tile<br/>is missing or outdated?}
+  E -- no --> F[done]
+  E -- yes --> G[re-encode each to 288 px, hash]
+  G --> H[batch into packs of ≤ 4 MB]
+  H --> I[PUT photos/atlas/&lt;seq&gt;-&lt;id&gt;.zip]
+  I -- ok --> J[drop packs whose tiles are all dead]
+  I -- failed --> K[log it — the tile is simply absent,<br/>readers fall back to the archival file]
+  K --> J
 ```
 
-A failed atlas write is a non-event: no photo is at risk, because the atlas
-never holds the only copy of anything.
+A failed atlas write is a non-event: the archival files are already committed,
+so no photo is at risk — the atlas never holds the only copy of anything.
+
+One wrinkle the ordering creates: tiles are only ever written on **save**, so a
+device that adopts a cloud copy and never edits it would never build an atlas,
+and would keep paying for archival reads on every open. So a load that finds
+crops with no tile asks for the same one-time sweep save the pre-file-layout
+migration already uses (`onPhotosNeedResave`). It converges in one pass — that
+save files the tiles, and the next open reads them instead.
 
 ## The archival tier
 
@@ -293,23 +298,31 @@ large win in the whole note.
 
 ## Phases
 
-| Phase | Scope                                                                                                                       | Rough size         |
-| ----- | --------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| 1     | **Lazy sources.** Skip `photoSource` in the eager rehydrate; fetch on lightbox/cropper open; a "download originals" action. | ~200 lines + tests |
-| 2     | `atlasPack.ts` (build/parse, 288 px re-encode, hash, index) + tests. Read path behind a flag.                               | ~350 lines + tests |
-| 3     | Atlas write path, prune, Developer toggle, docs + changeset.                                                                | ~250 lines         |
-| 4     | Compaction, and stop eagerly reading loose crops.                                                                           | ~150 lines         |
+| Phase | Scope                                                                                             | Status                  |
+| ----- | ------------------------------------------------------------------------------------------------- | ----------------------- |
+| 1     | **Lazy sources.** Skip `photoSource` in the eager rehydrate; fetch on lightbox / cropper open.    | done (`photoSource.ts`) |
+| 2     | Pack format — build/parse, 288 px re-encode, hash, index — and the read path.                     | done (`atlas.ts`)       |
+| 3     | Write path, prune, the one-time sweep that builds an atlas for an existing book, docs.            | done (`atlasStore.ts`)  |
+| 4     | Compaction: rebuild a pack whose tiles are mostly superseded rather than only dropping dead ones. | outstanding             |
 
-Files that move: `src/app/photoStore.ts` (split — the eager rehydrate learns
-about tiers), `src/app/mediaHydrate.ts` (tile-aware merge),
-`src/app/mediaCache.ts` (a `tile` media kind), `src/app/ContactIdentity.tsx` and
-the cropper entry points (lazy source fetch), `src/app/useSyncEngine.ts`
-(composition only), `docs/sync.md`, `docs/features/photo-files.md`.
+What phase 4 is for: today a pack survives while _any_ one of its tiles is still
+live, so a book that is re-cropped repeatedly accumulates superseded tiles.
+They're ~15 KB each and never read, so it is a slow leak rather than a problem —
+but the rebuild is the thing that closes it. It is cheap to add on top of what's
+here: a device holding the crops can regenerate packs from local bytes without
+downloading anything.
 
-Tests, pure and node-run per the repo's conventions (`tests/atlas_pack_test.ts`,
-`tests/atlas_index_test.ts`, `tests/atlas_gc_test.ts`): pack round-trip, index
-parse/format, tile-to-entry resolution, live-set and compaction selection, and
-the fallback rule (an entry with no tile resolves to its archival path).
+Where the code landed: `atlas.ts` (format and decisions, pure), `atlasTile.ts`
+(the canvas downscale, browser-only), `atlasStore.ts` (transport),
+`photoSource.ts` (on-demand originals), the `tiered` option on
+`withExternalPhotos` (`photoStore.ts`), `photoTile` on `ContactPhoto` with
+`photoSrc()` as the single read path (`contactPhotos.ts`), a `photoTile` kind in
+the on-device media cache, and tile-stripping in `serializeDoc`.
+
+Tests: `tests/atlas_test.ts` (hash stability, pack round-trip and determinism,
+path parsing, newest-tile-wins, the stale and dead sets, batching, tile
+application) and the `tiered` group in `tests/photoStore_test.ts` (originals not
+read on open, untiered backends unchanged, atlas packs never pruned as orphans).
 
 ## Open questions
 
@@ -317,9 +330,8 @@ the fallback rule (an entry with no tile resolves to its archival path).
    smaller and very slightly soft on the densest phones at hero size; 384 buys
    headroom for a future larger avatar. Worth eyeballing on a real device
    before committing.
-2. **Sheet or pack** for the render tier — performance is a wash, so it comes
-   down to whether a browsable contact sheet in the drive is worth losing
-   incremental writes.
+2. ~~**Sheet or pack** for the render tier.~~ **Decided: ZIP packs**, for the
+   incremental writes and the trivial concurrency story.
 3. **Does the 512 px crop need to sync at all?** Once the atlas holds a 288 px
    tile and the archival tier holds the source, the 512 crop is re-bakeable
    locally from the source plus `photoTransform`. Dropping it would remove the

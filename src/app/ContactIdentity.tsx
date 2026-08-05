@@ -8,6 +8,7 @@ import { Avatar } from "./Avatar.tsx";
 import { ContactAppearancePopover } from "./ContactAppearancePopover.tsx";
 import { activePhotoIndex, hasPhoto, photoList } from "./contactPhotos.ts";
 import { useT } from "./i18n/index.ts";
+import { bestSource, prefetchGallerySources } from "./photoSource.ts";
 import type { Contact } from "./types.ts";
 import { displayName, splitFullName } from "./types.ts";
 
@@ -34,9 +35,12 @@ export function ContactIdentity({
   const [viewing, setViewing] = useState(false);
   const name = displayName(contact);
   // Each photo shows its original when kept (crisper full-screen), else the
-  // baked crop — the srcs the viewer pages through.
+  // baked crop, else the atlas tile — the srcs the viewer pages through. On a
+  // device that hasn't got the originals they are fetched when the viewer opens
+  // (see `photoSource.ts`) and swapped in as they land, so the first paint is
+  // whatever is already here rather than an empty frame.
   const viewerSrcs = photoList(contact)
-    .map((p) => p.photoSource || p.photo)
+    .map((p) => bestSource(p))
     .filter((src): src is string => Boolean(src));
   // The company doubles as the display name when a card has no first/last name,
   // so only show it as a subtitle when it is genuinely a second line.
@@ -53,7 +57,10 @@ export function ContactIdentity({
       ) : hasPhoto(contact) ? (
         <button
           type="button"
-          onClick={() => setViewing(true)}
+          onClick={() => {
+            prefetchGallerySources(contact.id, photoList(contact));
+            setViewing(true);
+          }}
           aria-label={t("contact.viewPhoto")}
           title={t("contact.viewPhoto")}
           className="shrink-0 cursor-zoom-in rounded-full hover:opacity-90"

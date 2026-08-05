@@ -35,6 +35,27 @@ export function hasPhoto(c: WithPhotos): boolean {
   return activePhoto(c) !== undefined;
 }
 
+/** The bytes to *render* one gallery entry with: the full-resolution display
+ *  crop when this device holds it, else the atlas tile (see
+ *  `ContactPhoto.photoTile`), else nothing.
+ *
+ *  Every place that draws a photo goes through here, so a device that opened
+ *  the address book from a drive — and therefore has tiles rather than crops —
+ *  shows its pictures without any caller having to know the render tier exists.
+ *  The tile is a 288 px downscale, which is exactly the largest an avatar is
+ *  ever drawn, so at avatar size the two are indistinguishable. */
+export function photoSrc(
+  entry: Pick<ContactPhoto, "photo" | "photoTile"> | undefined,
+): string | null {
+  return entry?.photo ?? entry?.photoTile ?? null;
+}
+
+/** The card's face, as a renderable source — {@link photoSrc} of the
+ *  {@link activePhoto}. */
+export function activePhotoSrc(c: WithPhotos): string | null {
+  return photoSrc(activePhoto(c));
+}
+
 /** The currently-shown photo: the one `activePhotoId` names, or — when that's
  *  absent or stale — the first in the list, or undefined for an empty gallery.
  *  Every read of "the contact's photo" goes through here. */

@@ -14,7 +14,7 @@
 // (Blob + anchor click) is the framework's (`files` — `downloadText`).
 
 import { formatAddress, hasAddress } from "./address.ts";
-import { activePhoto } from "./contactPhotos.ts";
+import { activePhotoSrc } from "./contactPhotos.ts";
 import { phoneDialString } from "./format.ts";
 import { parseFlexDate } from "./importantDates.ts";
 import type { Contact } from "./types.ts";
@@ -117,7 +117,7 @@ export function contactToVCard(c: Contact): string {
   }
   if (c.notes?.trim()) lines.push(`NOTE:${vEscape(c.notes)}`);
   // The card's current face is the one photo a single-photo format can carry.
-  const photo = photoPayload(activePhoto(c)?.photo);
+  const photo = photoPayload(activePhotoSrc(c));
   if (photo) lines.push(`PHOTO;ENCODING=b;TYPE=${photo.type}:${photo.base64}`);
   lines.push("END:VCARD");
   return lines.map(fold).join("\r\n");

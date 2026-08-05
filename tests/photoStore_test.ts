@@ -5,6 +5,7 @@ import type { StorageAdapter } from "@niclaslindstedt/oss-framework/storage";
 
 import { MEDIA_CONCURRENCY } from "../src/app/cloudRetry.ts";
 import { photoPathFor, photoSourcePathFor } from "../src/app/photo.ts";
+import { atlasPackPath } from "../src/app/atlas.ts";
 import { withExternalPhotos, type PhotoStore } from "../src/app/photoStore.ts";
 
 // A one-pixel-ish JPEG stand-in: any decodable `image/jpeg` data URI will do.
@@ -21,10 +22,12 @@ function fakeStore(fail: { read?: Set<string>; write?: Set<string> } = {}): {
   store: PhotoStore;
   files: Map<string, Uint8Array>;
   removed: string[];
+  reads: string[];
   peakInFlight: () => number;
 } {
   const files = new Map<string, Uint8Array>();
   const removed: string[] = [];
+  const reads: string[] = [];
   let inFlight = 0;
   let peak = 0;
   const enter = async () => {
@@ -40,6 +43,7 @@ function fakeStore(fail: { read?: Set<string>; write?: Set<string> } = {}): {
     },
     async read(path) {
       await enter();
+      reads.push(path);
       if (fail.read?.has(path)) throw new TypeError("Load failed");
       return files.get(path) ?? null;
     },
@@ -53,7 +57,7 @@ function fakeStore(fail: { read?: Set<string>; write?: Set<string> } = {}): {
       files.delete(path);
     },
   };
-  return { store, files, removed, peakInFlight: () => peak };
+  return { store, files, removed, reads, peakInFlight: () => peak };
 }
 
 /** A minimal in-memory inner adapter: `save` keeps the last text, `load`
@@ -262,5 +266,84 @@ describe("withExternalPhotos — load", () => {
 
     expect(photosOf(snap!.text)[0]!.photoPath).toBe(ADA_PHOTO);
     expect(resaveAsked).toBe(true);
+  });
+});
+
+// The tiered (cloud) shape: the render tier covers the faces on open, and the
+// kept originals are left for `photoSource.ts` to fetch when something asks.
+// See `docs/design/photo-atlas.md`.
+describe("withExternalPhotos — tiered", () => {
+  it("does not read kept originals on open", async () => {
+    const { store, files, reads } = fakeStore();
+    files.set(ADA_PHOTO, new Uint8Array([1]));
+    files.set(ADA_SOURCE, new Uint8Array([2]));
+    const { adapter } = fakeInner(
+      docWith([
+        { id: "p1", photoPath: ADA_PHOTO, photoSourcePath: ADA_SOURCE },
+      ]),
+    );
+    const wrapped = withExternalPhotos(adapter, store, undefined, {
+      tiered: true,
+    });
+
+    const snap = await wrapped.load();
+
+    expect(reads).toContain(ADA_PHOTO);
+    expect(reads).not.toContain(ADA_SOURCE);
+    // The reference survives — that is what the on-demand fetch reads later.
+    expect(photosOf(snap!.text)[0]!.photoSourcePath).toBe(ADA_SOURCE);
+    expect(photosOf(snap!.text)[0]!.photoSource).toBeUndefined();
+  });
+
+  it("still reads them on an untiered backend", async () => {
+    // A picked local folder has no rate limit and browsability is its whole
+    // point, so it keeps filing and reading every image eagerly.
+    const { store, files, reads } = fakeStore();
+    files.set(ADA_PHOTO, new Uint8Array([1]));
+    files.set(ADA_SOURCE, new Uint8Array([2]));
+    const { adapter } = fakeInner(
+      docWith([
+        { id: "p1", photoPath: ADA_PHOTO, photoSourcePath: ADA_SOURCE },
+      ]),
+    );
+    const wrapped = withExternalPhotos(adapter, store);
+
+    await wrapped.load();
+
+    expect(reads).toContain(ADA_SOURCE);
+  });
+
+  it("skips the archival read for a crop the atlas already covered", async () => {
+    const { store, files, reads } = fakeStore();
+    files.set(ADA_PHOTO, new Uint8Array([1]));
+    const { adapter } = fakeInner(
+      docWith([{ id: "p1", photoPath: ADA_PHOTO, photoTile: "data:tile" }]),
+    );
+    const wrapped = withExternalPhotos(adapter, store, undefined, {
+      tiered: true,
+    });
+
+    await wrapped.load();
+
+    expect(reads).not.toContain(ADA_PHOTO);
+  });
+
+  it("never prunes an atlas pack as an orphaned photo", async () => {
+    // Packs live in the same `photos/` tree the archival prune sweeps, and no
+    // contact references one by path — so without the exclusion every save
+    // would delete the whole render tier.
+    const { store, files, removed } = fakeStore();
+    const pack = atlasPackPath(1, "abcdef0123456789");
+    files.set(pack, new Uint8Array([1]));
+    files.set("photos/orphan-of-nobody-9z9z-1.jpg", new Uint8Array([2]));
+    const { adapter } = fakeInner();
+    const wrapped = withExternalPhotos(adapter, store, undefined, {
+      tiered: true,
+    });
+
+    await wrapped.save(docWith([]), undefined);
+
+    expect(removed).toEqual(["photos/orphan-of-nobody-9z9z-1.jpg"]);
+    expect(files.has(pack)).toBe(true);
   });
 });

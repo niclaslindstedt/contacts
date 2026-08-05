@@ -14,7 +14,7 @@
 
 import { hasAddress } from "./address.ts";
 import { attachmentList } from "./attachments.ts";
-import { activePhoto } from "./contactPhotos.ts";
+import { activePhotoSrc } from "./contactPhotos.ts";
 import { toStoredPhone } from "./format.ts";
 import { parseDoc } from "./migrations.ts";
 import type { Attachment, Contact } from "./types.ts";
@@ -443,7 +443,7 @@ function fromContact(c: Contact): ImportedContact {
     notes: c.notes ?? undefined,
     // A single-photo interchange draft carries the card's current face; the
     // importer re-seats it as the sole gallery entry (see `applyImport`).
-    photo: activePhoto(c)?.photo ?? undefined,
+    photo: activePhotoSrc(c) ?? undefined,
     ...(attachmentList(c).length > 0 ? { attachments: attachmentList(c) } : {}),
     ...(c.ice ? { ice: true } : {}),
   };

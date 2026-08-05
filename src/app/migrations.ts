@@ -207,9 +207,35 @@ export function toAppData(doc: Versioned): AppData {
 }
 
 /** Serialize a document for the bytes at rest (localStorage and the cloud
- *  backends): stamp the latest version onto the version-free model. */
+ *  backends): stamp the latest version onto the version-free model.
+ *
+ *  Atlas tiles are dropped on the way out. A tile is a *derived* downscale of a
+ *  photo whose full-resolution copy is already at rest — in the drive's
+ *  archival file, and in the on-device media cache (`mediaCache.ts`) — so
+ *  writing it into the document too would spend the localStorage quota, and the
+ *  synced bytes, on a second copy of a picture nothing needs a second copy of.
+ *  The tiles are re-read from the atlas (or the cache) on the next open. */
 export function serializeDoc(data: AppData): string {
-  return JSON.stringify({ version: LATEST_VERSION, ...data });
+  return JSON.stringify({ version: LATEST_VERSION, ...stripTiles(data) });
+}
+
+/** The document without its derived atlas tiles. Returns the same object when
+ *  there are none, so the common path allocates nothing. */
+function stripTiles(data: AppData): AppData {
+  if (!data.contacts.some((c) => c.photos?.some((p) => p.photoTile))) {
+    return data;
+  }
+  return {
+    ...data,
+    contacts: data.contacts.map((c) =>
+      c.photos?.some((p) => p.photoTile)
+        ? {
+            ...c,
+            photos: c.photos.map(({ photoTile: _tile, ...rest }) => rest),
+          }
+        : c,
+    ),
+  };
 }
 
 /** Parse bytes from any backend into the app model, upgrading old shapes. */

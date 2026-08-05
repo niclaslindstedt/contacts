@@ -29,7 +29,9 @@ import {
   folderPhotoStore,
   gdrivePhotoStore,
   withExternalPhotos,
+  type PhotoStore,
 } from "./photoStore.ts";
+import { setPhotoSourceReader } from "./photoSource.ts";
 import {
   dropboxAttachmentStore,
   folderAttachmentStore,
@@ -412,6 +414,9 @@ export function useSyncEngine(
               cached,
               dropboxPhotoStore(dropboxAuth, DROPBOX_APP_KEY || undefined),
               () => setPhotoSweep(true),
+              // A cloud drive throttles a burst of reads, so it gets the render
+              // tier: a few atlas packs on open, originals on demand.
+              { tiered: true },
             ),
             dropboxAttachmentStore(dropboxAuth, DROPBOX_APP_KEY || undefined),
           );
@@ -431,8 +436,11 @@ export function useSyncEngine(
             logger: logStore.createLogger("encrypt"),
           })
         : withExternalAttachments(
-            withExternalPhotos(cached, gdrivePhotoStore(gdriveToken), () =>
-              setPhotoSweep(true),
+            withExternalPhotos(
+              cached,
+              gdrivePhotoStore(gdriveToken),
+              () => setPhotoSweep(true),
+              { tiered: true },
             ),
             gdriveAttachmentStore(gdriveToken),
           );
@@ -511,6 +519,54 @@ export function useSyncEngine(
     paused,
     markFolderPermissionLost,
   ]);
+
+  // The byte transport the *on-demand* original fetch drives. A tiered backend
+  // no longer downloads every photo's kept original on open (see
+  // `photoStore.ts`), so the lightbox and the cropper pull one when they
+  // actually need it — through the small registry in `photoSource.ts`, which is
+  // what this hands the reader to. Null while paused, encrypted, or
+  // disconnected; the screens then simply show whatever bytes they already hold.
+  const photoBytes = useMemo<PhotoStore | null>(() => {
+    if (paused || encrypted) return null;
+    if (backend === "dropbox" && dropboxTokens) {
+      return dropboxPhotoStore(
+        {
+          accessToken: dropboxTokens.accessToken,
+          refreshToken: dropboxTokens.refreshToken,
+          onAccessTokenRefreshed: (accessToken: string) => {
+            const next = { ...dropboxTokens, accessToken };
+            writeDropboxTokens(next);
+            setDropboxTokens(next);
+          },
+        },
+        DROPBOX_APP_KEY || undefined,
+      );
+    }
+    if (backend === "gdrive" && gdriveToken) {
+      return gdrivePhotoStore(gdriveToken);
+    }
+    if (backend === "folder" && folderHandle) {
+      return folderPhotoStore(folderHandle, markFolderPermissionLost);
+    }
+    return null;
+  }, [
+    backend,
+    dropboxTokens,
+    gdriveToken,
+    folderHandle,
+    encrypted,
+    paused,
+    markFolderPermissionLost,
+  ]);
+
+  const { hydrateMediaFrom } = store;
+  useEffect(() => {
+    setPhotoSourceReader(
+      photoBytes ? (path) => photoBytes.read(path) : null,
+      photoBytes ? hydrateMediaFrom : null,
+    );
+    return () => setPhotoSourceReader(null, null);
+  }, [photoBytes, hydrateMediaFrom]);
 
   // Complete a Dropbox OAuth redirect: trade the `?code=` for tokens, persist
   // them, and adopt the backend. Runs once on boot when a flow is mid-flight.
