@@ -60,7 +60,7 @@ import { SideMenuContent } from "./app/SideMenuContent.tsx";
 import { buildCatalog } from "./app/achievements.ts";
 import { useT } from "./app/i18n/index.ts";
 import { APP_LOOK } from "./app/look.ts";
-import { logStore } from "./app/log.ts";
+import { descendingLogStore, logStore } from "./app/log.ts";
 import { status } from "./output.ts";
 import { useAchievements } from "./app/useAchievements.ts";
 import { applyBackdropVars, useAppSettings } from "./app/useAppSettings.ts";
@@ -775,7 +775,11 @@ export function App() {
         onReload={sync.reload}
         onReconnect={sync.reconnect}
         onCheckConnection={sync.checkConnection}
-        logPanel={settings.devMode ? <LogViewer store={logStore} /> : undefined}
+        logPanel={
+          settings.devMode ? (
+            <LogViewer store={descendingLogStore} />
+          ) : undefined
+        }
         labels={{
           cloudSync: t("sync.cloudSync"),
           close: t("common.close"),
