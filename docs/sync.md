@@ -141,9 +141,14 @@ view it full-screen, or re-open the cropper to re-frame it. Two things follow:
 The atlas is a **convenience copy, never the only copy**. Every picture in it is
 also filed as a full-resolution image, so a pack that can't be written, read, or
 understood costs a little speed and nothing else — the app falls back to
-fetching the original files. It is also kept up to date automatically: packs
-nothing points at any more are cleaned up, and a photo you re-crop gets a fresh
-tile on the next save.
+fetching the original files.
+
+It also keeps itself tidy. A photo you re-crop gets a fresh tile on the next
+save, which leaves the old one sitting in its pack unread; once most of a pack
+has gone that way — through re-crops, or contacts you deleted — the app rewrites
+what's still wanted into a new pack and drops the old one. That happens during an
+ordinary save, from the pictures already on your device, so it costs no
+downloads and nothing to think about.
 
 The **local folder** backend has no atlas. A folder on your own disk has no rate
 limit to run into, and a browsable tree of real image files is the whole point

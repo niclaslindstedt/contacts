@@ -43,6 +43,13 @@ little speed and nothing else. The **local folder** backend has no atlas at all:
 a folder on your own disk has no rate limit, and a browsable tree of real image
 files is the whole point of it.
 
+The packs look after themselves. Deleting a contact or re-framing a photo leaves
+a picture in a pack that nothing reads any more; once most of a pack has gone
+that way the app quietly rewrites what's still wanted into a fresh one and drops
+the old, so the atlas keeps pace with your address book instead of growing
+alongside it. It happens on an ordinary save, from the pictures already on your
+device — nothing is re-downloaded to do it.
+
 ## When the drive is busy
 
 A big address book means a lot of image files, and a drive will push back if the

@@ -2,11 +2,17 @@
 // Moving the photo atlas over a backend: the transport half of `atlas.ts`.
 //
 // `atlas.ts` owns the format and the decisions (what a pack is, which tiles are
-// stale, which packs are dead); this module owns the round-trips — listing the
-// `photos/atlas/` tree, reading packs, baking and writing new ones, and
-// removing dead ones — over the same {@link PhotoStore} byte transport the
-// archival tier already drives, so it inherits the bounded concurrency and the
-// `Retry-After` handling in `cloudRetry.ts` for free.
+// stale, which packs have gone cold); this module owns the round-trips —
+// listing the `photos/atlas/` tree, reading packs, baking and writing new ones,
+// and removing the spent ones — over the same {@link PhotoStore} byte transport
+// the archival tier already drives, so it inherits the bounded concurrency and
+// the `Retry-After` handling in `cloudRetry.ts` for free.
+//
+// Note that a rebuild is not a special operation here. Packs are immutable, so
+// compacting one is just re-filing its survivors as if they were new tiles;
+// that supersedes everything the old pack held, and the same prune that clears
+// deleted photos then takes it. So `sync` has one write path, and the rebuild
+// is a handful of extra entries fed into it.
 //
 // Every operation here is **best-effort and non-fatal**. The atlas is a derived
 // render cache: a pack that won't read, won't write, or won't parse costs a few
@@ -31,6 +37,8 @@ import {
   isAtlasPath,
   nextSeq,
   readPack,
+  sparsePacks,
+  srcFingerprint,
   staleTiles,
   tileKey,
   type AtlasInput,
@@ -51,9 +59,10 @@ export type Atlas = {
    *  on a gallery entry. Empty when the backend has no atlas (or can't be
    *  read) — the caller then falls back to the archival tier. */
   read(): Promise<Map<string, string>>;
-  /** File tiles for any photo whose crop this device holds and the atlas is
-   *  missing or has an outdated copy of, then drop packs no surviving contact
-   *  wants. */
+  /** Bring the render tier back in step with the document: file tiles for any
+   *  photo whose crop this device holds and the atlas is missing or has an
+   *  outdated bake of, rebuild any pack that has gone mostly cold, and drop the
+   *  packs nothing would read any more. */
   sync(input: AtlasInput): Promise<void>;
 };
 
@@ -144,9 +153,34 @@ export function createAtlas(photos: PhotoStore): Atlas {
       //    holds an outdated bake of). A device that only hydrated tiles holds
       //    no crops and so derives an empty set — it writes nothing.
       const stale = staleTiles(input.inline, currentTiles(packs));
-      if (stale.length > 0) {
+
+      // 1b. Re-file the survivors of any pack that has gone mostly cold, which
+      //     supersedes the rest of it and lets step 2 drop the whole thing.
+      //     Deduped against the stale set, since a crop can qualify twice.
+      const sparse = sparsePacks(input.entries, input.inline, packs);
+      const already = new Set(
+        stale.map((s) => tileKey(s.contactId, s.entryId)),
+      );
+      const compacting = sparse.refile.filter((c) => {
+        const key = tileKey(c.contactId, c.entryId);
+        if (already.has(key)) return false;
+        already.add(key);
+        return true;
+      });
+      if (sparse.paths.length > 0) {
+        log.info(
+          `atlas: rebuilding ${sparse.paths.length} mostly-superseded pack(s) ` +
+            `— re-filing ${compacting.length} tile(s)`,
+        );
+      }
+
+      const toBake = [
+        ...stale,
+        ...compacting.map((c) => ({ ...c, src: srcFingerprint(c.dataUrl) })),
+      ];
+      if (toBake.length > 0) {
         const baked = await mapLimit(
-          stale,
+          toBake,
           MEDIA_CONCURRENCY,
           async (entry): Promise<PendingTile | null> => {
             const bytes = await bakeTile(entry.dataUrl);
@@ -181,7 +215,8 @@ export function createAtlas(photos: PhotoStore): Atlas {
         }
       }
 
-      // 2. Drop packs holding nothing any surviving contact still wants.
+      // 2. Drop packs nothing would read any more — the ones whose photos are
+      //    gone, and the ones step 1b just superseded in full.
       const dead = deadPacks(input.entries, [...known.values()]);
       if (dead.length === 0) return;
       log.info(`atlas: dropping ${dead.length} pack(s) with no live tiles`);

@@ -11,10 +11,12 @@ import {
   hashBytes,
   isAtlasPath,
   nextSeq,
+  packLiveness,
   parseAtlasPath,
   readPack,
   readPackIndex,
   sortPacks,
+  sparsePacks,
   srcFingerprint,
   staleTiles,
   tileKey,
@@ -235,6 +237,114 @@ describe("deadPacks", () => {
       packs,
     );
     expect(dead).toEqual([atlasPackPath(3, "cc")]);
+  });
+
+  it("drops a pack every one of whose tiles a later pack superseded", () => {
+    // Both photos were re-cropped, so pack 1's tiles are still *named* by live
+    // gallery entries but nothing would ever read them.
+    const superseded = [
+      pack(atlasPackPath(1, "aa"), {
+        h1: ["c1", "p1", "old"],
+        h2: ["c2", "p2", "old"],
+      }),
+      pack(atlasPackPath(2, "bb"), {
+        h3: ["c1", "p1", "new"],
+        h4: ["c2", "p2", "new"],
+      }),
+    ];
+    const entries = [
+      { contactId: "c1", entryId: "p1" },
+      { contactId: "c2", entryId: "p2" },
+    ];
+    expect(deadPacks(entries, superseded)).toEqual([atlasPackPath(1, "aa")]);
+  });
+});
+
+describe("packLiveness", () => {
+  it("counts a superseded tile as cold and a current one as live", () => {
+    const packs = [
+      pack(atlasPackPath(1, "aa"), {
+        h1: ["c1", "p1", "old"],
+        h2: ["c2", "p2", "s"],
+        h3: ["c3", "p3", "s"],
+        h4: ["c4", "p4", "s"],
+      }),
+      pack(atlasPackPath(2, "bb"), { h5: ["c1", "p1", "new"] }),
+    ];
+    // c1/p1 superseded, c4/p4's contact deleted → 2 of 4 still live.
+    const stats = packLiveness(
+      [
+        { contactId: "c1", entryId: "p1" },
+        { contactId: "c2", entryId: "p2" },
+        { contactId: "c3", entryId: "p3" },
+      ],
+      packs,
+    );
+    expect(stats.get(atlasPackPath(1, "aa"))).toEqual({
+      live: 2,
+      total: 4,
+      fraction: 0.5,
+    });
+    expect(stats.get(atlasPackPath(2, "bb"))?.fraction).toBe(1);
+  });
+});
+
+describe("sparsePacks", () => {
+  // One tile of four still live: below the rebuild threshold.
+  const packs = [
+    pack(atlasPackPath(1, "aa"), {
+      h1: ["c1", "p1", "s"],
+      h2: ["c2", "p2", "s"],
+      h3: ["c3", "p3", "s"],
+      h4: ["c4", "p4", "s"],
+    }),
+  ];
+  const entries = [{ contactId: "c1", entryId: "p1" }];
+  const crop = { contactId: "c1", entryId: "p1", dataUrl: "crop-1" };
+
+  it("re-files the survivors of a pack that has gone mostly cold", () => {
+    const { paths, refile } = sparsePacks(entries, [crop], packs);
+    expect(paths).toEqual([atlasPackPath(1, "aa")]);
+    expect(refile).toEqual([crop]);
+  });
+
+  it("leaves a pack alone while most of it is still live", () => {
+    const warm = [
+      { contactId: "c1", entryId: "p1" },
+      { contactId: "c2", entryId: "p2" },
+      { contactId: "c3", entryId: "p3" },
+    ];
+    expect(sparsePacks(warm, [crop], packs).paths).toEqual([]);
+  });
+
+  it("skips a pack this device cannot wholly replace", () => {
+    // Only one of the two survivors has crop bytes here. Re-filing it alone
+    // would leave the other live, so the old pack would survive and the new
+    // bytes would be pure addition — so nothing is compacted.
+    const twoLive = [
+      { contactId: "c1", entryId: "p1" },
+      { contactId: "c2", entryId: "p2" },
+    ];
+    const sparse5 = [
+      pack(atlasPackPath(1, "aa"), {
+        h1: ["c1", "p1", "s"],
+        h2: ["c2", "p2", "s"],
+        h3: ["c3", "p3", "s"],
+        h4: ["c4", "p4", "s"],
+        h5: ["c5", "p5", "s"],
+      }),
+    ];
+    expect(sparsePacks(twoLive, [crop], sparse5).paths).toEqual([]);
+  });
+
+  it("compacts nothing on a device holding no crops", () => {
+    expect(sparsePacks(entries, [], packs).paths).toEqual([]);
+  });
+
+  it("leaves a fully-cold pack to the prune", () => {
+    // Nothing live at all is `deadPacks`'s business — a rebuild would have
+    // nothing to write.
+    expect(sparsePacks([], [], packs).paths).toEqual([]);
   });
 });
 
