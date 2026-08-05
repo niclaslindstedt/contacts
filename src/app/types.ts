@@ -143,6 +143,13 @@ export type ContactPhoto = {
   photoTransform?: PhotoTransform | null;
   photoPath?: string | null;
   photoSourcePath?: string | null;
+  /** The photo as the **atlas** carries it — the display crop re-encoded down
+   *  to a 288 px tile (see `atlas.ts`), which is what a device that didn't take
+   *  the picture gets on open. Purely derived: it is never written back to the
+   *  drive, and never overwrites {@link photo}. Read it through `photoSrc()`
+   *  (`contactPhotos.ts`), which prefers the full-resolution crop when this
+   *  device has one and falls back to the tile when it doesn't. */
+  photoTile?: string | null;
 };
 
 /** A single contact card, optionally inside a folder. */

@@ -24,12 +24,14 @@ import { CONTACT_GLYPH_NAMES, CONTACT_GLYPH_PATHS } from "./contactGlyphs.ts";
 import {
   activePhoto,
   photoList,
+  photoSrc,
   withActivePhoto,
   withPhotoAdded,
   withPhotoAdjusted,
   withPhotoRemoved,
 } from "./contactPhotos.ts";
 import { log } from "./log.ts";
+import { fetchPhotoSource } from "./photoSource.ts";
 import { fromViewTransform, toViewTransform } from "./photo.ts";
 import { freshId } from "./useContactStore.ts";
 import { useT } from "./i18n/index.ts";
@@ -97,10 +99,13 @@ export function ContactAppearancePopover({
     }
   }
 
-  function adjust(photo: ContactPhoto) {
-    // Re-adjust from the kept original; fall back to the baked crop for a photo
-    // that predates the source (or whose source hasn't been fetched offline).
-    const source = photo.photoSource || photo.photo;
+  async function adjust(photo: ContactPhoto) {
+    // Re-adjust from the kept original. On a device that opened the address
+    // book from a drive the original isn't held locally — it is filed away and
+    // fetched only when something like this asks (see `photoSource.ts`) — so
+    // pull it first, and fall back to whatever this copy does hold (the crop,
+    // or the atlas tile) if it can't be had.
+    const source = await fetchPhotoSource(contact.id, photo);
     if (!source) return;
     setOpen(false);
     setCropping({
@@ -217,7 +222,7 @@ export function ContactAppearancePopover({
               icon={<CropIcon className="h-4 w-4" />}
               text={t("contact.adjust")}
               label={t("contact.adjustPhoto")}
-              onClick={() => adjust(active)}
+              onClick={() => void adjust(active)}
             />
             <PhotoAction
               icon={<TrashIcon className="h-4 w-4" />}
@@ -307,7 +312,7 @@ function PhotoThumb({
       }`}
     >
       <img
-        src={photo.photo ?? ""}
+        src={photoSrc(photo) ?? ""}
         alt=""
         className="h-full w-full rounded-full object-cover"
       />

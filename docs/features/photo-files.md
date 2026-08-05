@@ -20,6 +20,29 @@ under an older name, is **brought up to date automatically** on open: its photos
 are filed out (or renamed) once in the background, and any file left behind under
 the old name removed.
 
+## The photo atlas
+
+Reading those files back one at a time is what makes opening a big address book
+on a new device slow — and it's the burst of requests a drive answers by
+throttling. So on **Dropbox and Google Drive** the app keeps a **photo atlas**
+beside them: every contact's picture, shrunk to the size an avatar is actually
+drawn at, bundled into a few `.zip` packs under `photos/atlas/`. A fresh device
+reads those few packs instead of hundreds of image files, and the faces are
+simply there.
+
+The atlas carries only what's needed to _draw_ a contact. The full-size
+originals stay exactly where they were, one previewable JPEG each, and are
+fetched **only when you want one** — when you tap a photo to see it full-screen,
+or re-open the cropper to re-frame it. So the first tap on a new device takes a
+moment while the original arrives: the picture is already on screen at avatar
+quality and sharpens when it lands. Offline, you keep the avatar-sized copy.
+
+It's a convenience copy and never the only copy — every picture in it is also
+filed at full resolution — so a pack that can't be written or read costs a
+little speed and nothing else. The **local folder** backend has no atlas at all:
+a folder on your own disk has no rate limit, and a browsable tree of real image
+files is the whole point of it.
+
 ## When the drive is busy
 
 A big address book means a lot of image files, and a drive will push back if the

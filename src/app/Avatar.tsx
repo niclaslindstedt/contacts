@@ -8,7 +8,7 @@ import {
 import { Glyph } from "@niclaslindstedt/oss-framework/glyphs";
 
 import { CONTACT_GLYPH_PATHS } from "./contactGlyphs.ts";
-import { activePhoto } from "./contactPhotos.ts";
+import { activePhotoSrc } from "./contactPhotos.ts";
 import type { Contact } from "./types.ts";
 import { initials } from "./types.ts";
 
@@ -61,7 +61,7 @@ export function Avatar({
 
   return (
     <FrameworkAvatar
-      src={activePhoto(contact)?.photo ?? null}
+      src={activePhotoSrc(contact)}
       icon={icon}
       initials={initials(contact) || undefined}
       fallback={<PersonIcon />}
