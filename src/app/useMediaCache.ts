@@ -5,6 +5,7 @@ import { logStore } from "./log.ts";
 import {
   deleteCachedMedia,
   desiredMedia,
+  liveMediaKeys,
   readCachedMedia,
   recordsToMediaSource,
   writeCachedMedia,
@@ -76,13 +77,15 @@ export function useMediaCache(
     if (!enabled) return;
     const timer = window.setTimeout(() => {
       const desired = desiredMedia(slug, data);
-      const desiredKeys = new Set(desired.map((r) => r.key));
       const toPut: MediaRecord[] = desired.filter(
         (r) => synced.current.get(r.key) !== fingerprint(r.data),
       );
-      const toDelete = [...synced.current.keys()].filter(
-        (k) => !desiredKeys.has(k),
-      );
+      // Evict only what the document no longer has an *entry* for. A key the
+      // document still owns but currently holds no bytes for is exactly what the
+      // cache is here to cover (see `liveMediaKeys`) — diffing against the bytes
+      // instead let a document that had shed its media delete the last copy.
+      const live = liveMediaKeys(slug, data);
+      const toDelete = [...synced.current.keys()].filter((k) => !live.has(k));
       if (toPut.length > 0) {
         void writeCachedMedia(toPut);
         for (const r of toPut) synced.current.set(r.key, fingerprint(r.data));

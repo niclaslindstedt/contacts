@@ -20,6 +20,22 @@ under an older name, is **brought up to date automatically** on open: its photos
 are filed out (or renamed) once in the background, and any file left behind under
 the old name removed.
 
+## When the drive is busy
+
+A big address book means a lot of image files, and a drive will push back if the
+app asks for them all at once — Dropbox starts answering "too many requests", and
+the browser itself begins refusing connections. So photos move **a few files at a
+time**, and when a drive asks the app to slow down it waits as long as it was
+asked and tries again before giving up on a picture.
+
+While that's happening your photos stay put. A picture the app couldn't upload
+**keeps the copy already on the drive** — clean-up of unused files is skipped
+entirely for a save that didn't get everything through, so a busy moment can
+never delete a photo it merely failed to replace. And a picture the app couldn't
+download **stays on this device**: when a drive copy is taken on, photos already
+here are carried across rather than replaced with blanks. A photo you genuinely
+delete or re-crop somewhere else still wins.
+
 ## Self-healing
 
 Because the file names are deterministic, the layout **repairs itself**. When

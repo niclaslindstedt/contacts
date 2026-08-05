@@ -11,19 +11,30 @@
 // token-refresh and Drive folder-resolution — and only re-implements the two
 // operations that carry image bytes (`read`, `write`). The result is the small
 // {@link PhotoFileStore} contract the externaliser (see `photoStore.ts`) drives.
+//
+// Every operation is wrapped in the shared media retry (`cloudRetry.ts`), so a
+// `429 Too Many Requests` is waited out for exactly as long as the provider's
+// `Retry-After` asks and a browser-level "the request never left" rejection
+// (WebKit's `Load failed`) is backed off through. Without that a throttled photo
+// read looked exactly like a missing file to the layer above — and a throttled
+// *write* looked like a photo that no longer wanted its file.
 
 import {
   AuthError,
+  RateLimitError,
   bearerAuthHeader,
   createDropboxFileStore,
   createGdriveFileStore,
   dropboxApiArg,
+  parseRetryAfterMs,
   readErrorBody,
   refreshDropboxAccessToken,
   type DropboxAuth,
   type FileStore,
+  type Logger,
 } from "@niclaslindstedt/oss-framework/storage";
 
+import { TransientHttpError, withRetries } from "./cloudRetry.ts";
 import { logStore } from "./log.ts";
 
 /** A byte-level file store: the same shape as the framework's `FileStore` but
@@ -45,6 +56,41 @@ const DRIVE_FILES = "https://www.googleapis.com/drive/v3/files";
 const DRIVE_UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const JPEG_MIME = "image/jpeg";
+
+/** How long to wait out a throttle that arrives without a usable `Retry-After`.
+ *  Matches the framework's own document-adapter fallback. */
+const RATE_LIMIT_FALLBACK_MS = 2_000;
+
+/** Turn a failed content-API response into the right *kind* of error, so the
+ *  retry layer can tell a recoverable throttle or service blip from a genuine
+ *  failure. A `429` becomes the framework's `RateLimitError` carrying the
+ *  provider's own `Retry-After`; a `5xx` becomes a {@link TransientHttpError};
+ *  anything else is a plain `Error` nobody should retry. */
+function statusError(provider: string, op: string, res: Response): Error {
+  const label = `${provider} ${op} failed: ${res.status}`;
+  if (res.status === 429) {
+    return new RateLimitError(
+      parseRetryAfterMs(res.headers, RATE_LIMIT_FALLBACK_MS),
+    );
+  }
+  if (res.status >= 500) return new TransientHttpError(res.status, label);
+  return new Error(label);
+}
+
+/** Wrap every operation of a byte store in {@link withRetries}, so a throttle or
+ *  a browser-level "the request never left" failure is waited out rather than
+ *  reported to the externaliser as an unreadable / unwritable file. This is the
+ *  seam that keeps a transient blip from being mistaken for a missing photo. */
+function retrying(store: PhotoFileStore, log: Logger): PhotoFileStore {
+  return {
+    list: () => withRetries("list", () => store.list(), log),
+    read: (path) => withRetries(`read ${path}`, () => store.read(path), log),
+    write: (path, bytes, mime) =>
+      withRetries(`write ${path}`, () => store.write(path, bytes, mime), log),
+    remove: (path) =>
+      withRetries(`remove ${path}`, () => store.remove(path), log),
+  };
+}
 
 // --- Dropbox -----------------------------------------------------------------
 
@@ -75,45 +121,44 @@ export function dropboxPhotoFileStore(
     return res;
   }
 
-  return {
-    list: () => meta.list().then((e) => e.map((f) => f.path)),
-    remove: (path) => meta.remove(path),
-    async read(path) {
-      const res = await authed(DROPBOX_DOWNLOAD, (t) => ({
-        method: "POST",
-        headers: {
-          ...bearerAuthHeader(t),
-          "Dropbox-API-Arg": dropboxApiArg({ path: `/${path}` }),
-        },
-      }));
-      if (res.status === 409) return null; // path/not_found
-      if (!res.ok) {
-        throw new Error(`Dropbox download failed: ${res.status}`);
-      }
-      return new Uint8Array(await res.arrayBuffer());
+  return retrying(
+    {
+      list: () => meta.list().then((e) => e.map((f) => f.path)),
+      remove: (path) => meta.remove(path),
+      async read(path) {
+        const res = await authed(DROPBOX_DOWNLOAD, (t) => ({
+          method: "POST",
+          headers: {
+            ...bearerAuthHeader(t),
+            "Dropbox-API-Arg": dropboxApiArg({ path: `/${path}` }),
+          },
+        }));
+        if (res.status === 409) return null; // path/not_found
+        if (!res.ok) throw statusError("Dropbox", "download", res);
+        return new Uint8Array(await res.arrayBuffer());
+      },
+      // Dropbox stores the bytes verbatim and infers the type from the path's
+      // extension, so the upload body is always octet-stream — the `mime` hint
+      // is unused here (it matters only for the Drive content type).
+      async write(path, bytes) {
+        const res = await authed(DROPBOX_UPLOAD, (t) => ({
+          method: "POST",
+          headers: {
+            ...bearerAuthHeader(t),
+            "Dropbox-API-Arg": dropboxApiArg({
+              path: `/${path}`,
+              mode: "overwrite",
+              mute: true,
+            }),
+            "Content-Type": "application/octet-stream",
+          },
+          body: bytes as BodyInit,
+        }));
+        if (!res.ok) throw statusError("Dropbox", "upload", res);
+      },
     },
-    // Dropbox stores the bytes verbatim and infers the type from the path's
-    // extension, so the upload body is always octet-stream — the `mime` hint is
-    // unused here (it matters only for the Drive content type).
-    async write(path, bytes) {
-      const res = await authed(DROPBOX_UPLOAD, (t) => ({
-        method: "POST",
-        headers: {
-          ...bearerAuthHeader(t),
-          "Dropbox-API-Arg": dropboxApiArg({
-            path: `/${path}`,
-            mode: "overwrite",
-            mute: true,
-          }),
-          "Content-Type": "application/octet-stream",
-        },
-        body: bytes as BodyInit,
-      }));
-      if (!res.ok) {
-        throw new Error(`Dropbox upload failed: ${res.status}`);
-      }
-    },
-  };
+    log,
+  );
 }
 
 // --- Google Drive ------------------------------------------------------------
@@ -133,8 +178,7 @@ export function gdrivePhotoFileStore(token: string): PhotoFileStore {
   async function searchOne(query: string): Promise<string | null> {
     const url = `${DRIVE_FILES}?q=${encodeURIComponent(query)}&spaces=drive&fields=files(id)`;
     const res = await fetch(url, { headers: auth() });
-    if (!res.ok)
-      throw driveError("search", res.status, await readErrorBody(res));
+    if (!res.ok) throw await driveError("search", res);
     const json = (await res.json()) as { files?: { id: string }[] };
     return json.files?.[0]?.id ?? null;
   }
@@ -153,8 +197,7 @@ export function gdrivePhotoFileStore(token: string): PhotoFileStore {
       headers: { ...auth(), "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    if (!res.ok)
-      throw driveError("folder", res.status, await readErrorBody(res));
+    if (!res.ok) throw await driveError("folder", res);
     return ((await res.json()) as { id: string }).id;
   }
 
@@ -203,41 +246,50 @@ export function gdrivePhotoFileStore(token: string): PhotoFileStore {
     );
   }
 
-  return {
-    list: () => meta.list().then((e) => e.map((f) => f.path)),
-    remove: (path) => meta.remove(path),
-    async read(path) {
-      const id = await fileId(path);
-      if (!id) return null;
-      const res = await fetch(`${DRIVE_FILES}/${id}?alt=media`, {
-        headers: auth(),
-      });
-      if (res.status === 404) return null;
-      if (!res.ok)
-        throw driveError("download", res.status, await readErrorBody(res));
-      return new Uint8Array(await res.arrayBuffer());
+  return retrying(
+    {
+      list: () => meta.list().then((e) => e.map((f) => f.path)),
+      remove: (path) => meta.remove(path),
+      read,
+      write,
     },
-    async write(path, bytes, mime) {
-      const { dir, name } = split(path);
-      const dirId = await resolveDir(dir, true);
-      if (!dirId) throw new Error(`Google Drive: cannot resolve ${dir}`);
-      const existing = await searchOne(
-        `name='${name}' and '${dirId}' in parents and trashed=false`,
-      );
-      // Upload the raw bytes: PATCH an existing file's media, or create the file
-      // (metadata first, so it lands with the right name/parent) then its media.
-      // The content type defaults to JPEG (the photo case); an attachment passes
-      // its own so a filed PDF is stored as a PDF.
-      const id = existing ?? (await createEmpty(dirId, name));
-      const res = await fetch(`${DRIVE_UPLOAD}/${id}?uploadType=media`, {
-        method: "PATCH",
-        headers: { ...auth(), "Content-Type": mime ?? JPEG_MIME },
-        body: bytes as BodyInit,
-      });
-      if (!res.ok)
-        throw driveError("upload", res.status, await readErrorBody(res));
-    },
-  };
+    log,
+  );
+
+  async function read(path: string): Promise<Uint8Array | null> {
+    const id = await fileId(path);
+    if (!id) return null;
+    const res = await fetch(`${DRIVE_FILES}/${id}?alt=media`, {
+      headers: auth(),
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw await driveError("download", res);
+    return new Uint8Array(await res.arrayBuffer());
+  }
+
+  async function write(
+    path: string,
+    bytes: Uint8Array,
+    mime?: string,
+  ): Promise<void> {
+    const { dir, name } = split(path);
+    const dirId = await resolveDir(dir, true);
+    if (!dirId) throw new Error(`Google Drive: cannot resolve ${dir}`);
+    const existing = await searchOne(
+      `name='${name}' and '${dirId}' in parents and trashed=false`,
+    );
+    // Upload the raw bytes: PATCH an existing file's media, or create the file
+    // (metadata first, so it lands with the right name/parent) then its media.
+    // The content type defaults to JPEG (the photo case); an attachment passes
+    // its own so a filed PDF is stored as a PDF.
+    const id = existing ?? (await createEmpty(dirId, name));
+    const res = await fetch(`${DRIVE_UPLOAD}/${id}?uploadType=media`, {
+      method: "PATCH",
+      headers: { ...auth(), "Content-Type": mime ?? JPEG_MIME },
+      body: bytes as BodyInit,
+    });
+    if (!res.ok) throw await driveError("upload", res);
+  }
 
   async function createEmpty(parentId: string, name: string): Promise<string> {
     const res = await fetch(`${DRIVE_FILES}?fields=id`, {
@@ -245,13 +297,24 @@ export function gdrivePhotoFileStore(token: string): PhotoFileStore {
       headers: { ...auth(), "Content-Type": "application/json" },
       body: JSON.stringify({ name, parents: [parentId] }),
     });
-    if (!res.ok)
-      throw driveError("create", res.status, await readErrorBody(res));
+    if (!res.ok) throw await driveError("create", res);
     return ((await res.json()) as { id: string }).id;
   }
 
-  function driveError(op: string, status: number, body: string): Error {
-    const message = `Google Drive ${op} failed: ${status} ${body}`;
-    return status === 401 ? new AuthError(message) : new Error(message);
+  // A 401 is the reconnect signal; a 429 / 5xx is worth waiting out (see
+  // `statusError`); anything else is a genuine failure, reported with the
+  // provider's own body so the log names the cause.
+  async function driveError(op: string, res: Response): Promise<Error> {
+    if (res.status === 401) {
+      return new AuthError(
+        `Google Drive ${op} failed: 401 ${await readErrorBody(res)}`,
+      );
+    }
+    if (res.status === 429 || res.status >= 500) {
+      return statusError("Google Drive", op, res);
+    }
+    return new Error(
+      `Google Drive ${op} failed: ${res.status} ${await readErrorBody(res)}`,
+    );
   }
 }

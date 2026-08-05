@@ -116,6 +116,31 @@ on the drive to render offline; the drive files are written on save and re-read
 when a fresh device loads the document. If a file write can't complete, the
 photo simply stays inline in the document that save — it is never lost.
 
+### When the drive pushes back
+
+An address book with a lot of photographed contacts means a lot of image files,
+and a cloud drive will **throttle** an app that asks for them all at once —
+Dropbox answers `429 Too Many Requests`, and the browser itself starts refusing
+connections (which surfaces as a bare "Load failed"). So the app moves photo and
+attachment files **a few at a time** rather than in one burst, and when a drive
+does ask it to slow down it **waits exactly as long as the drive asked** and
+tries again, several times, before reporting a file as unreadable.
+
+Two rules protect the files while that is going on:
+
+- **A photo the app couldn't upload keeps its file.** Orphan clean-up only runs
+  for a save that filed _everything_ out successfully. A save that hit a
+  throttle leaves the `photos/` folder alone entirely, rather than mistaking a
+  file it failed to replace for one nobody wants.
+- **A photo the app couldn't download stays on this device.** When a drive copy
+  is adopted — a reload, a conflict resolution, the connect-time "use the cloud
+  copy" — pictures already held on this device are carried across for any photo
+  whose file couldn't be fetched. A momentary network failure blanks nothing;
+  a photo genuinely deleted or re-cropped elsewhere still wins.
+
+**Settings → Developer → Logs** carries the detail: one line per retry naming
+the file and the wait, and a line saying so whenever a clean-up was stood down.
+
 A document synced before this file layout existed keeps its photos inline in the
 cloud copy. The app **migrates it automatically**: when it opens and finds a
 cloud copy that still embeds photos, it files them out once in the background —
@@ -165,8 +190,9 @@ extension so what lands on the drive is a genuine, previewable file (a `.pdf` is
 a PDF), and the synced document carries only the path — not the file bytes — so
 it stays small. As with photos, the copy on this device keeps attachments inline
 for offline use, a file that can't be written stays inline rather than being
-lost, and orphaned files are pruned once a save commits. With encryption on,
-attachments stay inside the encrypted envelope instead.
+lost, and orphaned files are pruned once a save commits — under the same
+throttling and clean-up rules as photos (above). With encryption on, attachments
+stay inside the encrypted envelope instead.
 
 ## Backup files
 

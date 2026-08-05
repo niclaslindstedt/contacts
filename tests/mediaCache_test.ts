@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   desiredMedia,
+  liveMediaKeys,
   mediaKey,
   recordsToMediaSource,
   type MediaRecord,
@@ -82,6 +83,41 @@ describe("desiredMedia", () => {
       }),
     ]);
     expect(desiredMedia("default", data)).toEqual([]);
+  });
+});
+
+describe("liveMediaKeys", () => {
+  it("covers an entry the working copy currently holds no bytes for", () => {
+    // The cache exists precisely to hold what the document has shed — to the
+    // storage quota, or by adopting a backend copy whose files were unreachable
+    // — so a byte-less entry must still count as live, or the change-sync would
+    // evict the last copy of the picture.
+    const keys = liveMediaKeys(
+      "default",
+      doc([
+        contact({
+          photos: [{ id: "p1", photoPath: "photos/ada-abcd-1.jpg" }],
+          attachments: [
+            {
+              id: "a1",
+              name: "cv.pdf",
+              mime: "application/pdf",
+              size: 1,
+              dataPath: "attachments/ada-c1-a1.pdf",
+            },
+          ],
+        }),
+      ]),
+    );
+    expect(keys.has(mediaKey("default", "c1", "p1", "photo"))).toBe(true);
+    expect(keys.has(mediaKey("default", "c1", "p1", "photoSource"))).toBe(true);
+    expect(keys.has(mediaKey("default", "c1", "a1", "attachment"))).toBe(true);
+  });
+
+  it("drops an entry the document no longer has at all", () => {
+    const keys = liveMediaKeys("default", doc([contact({ photos: [] })]));
+    expect(keys.has(mediaKey("default", "c1", "p1", "photo"))).toBe(false);
+    expect(keys.size).toBe(0);
   });
 });
 
