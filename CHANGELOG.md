@@ -14,6 +14,56 @@ doc. Do not hand-edit the released sections.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-07
+
+### Added
+
+- **A trophy for every feature** — Fifteen new achievements — favorites, emergencies, company cards, subfolders, attachments, cloud sync, backups, encryption, and more — join the tour, and the whole achievements surface is now translated into Swedish. [Learn more](feature:achievements)
+- **Undo archive & delete** — Archiving or deleting a contact or folder now raises a hovering Undo toast so a mistaken action is one tap to reverse. [Learn more](feature:list)
+- **Bulk archive and delete** — Select mode's right-click menu now acts on the whole selection, and a new Delete button in the header removes every ticked contact after a confirmation. [Learn more](feature:list)
+- **Quick find** — Just start typing (or press Ctrl/Cmd+K) to search — the overlay opens with
+  your keystroke in the field, and now finds text anywhere on a card, including
+  homepages, birthdays, attachment names and descriptions, tags, and the
+  relationship. [Learn more](feature:quick-find)
+- **Demo data** — The Developer tab can load an in-memory demo address book — about a hundred realistic sample contacts with portrait photos, ready for demos and screenshots — without touching your real contacts.
+- **Card timestamps** — Each contact card now shows a discreet stamp at its foot for when it was added and, once edited, when it was last modified.
+- **Paste to create** — On desktop, copy someone as "Name <email>" and paste anywhere outside a text
+  field to file a new contact with that name and address and open their card. [Learn more](feature:paste-to-create)
+- **Country code for foreign numbers only** — The Format tab can now show the international country code only for numbers from abroad, so numbers in your own country read as plain local numbers while foreign ones keep their +46-style prefix. [Learn more](feature:formats)
+- **Range and folder select** — Shift-click a second contact in select mode to tick everyone between it and the last one — across folders — and each folder heading now carries a checkbox that selects everyone inside it. [Learn more](feature:list)
+- **Undo an accidental unfavorite** — Unstarring a contact on the Favorites page now raises the shared Undo toast — the same hovering pill import, archive, and delete use — so a mis-tap is one tap to put back. [Learn more](feature:favorites)
+- **Reorder important dates** — Use the up/down arrows beside each important date in edit mode to arrange them in the order you want.
+- **Sync status on the browse pages** — The cloud sync glyph now rides the List and Favorites page headers too, hidden only while you're picking contacts in select mode.
+- **Relationship** — Record how you know a contact with a Relationship field — Family, Partner, Friend, Colleague, Business, or a custom value you add once and reuse everywhere. [Learn more](feature:relationship)
+- **Tags** — File contacts under any number of free-form tags, with typeahead over the tags you've already used. [Learn more](feature:tags)
+- **Edit a whole selection at once** — Select mode has a new **Edit selected** button that opens a modal to add tags, set a relationship, or switch the card type across every ticked contact in one undoable step. [Learn more](feature:list)
+- **Filter the List** — A filter button on the List page narrows contacts by relationship, tag, and card type — private or business — from a row of dropdowns, and pressing a tag on a contact card opens the List filtered to it. [Learn more](feature:list)
+- **Browser navigation** — Back and Forward now step between the contacts you've opened, and every card
+  has its own bookmarkable address. [Learn more](feature:browser-navigation)
+
+### Changed
+
+- **Swipe moved to the List page** — Contacts and folders now archive and delete by swiping on the List page — the side menu's rows no longer swipe. [Learn more](feature:list)
+- **Shared components** — The photo viewer gains previous/next buttons and the undo toast wears a refreshed card style as the app moves onto the shared oss-framework components.
+- **Imports merge duplicates** — Importing contacts now merges duplicates instead of adding copies — a shared phone or email merges silently, a matching name asks first (with an "All (n)" shortcut), and merging only ever fills in what's missing. [Learn more](feature:import)
+- **Redesigned settings sections** — Settings now lists its sections in a side rail you can click or arrow through on wider screens, falling back to the section menu on phones.
+- **Tidier photo filenames** — Photos filed to a connected drive now use short, predictable names like `ada-lovelace-3f2a-1.jpg` (name, a short tag, and the photo's number), and existing photos are renamed to match on open. [Learn more](feature:photo-files)
+- **Favorites drops swipe** — The Favorites page no longer archives or deletes on a left/right swipe — that stays a List-page gesture, leaving a Favorites row with just its right-click menu.
+- **Photo atlas** — Opening your address book on a new device now reads a handful of self-maintaining photo packs instead of hundreds of image files, with full-size originals fetched only when you view or re-crop one. [Learn more](feature:photo-files)
+- **Sync log newest-first** — The sync log in the cloud sync panel now lists its lines newest-first, so the entry explaining what just happened is at the top.
+
+### Fixed
+
+- **Company conversion clean-up** — Turning a card into a company now clears the person-only fields — the name split, birthday, important dates, and emergency flag — instead of leaving them hidden on the card.
+- **Settings stays put on toggle** — Flipping a toggle at the bottom of Settings — like Developer mode — no longer scrolls the header and its tab menu out of reach.
+- **Card edits saved on close** — Closing a contact card opened from the List or Favorites page now saves the field you were editing and drops back to read mode, instead of losing an in-progress edit when you swipe or press Escape.
+- **Photos survive a cold restart** — Contact photos on a connected drive no longer vanish when the app is reopened on a device too full to keep them inline — they're cached on your device and re-shown the instant the app opens, online or off, instead of blanking out until a manual re-index. [Learn more](feature:photo-files)
+- **iOS date picker stays open** — On iOS the birthday and auto-archive date fields no longer dismiss the native date picker when you spin to a month, so you can pick month, day, and year in one go.
+- **Edits made on open sync cleanly** — Editing a contact the moment you open the app with a cloud backend no longer risks a spurious "sync conflict" (and losing that edit if you reload to clear it) — the first save now waits for the initial backend read to finish before pushing, instead of racing it on a slow connection.
+- **Full-height on iOS home screen** — The installed iOS app now paints all the way to the bottom of the screen instead of leaving a dead black band above the home indicator, so your contacts and the side-menu drawer get the full screen height and the footer sits snug at the bottom.
+- **Tighter top margin on iOS** — The browse pages and contact card now sit closer to the status bar on iOS, and the sidebar's namespaces cog lines up with the browse toolbar, so the space above the content mirrors the space above the Dynamic Island.
+- **Photos survive a busy drive** — A drive that throttles the app can no longer cost you a picture: photo and attachment files now move a few at a time and wait out a "too many requests", a save that couldn't upload everything leaves the drive's files alone instead of clearing them, and a photo whose file couldn't be fetched stays on this device rather than blanking out. [Learn more](feature:photo-files)
+
 ## [0.5.0] - 2026-07-05
 
 ### Added
