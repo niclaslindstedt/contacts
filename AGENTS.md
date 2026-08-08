@@ -104,6 +104,20 @@ modals, theme engine, glyph catalogue, search matcher, storage adapters
 (localStorage / Dropbox / Google Drive), the AES-GCM encryption wrapper, the
 achievements engine, i18n runtime, logging, and the PWA update state machine.
 
+### The renderer is Preact
+
+`preact` is the only renderer dependency — **never add `react` or `react-dom`
+back.** `@preact/preset-vite` compiles JSX against `preact/jsx-runtime` and
+aliases `react` / `react-dom` (and their `/jsx-runtime` + `/client` subpaths)
+onto `preact/compat`; `tsconfig.json` `paths` and `package.json` `overrides`
+mirror that for `tsc` and npm, so the framework — which is built against React
+— resolves to Preact too. App code keeps importing hooks and types from
+`"react"`, which is the supported compat path; only `src/main.tsx` uses
+Preact's own `render`. Two differences bite in new code: use `e.currentTarget`
+rather than `e.target` in event handlers, and spell string-valued attributes
+like SVG's `focusable` as `"false"` rather than a JSX boolean. See
+[`docs/architecture.md`](docs/architecture.md#rendering-runtime).
+
 The app owns the domain and the stores ("store stays in the app"):
 
 - `src/app/types.ts` — the `Contact` / `Folder` / `AppData` model.

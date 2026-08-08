@@ -7,6 +7,8 @@
 // then links to the privacy policy. It renders for visitors who have not (and
 // need not) log in, since the app itself has no account at all. English-only by
 // design, like `PrivacyPage`.
+import { type ReactNode } from "react";
+
 import {
   CloudIcon,
   CodeIcon,
@@ -230,9 +232,9 @@ function Section({
   title,
   children,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <section className="flex flex-col gap-2">

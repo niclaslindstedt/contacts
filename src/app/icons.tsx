@@ -26,7 +26,7 @@ export function IceIcon({ className }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
-      focusable={false}
+      focusable="false"
       className={className}
     >
       <path d="M7 18v-6a5 5 0 0 1 10 0v6" />
@@ -55,7 +55,7 @@ export function SectionsToggleIcon({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
-      focusable={false}
+      focusable="false"
       className={className}
     >
       <path d="M12 22v-6M12 8V2M4 12H2M10 12H8M16 12h-2M22 12h-2" />
@@ -95,7 +95,7 @@ export function TagIcon({ className }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
-      focusable={false}
+      focusable="false"
       className={className}
     >
       <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
@@ -116,7 +116,7 @@ export function FormatIcon({ className }: IconProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
-      focusable={false}
+      focusable="false"
       className={className}
     >
       <path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18" />

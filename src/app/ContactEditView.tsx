@@ -349,10 +349,10 @@ function RelationField({
           value={draft}
           placeholder={t("contact.relationCustomPlaceholder")}
           aria-label={t("contact.relationCustomLabel")}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => setDraft(e.currentTarget.value)}
           onBlur={commitDraft}
           onKeyDown={(e) => {
-            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            if (e.key === "Enter") e.currentTarget.blur();
             if (e.key === "Escape") {
               setAdding(false);
               setDraft("");
@@ -445,7 +445,7 @@ function TagsField({
         value={draft}
         placeholder={t("contact.tagPlaceholder")}
         aria-label={t("contact.tagAdd")}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => setDraft(e.currentTarget.value)}
         onBlur={() => add(draft)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
@@ -615,7 +615,7 @@ function AttachmentRows({
         type="file"
         multiple
         className="hidden"
-        onChange={(e) => void pick(e.target.files)}
+        onChange={(e) => void pick(e.currentTarget.files)}
       />
       <Button
         variant="ghost"
@@ -829,10 +829,10 @@ function MethodValueRow({
         value={draft}
         autoFocus={autoFocus}
         placeholder={placeholder}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => setDraft(e.currentTarget.value)}
         onBlur={() => onCommit(draft, draftKind)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Enter") e.currentTarget.blur();
           if (e.key === "Escape") onRemove();
         }}
         className={LABELED_FIELD_CLASS}
@@ -1071,7 +1071,7 @@ function FlexDateInput({
         <span className="text-xs text-muted">{t("contact.dateMonth")}</span>
         <select
           value={month}
-          onChange={(e) => onMonth(e.target.value)}
+          onChange={(e) => onMonth(e.currentTarget.value)}
           className={selectClass}
         >
           <option value="" />
@@ -1087,8 +1087,8 @@ function FlexDateInput({
         <select
           value={day}
           onChange={(e) => {
-            setDay(e.target.value);
-            commit(month, e.target.value, year);
+            setDay(e.currentTarget.value);
+            commit(month, e.currentTarget.value, year);
           }}
           className={selectClass}
         >
@@ -1107,10 +1107,10 @@ function FlexDateInput({
           inputMode="numeric"
           value={year}
           placeholder="—"
-          onChange={(e) => setYear(e.target.value)}
+          onChange={(e) => setYear(e.currentTarget.value)}
           onBlur={() => commit(month, day, year)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            if (e.key === "Enter") e.currentTarget.blur();
           }}
           className={selectClass}
         />

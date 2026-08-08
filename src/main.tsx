@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+import { render } from "preact";
 
 // The default UI family (JetBrains Mono) is imported statically so it ships in
 // the main bundle and precaches for offline first paint. The other font
@@ -41,10 +40,13 @@ const path = window.location.pathname.replace(/\/$/, "");
 const isPrivacy = path.endsWith("/privacy");
 const isHome = path.endsWith("/home");
 
-createRoot(root).render(
-  <StrictMode>
-    <LanguageRoot>
-      {isHome ? <ShowcasePage /> : isPrivacy ? <PrivacyPage /> : <App />}
-    </LanguageRoot>
-  </StrictMode>,
+// Preact's own `render` mounts straight into the container — there is no
+// root object to create. `StrictMode` is gone with it: Preact has no
+// double-invoking dev mode, so `preact/compat` only aliases it to a plain
+// `Fragment` and wrapping the tree in it would imply a check that never runs.
+render(
+  <LanguageRoot>
+    {isHome ? <ShowcasePage /> : isPrivacy ? <PrivacyPage /> : <App />}
+  </LanguageRoot>,
+  root,
 );

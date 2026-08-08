@@ -862,7 +862,7 @@ export function StorageTab({
             <input
               type="password"
               value={pass}
-              onChange={(e) => setPass(e.target.value)}
+              onChange={(e) => setPass(e.currentTarget.value)}
               placeholder={t("settings.storage.passphrase")}
               className={inputClass}
             />
@@ -912,9 +912,9 @@ export function StorageTab({
           multiple
           className="hidden"
           onChange={(e) => {
-            runImport(e.target.files);
+            runImport(e.currentTarget.files);
             // Reset so re-picking the same file fires `change` again.
-            e.target.value = "";
+            e.currentTarget.value = "";
           }}
         />
         <div className="flex flex-wrap items-center gap-2">
@@ -980,9 +980,9 @@ export function StorageTab({
           accept=".zip,application/zip"
           className="hidden"
           onChange={(e) => {
-            void runImportBackup(e.target.files);
+            void runImportBackup(e.currentTarget.files);
             // Reset so re-picking the same file fires `change` again.
-            e.target.value = "";
+            e.currentTarget.value = "";
           }}
         />
         <div className="flex flex-wrap items-center gap-2">

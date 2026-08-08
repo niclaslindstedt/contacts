@@ -152,7 +152,7 @@ export function LabeledDateInput({
         type="date"
         defaultValue={value}
         onBlur={(e) => {
-          if (e.target.value !== value) onCommit(e.target.value);
+          if (e.currentTarget.value !== value) onCommit(e.currentTarget.value);
         }}
         className={LABELED_FIELD_CLASS}
       />

@@ -220,7 +220,7 @@ export function MassEditModal({
               value={tagDraft}
               placeholder={t("contact.tagPlaceholder")}
               aria-label={t("contact.tagAdd")}
-              onChange={(e) => setTagDraft(e.target.value)}
+              onChange={(e) => setTagDraft(e.currentTarget.value)}
               onBlur={() => addTag(tagDraft)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -260,10 +260,10 @@ export function MassEditModal({
               value={relationDraft}
               placeholder={t("contact.relationCustomPlaceholder")}
               aria-label={t("contact.relationCustomLabel")}
-              onChange={(e) => setRelationDraft(e.target.value)}
+              onChange={(e) => setRelationDraft(e.currentTarget.value)}
               onBlur={commitRelationDraft}
               onKeyDown={(e) => {
-                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                if (e.key === "Enter") e.currentTarget.blur();
                 if (e.key === "Escape") {
                   setRelationAdding(false);
                   setRelationDraft("");

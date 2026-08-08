@@ -75,9 +75,5 @@ export const toastStore = {
 
 /** Subscribe a component to the toast stack and re-render as it changes. */
 export function useToasts(): ToastEntry[] {
-  return useSyncExternalStore(
-    toastStore.subscribe,
-    toastStore.getToasts,
-    toastStore.getToasts,
-  );
+  return useSyncExternalStore(toastStore.subscribe, toastStore.getToasts);
 }

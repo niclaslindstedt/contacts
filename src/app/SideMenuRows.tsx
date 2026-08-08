@@ -265,7 +265,7 @@ export function BarButton({
   dropRef?: (el: HTMLElement | null) => void;
   over?: boolean;
   active?: boolean;
-  buttonRef?: RefObject<HTMLButtonElement | null>;
+  buttonRef?: RefObject<HTMLButtonElement>;
 }) {
   // A live drag's drop-zone feedback wins over the resting "current view"
   // tint so the user can see where a dropped item will land.
