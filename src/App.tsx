@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import {
+  Suspense,
+  lazy,
   useCallback,
   useEffect,
   useMemo,
@@ -26,9 +28,6 @@ import {
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
 import { UpdateToast, usePwaUpdate } from "@niclaslindstedt/oss-framework/pwa";
-import { SyncDetailsModal } from "@niclaslindstedt/oss-framework/sync";
-import { ChangelogModal } from "@niclaslindstedt/oss-framework/changelog";
-import { LogViewer } from "@niclaslindstedt/oss-framework/logging";
 import {
   useMediaQuery,
   useSearchShortcuts,
@@ -36,26 +35,41 @@ import {
 } from "@niclaslindstedt/oss-framework/hooks";
 import { glyphDataUri } from "@niclaslindstedt/oss-framework/glyphs";
 import {
-  NamespacesModal,
   applyFaviconHref,
   namespaceFaviconHref,
 } from "@niclaslindstedt/oss-framework/namespaces";
 import {
-  AchievementUnlockModal,
-  AchievementsModal,
   TrophyButton,
   unlock,
   useAchievementWatcher,
 } from "@niclaslindstedt/oss-framework/achievements";
 
 import { ArchiveScreen } from "./app/ArchiveScreen.tsx";
-import { CloudSetupModal } from "./app/CloudSetupModal.tsx";
 import { ContactListScreen } from "./app/ContactListScreen.tsx";
 import { ContactScreen } from "./app/ContactScreen.tsx";
 import { ImportDropZone } from "./app/ImportDropZone.tsx";
-import { RELEASES, FEATURE_DOCS } from "./app/changelog.ts";
 import { SearchOverlay } from "./app/SearchOverlay.tsx";
-import { SettingsModal } from "./app/SettingsModal.tsx";
+import { SyncDetailsModal } from "@niclaslindstedt/oss-framework/sync";
+import { LogViewer } from "@niclaslindstedt/oss-framework/logging";
+import { NamespacesModal } from "@niclaslindstedt/oss-framework/namespaces";
+import {
+  AchievementUnlockModal,
+  AchievementsModal,
+} from "@niclaslindstedt/oss-framework/achievements";
+
+const CloudSetupModal = lazy(() =>
+  import("./app/CloudSetupModal.tsx").then((m) => ({
+    default: m.CloudSetupModal,
+  })),
+);
+const ChangelogModal = lazy(() =>
+  import("./app/ChangelogPanel.tsx").then((m) => ({
+    default: m.ChangelogPanel,
+  })),
+);
+const SettingsModal = lazy(() =>
+  import("./app/SettingsModal.tsx").then((m) => ({ default: m.SettingsModal })),
+);
 import { SideMenuContent } from "./app/SideMenuContent.tsx";
 import { buildCatalog } from "./app/achievements.ts";
 import { useT } from "./app/i18n/index.ts";
@@ -64,8 +78,7 @@ import { descendingLogStore, logStore } from "./app/log.ts";
 import { status } from "./output.ts";
 import { useAchievements } from "./app/useAchievements.ts";
 import { applyBackdropVars, useAppSettings } from "./app/useAppSettings.ts";
-import { useDevSeed } from "./app/dev/useDevSeed.ts";
-import { createDemoBackend, createSeedBackend } from "./app/dev/seedBackend.ts";
+import { seedBackends, useDevSeed } from "./app/dev/useDevSeed.ts";
 import { localDocBackend, useContactStore } from "./app/useContactStore.ts";
 import { useMediaCache } from "./app/useMediaCache.ts";
 import { useNavigation } from "./app/useNavigation.ts";
@@ -117,8 +130,12 @@ export function App() {
   // address book (see `useDevSeed`).
   const devSeed = useDevSeed();
   const backend = useMemo(() => {
-    if (devSeed.mode === "fake") return createSeedBackend(devSeed.size);
-    if (devSeed.mode === "demo") return createDemoBackend();
+    // Non-null whenever a mode is on: `setDevDataMode` only flips the mode
+    // once the dev chunk has loaded.
+    const dev = seedBackends();
+    if (dev && devSeed.mode === "fake")
+      return dev.createSeedBackend(devSeed.size);
+    if (dev && devSeed.mode === "demo") return dev.createDemoBackend();
     return localDocBackend;
   }, [devSeed.mode, devSeed.size]);
   const store = useContactStore(ns.activeSlug, backend);
@@ -704,26 +721,34 @@ export function App() {
         />
       </Modal>
 
-      <SettingsModal
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        appearance={appearance}
-        setAppearance={setAppearance}
-        settings={settings}
-        commitSettings={setSettings}
-        store={store}
-        sync={sync}
-        passwordRef={passwordRef}
-      />
+      {settingsOpen && (
+        <Suspense fallback={null}>
+          <SettingsModal
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+            appearance={appearance}
+            setAppearance={setAppearance}
+            settings={settings}
+            commitSettings={setSettings}
+            store={store}
+            sync={sync}
+            passwordRef={passwordRef}
+          />
+        </Suspense>
+      )}
 
       {/* The connect-time replace-or-adopt prompt — opens when a freshly
           connected cloud backend already holds contacts that differ from this
           device's copy. The engine (`useSyncEngine`) owns the state and holds
           auto-save until a side is chosen. */}
-      <CloudSetupModal
-        pending={sync.pendingSetup}
-        onResolve={sync.resolveSetup}
-      />
+      {sync.pendingSetup && (
+        <Suspense fallback={null}>
+          <CloudSetupModal
+            pending={sync.pendingSetup}
+            onResolve={sync.resolveSetup}
+          />
+        </Suspense>
+      )}
 
       {/* The one hovering toast banner — import results and the "archived /
           deleted / unfavorited — undo?" confirmations all ride this single
@@ -874,18 +899,20 @@ export function App() {
       {/* The "What's new" dialog — opened from the side menu's About
           dropdown. The app inlines the CHANGELOG and the feature docs at
           build time (`./app/changelog.ts`). */}
-      <ChangelogModal
-        open={changelogOpen}
-        onClose={() => setChangelogOpen(false)}
-        releases={RELEASES}
-        featureDocs={FEATURE_DOCS}
-        labels={{
-          heading: t("changelog.heading"),
-          empty: t("changelog.empty"),
-          close: t("common.close"),
-          back: t("changelog.back"),
-        }}
-      />
+      {changelogOpen && (
+        <Suspense fallback={null}>
+          <ChangelogModal
+            open={changelogOpen}
+            onClose={() => setChangelogOpen(false)}
+            labels={{
+              heading: t("changelog.heading"),
+              empty: t("changelog.empty"),
+              close: t("common.close"),
+              back: t("changelog.back"),
+            }}
+          />
+        </Suspense>
+      )}
 
       {/* The achievements tour — the full catalog, every feature a trophy. */}
       <AchievementsModal

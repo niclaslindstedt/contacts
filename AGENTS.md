@@ -141,6 +141,19 @@ The app owns the domain and the stores ("store stays in the app"):
 Dependency direction: screens → stores → framework. Nothing imports from the
 framework's internals — only its published subpaths.
 
+### Keep boot small
+
+There is no server and no prerender, so everything on the entry path is
+downloaded before the user sees anything. Before adding a static import to
+`App.tsx` or a screen, ask whether the first paint needs it — modals, the
+changelog payload, importers, and the dev-data builders all belong behind
+`import()`. `docs/architecture.md`'s "What loads when" lists what is deferred
+today, and records two traps: measure a route's real fetched bytes in a browser
+with the service worker blocked (build-log chunk sizes mislead once code
+splits), and leave `build.modulePreload.resolveDependencies` in
+`vite.config.ts` alone — without it Vite preloads the union of every route
+branch's dependencies and the page splits silently stop working.
+
 ### Reach for the framework first
 
 Before building any UI primitive, gesture, or generic mechanic, **check whether

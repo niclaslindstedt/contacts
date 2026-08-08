@@ -213,6 +213,19 @@ const version = process.env.GITHUB_SHA
 
 export default defineConfig({
   base,
+  build: {
+    modulePreload: {
+      // Vite wraps every `import()` in a preload helper carrying that call's
+      // dependency list, and the minifier folds the three route branches in
+      // `main.tsx` back into one call however the source is written — so that
+      // helper ends up preloading the UNION of all three, and `/privacy/`
+      // eagerly fetches the whole app. Dropping the JS-side dependency hints
+      // lets each branch pull only what it actually imports; the entry's own
+      // `<link rel="modulepreload">` tags in the HTML are kept.
+      resolveDependencies: (_url, deps, { hostType }) =>
+        hostType === "js" ? [] : deps,
+    },
+  },
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
     __BUILD_LABEL__: JSON.stringify(buildLabel),

@@ -68,6 +68,46 @@ paper over, and which the codebase therefore avoids: an event handler's
 element the handler is bound to), and string-valued attributes such as SVG's
 `focusable` want `"false"`, not a JSX boolean.
 
+## What loads when
+
+There is no server and no prerender, so every byte of the app is downloaded
+before anything appears. Boot therefore carries only what the first screen
+needs; the rest is behind `import()`. What is deferred today:
+
+| Chunk                                       | Loads when                        |
+| ------------------------------------------- | --------------------------------- |
+| `ChangelogPanel` (CHANGELOG + feature docs) | "What's new" is opened            |
+| `SettingsModal` + its tabs                  | Settings is opened                |
+| `CloudSetupModal`                           | a cloud backend is connected      |
+| `seedBackend` (+ `fakeData` / `demoData`)   | a Developer data toggle turns on  |
+| `demoPhotos`                                | demo mode turns on                |
+| `PrivacyPage` / `ShowcasePage`              | their own route is the one served |
+| the `sv` catalogue                          | Swedish is selected               |
+
+`main.tsx` picks exactly one page per route, so the app bundle never reaches
+`/privacy/` or `/home/` and neither page reaches the app.
+
+Two rules keep this honest, both learned the hard way:
+
+- **Measure in a browser, not in the build log.** An entry chunk that shrank
+  because its contents moved into a sibling chunk it imports on the next line
+  has saved nothing. What counts is the JS a route actually fetches — and when
+  measuring that, block the service worker, whose precache pulls _every_ asset
+  and hides the difference entirely.
+- **`build.modulePreload.resolveDependencies` in `vite.config.ts` is
+  load-bearing.** Vite wraps each `import()` in a preload helper carrying that
+  call's dependency list, and the minifier folds the route switch in
+  `main.tsx` into a single call however the source is written — so that helper
+  would preload the union of all three branches and `/privacy/` would eagerly
+  fetch the whole app. Dropping the JS-side dependency hints is what makes the
+  page splits real; the entry's own HTML preload tags are kept.
+
+Not everything that looks splittable is. A modal that shares a framework chunk
+with something the first screen already needs — `SyncDetailsModal` with
+`SyncStatus`, the achievements and namespaces modals with the watcher and the
+favicon helpers — moves no bytes when deferred, and the `lazy()` wrapper costs
+more than it saves. Those stay statically imported on purpose.
+
 ## The document
 
 One namespace = one document (`AppData`): folders + contacts + the active

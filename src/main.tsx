@@ -11,9 +11,6 @@ import "@fontsource/jetbrains-mono/latin-700.css";
 import "@fontsource/jetbrains-mono/latin-ext-700.css";
 
 import "./styles.css";
-import { App } from "./App.tsx";
-import { PrivacyPage } from "./app/PrivacyPage.tsx";
-import { ShowcasePage } from "./app/ShowcasePage.tsx";
 import { LanguageRoot } from "./app/i18n/index.ts";
 
 // In dev no worker registers (`usePwaUpdate` runs disabled), but a worker
@@ -44,9 +41,21 @@ const isHome = path.endsWith("/home");
 // root object to create. `StrictMode` is gone with it: Preact has no
 // double-invoking dev mode, so `preact/compat` only aliases it to a plain
 // `Fragment` and wrapping the tree in it would imply a check that never runs.
-render(
-  <LanguageRoot>
-    {isHome ? <ShowcasePage /> : isPrivacy ? <PrivacyPage /> : <App />}
-  </LanguageRoot>,
-  root,
-);
+function loadPage() {
+  if (isHome) {
+    return import("./app/ShowcasePage.tsx").then((m) => m.ShowcasePage);
+  }
+  if (isPrivacy) {
+    return import("./app/PrivacyPage.tsx").then((m) => m.PrivacyPage);
+  }
+  return import("./App.tsx").then((m) => m.App);
+}
+
+void loadPage().then((Page) => {
+  render(
+    <LanguageRoot>
+      <Page />
+    </LanguageRoot>,
+    root,
+  );
+});

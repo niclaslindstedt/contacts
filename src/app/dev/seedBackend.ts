@@ -16,7 +16,10 @@
 import type { AppData } from "../types.ts";
 import type { DocBackend } from "../useContactStore.ts";
 import { buildDemoData } from "./demoData.ts";
-import { buildFakeData, type FakeSeedSize } from "./fakeData.ts";
+
+export { loadDemoPhotos } from "./demoData.ts";
+import { buildFakeData } from "./fakeData.ts";
+import type { FakeSeedSize } from "./seedMode.ts";
 
 // The shared mechanics: an in-memory backend that seeds each namespace lazily
 // from `build` on first access, so switching workspaces during a seeded
