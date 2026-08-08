@@ -174,8 +174,8 @@ export function ContactAppearancePopover({
           accept="image/*"
           className="hidden"
           onChange={(e) => {
-            void onPickFile(e.target.files?.[0]);
-            e.target.value = "";
+            void onPickFile(e.currentTarget.files?.[0]);
+            e.currentTarget.value = "";
           }}
         />
 

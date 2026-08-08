@@ -6,6 +6,8 @@
 // that send contact data off the browser only when the user explicitly connects
 // one, so this policy covers both cases. It is English-only by design (a legal
 // page, not chrome).
+import { type ReactNode } from "react";
+
 import { ArrowLeftIcon } from "@niclaslindstedt/oss-framework/components";
 
 // Last meaningful change to the policy text below. Bump this whenever the
@@ -211,13 +213,7 @@ export function PrivacyPage() {
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
       <h2 className="text-sm font-bold tracking-wide text-fg-bright">

@@ -33,6 +33,41 @@ The framework owns the **mechanics and the UI kit**; the app owns the
 Dependency direction is strictly downward: screens → stores → framework.
 Nothing deep-imports framework internals.
 
+## Rendering runtime
+
+The renderer is **Preact**, not React. Nothing from React ships: the app
+depends on `preact` alone, and `@preact/preset-vite` compiles JSX against
+`preact/jsx-runtime` and aliases `react`, `react-dom`, and their
+`/jsx-runtime` + `/client` subpaths onto `preact/compat`. That swap is worth
+roughly 190 kB of raw JavaScript (~53 kB gzipped) off the main bundle — the
+whole point of it is the download, so keep it that way.
+
+Two seams keep the alias honest:
+
+- **The framework is built against React.** Its published chunks import
+  `react` / `react-dom` / `react/jsx-runtime` as externals and its `.d.ts`
+  files take their types from `react`. Both are resolved to Preact rather than
+  rewritten: the bundler by the preset's aliases, `tsc` by the matching
+  `paths` in `tsconfig.json`. `package.json` `overrides` point npm's `react`
+  and `react-dom` at `@preact/compat` so the framework's peer dependency
+  resolves to the same thing and no React copy is installed at all.
+- **App code still imports from `"react"`.** That is deliberate, and the
+  supported Preact migration path — `preact/compat` is in the bundle for the
+  framework's sake regardless, so importing `preact/hooks` directly would save
+  nothing while making the app's types disagree with the framework's props.
+  `src/main.tsx` is the exception: it mounts with Preact's own `render`, since
+  there is no root object to create and no `StrictMode` double-render to opt
+  into.
+
+Preact is a re-implementation, not a fork, so a handful of React behaviours
+only hold because `preact/compat` restores them — most importantly `onChange`
+on a text field, which Preact would otherwise fire on commit rather than per
+keystroke (compat remaps it to `oninput`). Two React-isms it does **not**
+paper over, and which the codebase therefore avoids: an event handler's
+`target` is typed as the bare `EventTarget` (use `currentTarget`, which is the
+element the handler is bound to), and string-valued attributes such as SVG's
+`focusable` want `"false"`, not a JSX boolean.
+
 ## The document
 
 One namespace = one document (`AppData`): folders + contacts + the active

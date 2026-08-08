@@ -4,8 +4,8 @@ import { readFileSync } from "node:fs";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
+import preact from "@preact/preset-vite";
 import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 
 import { appPwa } from "./pwa-plugin.ts";
@@ -221,8 +221,16 @@ export default defineConfig({
   },
   // `appPwa` only applies on build, so dev keeps registering no worker (the
   // app passes `enabled: !import.meta.env.DEV` to `usePwaUpdate`).
+  //
+  // The runtime is Preact, not React: `@preact/preset-vite` compiles JSX
+  // against `preact/jsx-runtime` and aliases `react` / `react-dom` (and the
+  // `/jsx-runtime` + `/client` subpaths) onto `preact/compat`, so both this
+  // app's `import … from "react"` lines and the pre-built framework chunks —
+  // which import `react`, `react-dom`, and `react/jsx-runtime` as externals —
+  // resolve to Preact. Nothing from React itself reaches the bundle; see
+  // `docs/architecture.md`.
   plugins: [
-    react(),
+    preact(),
     tailwindcss(),
     appPwa({ base, version, ignorePaths }),
     emitRouteAlias(SHOWCASE_ROUTE, "home"),

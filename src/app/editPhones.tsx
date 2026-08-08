@@ -172,10 +172,10 @@ function PhoneValueRow({
         value={draft}
         autoFocus={autoFocus}
         placeholder={t("contact.phonePlaceholder")}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => setDraft(e.currentTarget.value)}
         onBlur={() => onCommit(draft, activeCode, activeKind)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Enter") e.currentTarget.blur();
           if (e.key === "Escape") onRemove();
         }}
         className={LABELED_FIELD_CLASS}
