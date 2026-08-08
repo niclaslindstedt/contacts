@@ -36,22 +36,18 @@ import type {
 /** How much fake data to build: the curated `"sample"` set, or that set plus
  *  enough generated cards to reach roughly N contacts (a number), with
  *  `"large"` a named shorthand for a stress-test count. */
-export type FakeSeedSize = "sample" | number;
+export type { FakeSeedSize, DevDataMode, FakeSeedConfig } from "./seedMode.ts";
+import type { FakeSeedSize } from "./seedMode.ts";
 
 /** Which in-memory dataset (if any) has taken over storage: the edge-case
  *  **fake** data, the presentation-grade **demo** data (`demoData.ts`), or
  *  neither. One mode for both toggles so they stay mutually exclusive. */
-export type DevDataMode = "off" | "fake" | "demo";
 
 /** The parsed intent of the `VITE_SEED` build-time variable. */
-export type FakeSeedConfig = {
-  mode: DevDataMode;
-  size: FakeSeedSize;
-};
 
 // The count `VITE_SEED=large` expands to — big enough to stress the virtualised
 // list and the search index without being so large that a dev reload crawls.
-export const LARGE_SEED_COUNT = 250;
+export { LARGE_SEED_COUNT, parseSeedEnv } from "./seedMode.ts";
 
 // A 1×1 transparent PNG — a valid `photo` data URI without shipping a real
 // image. Enough to exercise the avatar's photo path (vs. the glyph fallback).
@@ -727,25 +723,6 @@ function generatedContact(i: number): Contact {
  *  `demo` → the presentation-grade demo document; `large`/`xl`/`stress` → the
  *  big fake stress count; a number > 1 → that many fake cards; anything else
  *  truthy (`1`, `true`, `on`, `sample`) → the curated fake set. */
-export function parseSeedEnv(raw: string | undefined | null): FakeSeedConfig {
-  const v = (raw ?? "").trim().toLowerCase();
-  if (v === "" || v === "0" || v === "false" || v === "off" || v === "no") {
-    return { mode: "off", size: "sample" };
-  }
-  if (v === "demo") {
-    return { mode: "demo", size: "sample" };
-  }
-  if (v === "large" || v === "xl" || v === "stress" || v === "max") {
-    return { mode: "fake", size: LARGE_SEED_COUNT };
-  }
-  const n = Number(v);
-  if (Number.isFinite(n) && n > 1) {
-    return { mode: "fake", size: Math.floor(n) };
-  }
-  // "1", "true", "on", "yes", "sample", or any other truthy token.
-  return { mode: "fake", size: "sample" };
-}
-
 /** Build a fresh fake-data document. `"sample"` returns just the curated
  *  edge-case cards; a number returns those cards plus enough generated cards to
  *  reach roughly that many contacts. The active card is the fully-loaded one so

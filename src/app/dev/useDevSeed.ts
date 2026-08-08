@@ -26,12 +26,25 @@
 
 import { useEffect, useState } from "react";
 
-import { loadDemoPhotos } from "./demoData.ts";
 import {
   parseSeedEnv,
   type DevDataMode,
   type FakeSeedSize,
-} from "./fakeData.ts";
+} from "./seedMode.ts";
+
+// The seeded backends and the data builders behind them are a dev-only
+// luxury, so they ride in their own chunk: nothing on the entry path imports
+// `seedBackend.ts` / `fakeData.ts` / `demoData.ts` statically, and the chunk
+// is fetched only when a mode actually turns on.
+type SeedBackends = typeof import("./seedBackend.ts");
+let backends: SeedBackends | null = null;
+
+/** The loaded backend factories, or `null` while no mode has ever been on.
+ *  `App` reads this synchronously — `setDevDataMode` guarantees the chunk has
+ *  landed before it flips `mode` off "off". */
+export function seedBackends(): SeedBackends | null {
+  return backends;
+}
 
 // Read the build-time seed intent once. `VITE_SEED` is only ever set for local
 // dev / preview builds; a normal production build leaves it unset, so the mode
@@ -41,7 +54,11 @@ const initial = parseSeedEnv(import.meta.env.VITE_SEED as string | undefined);
 // Demo mode starts "off" even when `VITE_SEED=demo` asked for it: the portrait
 // chunk has to arrive first (see `setDevDataMode`), and the kick-off at the
 // bottom of this module flips the mode on as soon as it has.
-let mode: DevDataMode = initial.mode === "demo" ? "off" : initial.mode;
+// Always starts "off", whatever `VITE_SEED` asked for: the builders live in
+// their own chunk now, so *every* mode has to wait for it. The kick-off at the
+// bottom of this module requests the real initial mode, which lands a tick
+// later once the chunk is in.
+let mode: DevDataMode = "off";
 // The fake-data size is fixed by the env for the whole session: the manual
 // toggle reuses whatever `VITE_SEED` asked for (or the curated sample when
 // it's unset), so turning the switch off and on again rebuilds the same
@@ -72,22 +89,33 @@ let seq = 0;
 export function setDevDataMode(next: DevDataMode): void {
   const token = ++seq;
   if (mode === next) return;
-  if (next === "demo") {
-    void loadDemoPhotos().then(() => {
-      // A later call (toggled away while loading) wins over this one.
-      if (token !== seq) return;
-      mode = "demo";
-      notify();
-    });
+  if (next === "off") {
+    mode = "off";
+    notify();
     return;
   }
-  mode = next;
-  notify();
+  // Turning a mode ON is asynchronous under the hood: the builders live in
+  // their own chunk, and demo mode additionally waits on the ~290 KB portrait
+  // chunk so its document seeds complete with faces. The mode flips only once
+  // everything it needs has landed, so `App` can build the backend
+  // synchronously from that render on.
+  void import("./seedBackend.ts")
+    .then(async (m) => {
+      backends = m;
+      if (next === "demo") await m.loadDemoPhotos();
+    })
+    .then(() => {
+      // A later call (toggled away while loading) wins over this one.
+      if (token !== seq) return;
+      mode = next;
+      notify();
+    });
 }
 
-// The `VITE_SEED=demo` boot path: request the deferred flip now, so the dev
-// server lands on the demo book as soon as the portrait chunk is in.
-if (initial.mode === "demo") setDevDataMode("demo");
+// The `VITE_SEED` boot path: request the deferred flip now, so the dev server
+// lands on the seeded document as soon as the dev chunk (and, for demo mode,
+// the portrait chunk) is in.
+if (initial.mode !== "off") setDevDataMode(initial.mode);
 
 export function useDevSeed(): {
   mode: DevDataMode;
