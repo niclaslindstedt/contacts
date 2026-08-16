@@ -18,7 +18,11 @@ import {
   type ThemeAppearance,
 } from "@niclaslindstedt/oss-framework/theme";
 import { LogViewer } from "@niclaslindstedt/oss-framework/logging";
-import { useStandaloneMobile } from "@niclaslindstedt/oss-framework/pwa";
+import {
+  useStandaloneMobile,
+  type PwaUpdate,
+  type PwaUpdateCheckResult,
+} from "@niclaslindstedt/oss-framework/pwa";
 import { unlock as unlockTrophy } from "@niclaslindstedt/oss-framework/achievements";
 import {
   downloadBlob,
@@ -1060,10 +1064,12 @@ export function DeveloperTab({
   settings,
   update,
   sync,
+  pwa,
 }: {
   settings: AppSettings;
   update: Update;
   sync: SyncEngine;
+  pwa: PwaUpdate;
 }) {
   const t = useT();
   // Real install context, read from the framework's PWA detection. `true`
@@ -1099,6 +1105,28 @@ export function DeveloperTab({
       setReindexing(false);
     }
   };
+  // "Check for updates" — the manual half of the PWA update flow. The service
+  // worker already polls in the background and raises the update toast on its
+  // own; this asks right now instead of waiting. `echo` holds the last answer
+  // ("up to date" / "unavailable") so the outcome is readable after the check
+  // ends; a found update needs no echo, because `pwa.needRefresh` flips and
+  // the toast takes over.
+  const [updateEcho, setUpdateEcho] = useState<PwaUpdateCheckResult | null>(
+    null,
+  );
+  const runUpdateCheck = async () => {
+    setUpdateEcho(null);
+    setUpdateEcho(await pwa.checkForUpdate());
+  };
+  const updateStatus = pwa.checking
+    ? t("settings.developer.checkingUpdates")
+    : pwa.needRefresh
+      ? t("settings.developer.updateAvailable")
+      : updateEcho === "up-to-date"
+        ? t("settings.developer.upToDate")
+        : updateEcho === "unavailable"
+          ? t("settings.developer.updatesUnavailable")
+          : null;
   return (
     <div>
       <p className="mb-3 text-xs text-muted">{t("settings.developer.intro")}</p>
@@ -1146,6 +1174,28 @@ export function DeveloperTab({
           checked={settings.captureLogs}
           onChange={(next) => update("captureLogs", next)}
         />
+      </Section>
+      <Section title={t("settings.developer.updatesTitle")}>
+        <p className="text-xs text-muted">
+          {t("settings.developer.updatesHint")}
+        </p>
+        <Button
+          variant="secondary"
+          className="self-start"
+          disabled={pwa.checking}
+          aria-busy={pwa.checking}
+          onClick={() => void runUpdateCheck()}
+        >
+          <span className="flex items-center gap-1.5">
+            {pwa.checking && <SpinnerIcon className="h-4 w-4 animate-spin" />}
+            {t("settings.developer.checkUpdates")}
+          </span>
+        </Button>
+        {updateStatus && (
+          <p className="text-sm text-fg" role="status">
+            {updateStatus}
+          </p>
+        )}
       </Section>
       <Section title={t("settings.developer.buildTitle")}>
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">

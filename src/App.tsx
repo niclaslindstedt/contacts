@@ -646,9 +646,6 @@ export function App() {
             setView("favorites");
             if (!pinned) setDrawerOpen(false);
           }}
-          checkingUpdate={pwa.checking}
-          updateAvailable={pwa.needRefresh}
-          onCheckUpdate={pwa.checkForUpdate}
           trophy={trophyRow}
           folderSort={settings.folderSort}
         />
@@ -733,6 +730,7 @@ export function App() {
             store={store}
             sync={sync}
             passwordRef={passwordRef}
+            pwa={pwa}
           />
         </Suspense>
       )}

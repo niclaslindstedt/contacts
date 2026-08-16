@@ -81,11 +81,6 @@ export const sv: Catalog = {
     about: "Om",
     whatsNew: "Nyheter",
     source: "Källkod",
-    checkUpdates: "Sök efter uppdateringar",
-    checkingUpdates: "Söker efter uppdateringar…",
-    upToDate: "Du är uppdaterad",
-    updateAvailable: "Uppdatering tillgänglig",
-    updatesUnavailable: "Uppdateringar otillgängliga",
     updating: "Uppdaterar…",
     settings: "Inställningar",
   },
@@ -846,6 +841,14 @@ export const sv: Catalog = {
       reindexEmpty: "Lagringen innehåller inget dokument ännu.",
       reindexError:
         "Omindexeringen misslyckades — se Loggar-fliken för detaljer.",
+      updatesTitle: "Uppdateringar",
+      updatesHint:
+        "Appen uppdaterar sig själv i bakgrunden och erbjuder en omladdning när en ny version har landat. Sök nu om du inte vill vänta.",
+      checkUpdates: "Sök efter uppdateringar",
+      checkingUpdates: "Söker efter uppdateringar…",
+      upToDate: "Du är uppdaterad",
+      updateAvailable: "Uppdatering tillgänglig",
+      updatesUnavailable: "Uppdateringar otillgängliga",
       loggingTitle: "Loggning",
       captureLogs: "Fånga loggar",
       captureLogsHint:
