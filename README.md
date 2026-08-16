@@ -146,7 +146,7 @@ Enter — and start filling in the card.
 The deployed site is an installable PWA: use your browser's _Install app_
 affordance (or on iOS, Safari → Share → _Add to Home Screen_). The installed
 app works fully offline and surfaces new deploys through an in-app update
-prompt — check manually from the sidebar's _Check for updates_ row. The site
+prompt — check manually from _Settings → Developer → Check for updates_. The site
 also serves two no-login pages: a `/privacy` policy spelling out what's stored
 and when it leaves your device, and a `/home` showcase linked from the cloud
 providers' consent screens.

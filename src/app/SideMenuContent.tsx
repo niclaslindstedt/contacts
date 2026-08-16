@@ -26,10 +26,6 @@ import {
   type Namespace,
 } from "@niclaslindstedt/oss-framework/namespaces";
 import { useLocalStorageState } from "@niclaslindstedt/oss-framework/hooks";
-import {
-  CheckForUpdatesItem,
-  type PwaUpdateCheckResult,
-} from "@niclaslindstedt/oss-framework/pwa";
 import { useDragDrop } from "@niclaslindstedt/oss-framework/sidebar";
 
 import { Avatar } from "./Avatar.tsx";
@@ -123,10 +119,6 @@ type Props = {
   onShowList: () => void;
   // Open the Favorites page (starred contacts, same folder-grouped layout).
   onShowFavorites: () => void;
-  // PWA update state, threaded from `usePwaUpdate`.
-  checkingUpdate: boolean;
-  updateAvailable: boolean;
-  onCheckUpdate: () => Promise<PwaUpdateCheckResult>;
   // The framework `TrophyButton` in its row form, seated among the footer
   // rows (or nothing when achievements are switched off).
   trophy?: ReactNode;
@@ -153,9 +145,6 @@ export function SideMenuContent({
   onShowArchive,
   onShowList,
   onShowFavorites,
-  checkingUpdate,
-  updateAvailable,
-  onCheckUpdate,
   trophy,
   folderSort,
 }: Props) {
@@ -852,8 +841,9 @@ export function SideMenuContent({
       />
 
       {/* Footer — fixed. Donate (an external link), the trophy, an About
-          dropdown, the framework's "check for updates" row, and Settings
-          pinned last under the thumb. Foldable away via the rail above. Now the
+          dropdown, and Settings pinned last under the thumb (checking for an
+          app update lives in Settings → Developer). Foldable away via the rail
+          above. Now the
           PWA paints fullscreen (no bottom safe-area inset lifting the panel),
           Settings would otherwise sit right on the screen's edge, so the bottom
           breathing room carries an extra 10px to keep the last row a
@@ -881,18 +871,6 @@ export function SideMenuContent({
             </span>
             <span className="flex-1">{t("menu.about")}</span>
           </button>
-          <CheckForUpdatesItem
-            checking={checkingUpdate}
-            updateAvailable={updateAvailable}
-            onCheck={onCheckUpdate}
-            labels={{
-              idle: t("menu.checkUpdates"),
-              checking: t("menu.checkingUpdates"),
-              upToDate: t("menu.upToDate"),
-              updateAvailable: t("menu.updateAvailable"),
-              unavailable: t("menu.updatesUnavailable"),
-            }}
-          />
           <FooterRow
             icon={<CogIcon className="h-5 w-5" />}
             onClick={onOpenSettings}

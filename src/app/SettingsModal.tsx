@@ -23,6 +23,7 @@ import {
   type IconProps,
 } from "@niclaslindstedt/oss-framework/components";
 import { type ThemeAppearance } from "@niclaslindstedt/oss-framework/theme";
+import { type PwaUpdate } from "@niclaslindstedt/oss-framework/pwa";
 
 import { FormatIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
@@ -92,6 +93,9 @@ type Props = {
   store: ContactStore;
   sync: SyncEngine;
   passwordRef: MutablePasswordRef;
+  // PWA update state, threaded from `usePwaUpdate` — the Developer tab's
+  // "Check for updates" button asks it for a check on demand.
+  pwa: PwaUpdate;
 };
 
 export function SettingsModal({
@@ -104,6 +108,7 @@ export function SettingsModal({
   store,
   sync,
   passwordRef,
+  pwa,
 }: Props) {
   const t = useT();
   const [tab, setTab] = useState<TabId>("general");
@@ -311,7 +316,12 @@ export function SettingsModal({
             <StorageTab store={store} sync={sync} passwordRef={passwordRef} />
           )}
           {activeTab === "developer" && (
-            <DeveloperTab settings={draft} update={update} sync={sync} />
+            <DeveloperTab
+              settings={draft}
+              update={update}
+              sync={sync}
+              pwa={pwa}
+            />
           )}
           {activeTab === "logs" && <LogsTab />}
         </div>
