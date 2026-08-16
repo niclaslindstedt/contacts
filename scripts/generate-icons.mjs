@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // Generate the PWA install icons and the social-preview image from the same
-// geometry as public/icons/icon.svg — a person outline drawn as a gradient
-// stroke on the app's dark surface (the line-art style shared with the sibling
-// notes and checklist apps). Pure Node (zlib + a minimal PNG encoder), so the
-// pipeline needs no native image dependencies. Rerun with `npm run icons` /
-// `make icons` after changing the mark.
+// geometry as public/icons/icon.svg — a solid person silhouette filled with a
+// green gradient on the app's dark surface (the bold single-glyph style shared
+// with the sibling notes and checklist apps). Pure Node (zlib + a minimal PNG
+// encoder), so the pipeline needs no native image dependencies. Rerun with
+// `npm run icons` / `make icons` after changing the mark.
 import { deflateSync } from "node:zlib";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -14,18 +14,18 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const iconsDir = join(root, "public", "icons");
 mkdirSync(iconsDir, { recursive: true });
 
-// The app look's surface (see src/app/look.ts) and the mark's blue gradient —
-// a distinct hue from the green-marked sibling apps. Kept in lockstep with the
-// <linearGradient> stops in public/icons/icon.svg.
+// The app look's surface (see src/app/look.ts) and the mark's green gradient —
+// the family hue the sibling notes and checklist apps wear. Kept in lockstep
+// with the <linearGradient> stops in public/icons/icon.svg.
 const BG = [11, 13, 16]; // #0b0d10
-const GRAD_TOP = [125, 211, 252]; // #7dd3fc
-const GRAD_BOT = [59, 130, 246]; // #3b82f6
+const GRAD_TOP = [134, 239, 172]; // #86efac
+const GRAD_BOT = [52, 211, 153]; // #34d399
 // The gradient runs top-to-bottom over the mark's vertical extent (unit space),
-// matching the userSpaceOnUse y1=0.25 / y2=0.76 span in the SVG.
-const GRAD_Y0 = 0.25;
-const GRAD_Y1 = 0.76;
+// matching the userSpaceOnUse y1=0.15 / y2=0.84 span in the SVG.
+const GRAD_Y0 = 0.15;
+const GRAD_Y1 = 0.84;
 
-// The stroke ink at unit-space height `y`, interpolated along the gradient.
+// The mark's ink at unit-space height `y`, interpolated along the gradient.
 function markInk(y) {
   const t = Math.max(0, Math.min(1, (y - GRAD_Y0) / (GRAD_Y1 - GRAD_Y0)));
   return [
@@ -105,48 +105,60 @@ function encodePng(width, height, rgba) {
 
 // --- the mark ----------------------------------------------------------------
 
-// Half the stroke width in unit space (SVG stroke-width 8 on the 100 viewBox).
-const STROKE_HALF = 0.04;
+// Sub-pixel sample offsets, used on both axes (a 4×4 grid per pixel).
+const SAMPLES = [1 / 8, 3 / 8, 5 / 8, 7 / 8];
 
-// Whether unit-space point (x, y) lands on the person outline: a head ring over
-// an open shoulders arc with rounded ends. Mirrors the <circle>/<path> geometry
-// in public/icons/icon.svg. The shoulders live on a circle centred at
-// (0.5, 0.781) r=0.231; only its upper arc (down to y≈0.76) is drawn, capped by
-// discs at the two endpoints so the ends read as round.
-function inStroke(x, y) {
-  const head = Math.abs(Math.hypot(x - 0.5, y - 0.38) - 0.13);
-  if (head < STROKE_HALF) return true;
-  if (y <= 0.767) {
-    const shoulders = Math.abs(Math.hypot(x - 0.5, y - 0.781) - 0.231);
-    if (shoulders < STROKE_HALF) return true;
-  }
-  if (Math.hypot(x - 0.27, y - 0.76) < STROKE_HALF) return true;
-  if (Math.hypot(x - 0.73, y - 0.76) < STROKE_HALF) return true;
-  return false;
+// The fillet radius on the two bottom corners of the shoulders dome (unit
+// space; SVG r=4 on the 100 viewBox).
+const FILLET = 0.04;
+
+// Whether unit-space point (x, y) lands on the solid person silhouette: a head
+// disc over a shoulders dome. Mirrors the <circle>/<path> geometry in
+// public/icons/icon.svg — head at (0.5, 0.31) r=0.16, and a dome that is the
+// circle centred at (0.5, 0.87) r=0.35 cut flat at y=0.84. The cut is a rounded
+// intersection of the two signed distances, which fillets the bottom corners
+// the way the SVG path's r=4 arcs do.
+function inMark(x, y) {
+  if (Math.hypot(x - 0.5, y - 0.31) <= 0.16) return true;
+  const a = Math.hypot(x - 0.5, y - 0.87) - 0.35 + FILLET;
+  const b = y - 0.84 + FILLET;
+  const dome =
+    Math.min(Math.max(a, b), 0) +
+    Math.hypot(Math.max(a, 0), Math.max(b, 0)) -
+    FILLET;
+  return dome <= 0;
 }
 
-// Render size×size RGBA. `pad` insets the mark (maskable icons need a safe
-// zone); `radius` rounds the background corners (0 = square, for maskable).
-function renderIcon(size, { pad = 0.12, radius = 0.2 } = {}) {
+// Render size×size RGBA. The mark carries its own margin inside the 100-unit
+// box, so `pad` is 0 by default and only the maskable icon insets further for
+// its safe zone; `radius` rounds the background corners (0 = square, for
+// maskable).
+function renderIcon(size, { pad = 0, radius = 0.2 } = {}) {
   const rgba = Buffer.alloc(size * size * 4);
   const r = radius * size;
   for (let py = 0; py < size; py++) {
     for (let px = 0; px < size; px++) {
       const i = (py * size + px) * 4;
-      // Rounded-rect background coverage.
-      const dx = Math.max(r - px, px - (size - 1 - r), 0);
-      const dy = Math.max(r - py, py - (size - 1 - r), 0);
-      const outside = Math.hypot(dx, dy) - r;
+      // Rounded-rect background coverage, from the shape's signed distance at
+      // the pixel centre (negative inside). The straight-edge term matters:
+      // without it a radius of 0 reads as "on the boundary" everywhere and the
+      // whole square comes out half-transparent.
+      const qx = Math.abs(px + 0.5 - size / 2) - (size / 2 - r);
+      const qy = Math.abs(py + 0.5 - size / 2) - (size / 2 - r);
+      const outside =
+        Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) +
+        Math.min(Math.max(qx, qy), 0) -
+        r;
       const bgAlpha = Math.max(0, Math.min(1, 0.5 - outside));
-      // Stroke coverage in padded unit space, 3×3 supersampled for smooth
-      // edges on the thin outline. The gradient ink is sampled at the pixel's
-      // own height so the stroke shades top-to-bottom.
+      // Mark coverage in padded unit space, 4×4 supersampled so the
+      // silhouette's curved edges stay smooth down to 16 px. The gradient ink
+      // is sampled at the pixel's own height so the mark shades top-to-bottom.
       let hit = 0;
-      for (const oy of [1 / 6, 0.5, 5 / 6]) {
-        for (const ox of [1 / 6, 0.5, 5 / 6]) {
+      for (const oy of SAMPLES) {
+        for (const ox of SAMPLES) {
           const sx = ((px + ox) / size - pad) / (1 - 2 * pad);
           const sy = ((py + oy) / size - pad) / (1 - 2 * pad);
-          if (inStroke(sx, sy)) hit += 1 / 9;
+          if (inMark(sx, sy)) hit += 1 / (SAMPLES.length * SAMPLES.length);
         }
       }
       const [br, bg2, bb] = BG;
@@ -183,7 +195,7 @@ function renderOg() {
     for (let px = 0; px < w; px++) {
       const i = (py * w + px) * 4;
       let [cr, cg, cb] = BG;
-      // The person outline, drawn with the same gradient stroke as the icons.
+      // The person silhouette, drawn with the same gradient ink as the icons.
       if (
         px >= markX &&
         px < markX + markSize &&
@@ -192,7 +204,7 @@ function renderOg() {
       ) {
         const sx = (px - markX) / markSize;
         const sy = (py - markY) / markSize;
-        if (inStroke(sx, sy)) [cr, cg, cb] = markInk(sy).map(Math.round);
+        if (inMark(sx, sy)) [cr, cg, cb] = markInk(sy).map(Math.round);
       }
       // The row bars.
       for (const rrow of rows) {
@@ -220,27 +232,21 @@ writeFileSync(join(iconsDir, "pwa-192.png"), renderIcon(192));
 writeFileSync(join(iconsDir, "pwa-512.png"), renderIcon(512));
 writeFileSync(
   join(iconsDir, "pwa-512-maskable.png"),
-  renderIcon(512, { pad: 0.22, radius: 0 }),
+  renderIcon(512, { pad: 0.1, radius: 0 }),
 );
 writeFileSync(
   join(iconsDir, "apple-touch-icon-180.png"),
-  renderIcon(180, { pad: 0.12, radius: 0 }),
+  renderIcon(180, { radius: 0 }),
 );
 writeFileSync(join(root, "public", "og.png"), renderOg());
 
 // favicon.ico — the browser-tab fallback for engines that ignore the SVG
 // favicon (Safari, search crawlers) and for the implicit /favicon.ico request.
-// Packs the mark at the three classic tab sizes; a hair less padding than the
-// install icons so the thin outline stays legible at 16 px. Lives at the public
-// root so it deploys as `<base>favicon.ico` (see pwa-plugin.ts link tag).
+// Packs the mark at the three classic tab sizes. Lives at the public root so it
+// deploys as `<base>favicon.ico` (see pwa-plugin.ts link tag).
 writeFileSync(
   join(root, "public", "favicon.ico"),
-  encodeIco(
-    [16, 32, 48].map((size) => ({
-      size,
-      data: renderIcon(size, { pad: 0.08 }),
-    })),
-  ),
+  encodeIco([16, 32, 48].map((size) => ({ size, data: renderIcon(size) }))),
 );
 console.log(
   "icons: wrote pwa-192/512/512-maskable, apple-touch-180, og.png, favicon.ico",
