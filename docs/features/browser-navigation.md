@@ -7,8 +7,12 @@ retraces the same steps. It works everywhere the app takes you: the cards you
 picked from the side menu, the ones you landed on from a search hit, the
 Favorites and Archive pages, and the List page you started from.
 
-On a phone this is the gesture you already use — swipe from the edge, or press
-the system Back button, and the app steps back instead of closing. A contact
+On a phone, press the system Back button and the app steps back instead of
+closing. What it no longer does is step on a **swipe**: dragging in from the
+left or right edge of the screen used to go back or forward, and too often it
+fired when you meant to swipe a row to archive it or to pull the sidebar out, so
+the app now keeps sideways swipes for itself. Back and Forward still work from
+the browser's own buttons, the system Back button, and the keyboard. A contact
 card opened from the List page floats above it, and Back closes that card and
 drops you back on the list, right where you were.
 
