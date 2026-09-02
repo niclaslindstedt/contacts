@@ -82,6 +82,7 @@ import { seedBackends, useDevSeed } from "./app/dev/useDevSeed.ts";
 import { localDocBackend, useContactStore } from "./app/useContactStore.ts";
 import { useMediaCache } from "./app/useMediaCache.ts";
 import { useNavigation } from "./app/useNavigation.ts";
+import { useSwipeNavigationGuard } from "./app/useSwipeNavigationGuard.ts";
 import { AppToastViewport } from "./app/AppToastViewport.tsx";
 import { toastStore, UNDO_TOAST_MS } from "./app/toast.ts";
 import { useNamespaces } from "./app/useNamespaces.ts";
@@ -438,6 +439,12 @@ export function App() {
     enabled: swipeToOpen && !drawerOpen,
     onOpen: () => setDrawerOpen(true),
   });
+
+  // Horizontal swipes belong to the app, not to the browser's history: a drag
+  // in from an edge (or a two-finger trackpad flick) no longer goes Back or
+  // Forward, so it can't hijack a row's archive/delete swipe or the drawer's
+  // own edge gesture. See `swipeNavigation.ts`.
+  useSwipeNavigationGuard();
 
   // Keyboard undo/redo over the same document history the side-menu buttons
   // drive (Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z / Ctrl+Y). Gated off while the phone

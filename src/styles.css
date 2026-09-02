@@ -174,7 +174,10 @@ body {
   height: 100%;
   /* Lock the document down: no page scroll and no overscroll rubber-band, so a
      horizontal swipe on a row (or a vertical drag at a list's edge) can't drag
-     the whole page around underneath it on mobile. */
+     the whole page around underneath it on mobile. The `overscroll-behavior`
+     also switches off Chrome's overscroll flavour of history navigation; the
+     edge-swipe and trackpad flavours are handled in JS by
+     `useSwipeNavigationGuard.ts`. */
   overflow: hidden;
   overscroll-behavior: none;
 }
