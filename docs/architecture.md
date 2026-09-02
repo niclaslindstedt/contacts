@@ -120,11 +120,21 @@ from localStorage, a cloud backend, or an imported backup.
 ## Navigation
 
 There is no router library. `route.ts` defines the whole navigation contract —
-a screen (`list` / `favorites` / `archive` / `contact`) plus the open card —
-and its `#/…` spelling; `useAppRoute` mirrors that route into the browser's
+a browse screen (`list` / `favorites` / `archive`) plus the card floating over
+it — and its `#/…` spelling; `useAppRoute` mirrors that route into the browser's
 history and hands popped routes back to `App`, which applies them as state. The
 app state stays the source of truth: the screens go on calling `setView` /
 `setActive`, and the hook only reflects where that lands.
+
+The **main area is always a browse screen** — a contact card never takes it
+over. Every way into a card (a List / Favorites row, a side-menu pick, a search
+hit, a freshly created or pasted contact) funnels through `App`'s
+`openContactModal`, which surfaces the card in the shell's swipe-down `Modal`
+over the page underneath; `ContactScreen` renders only there. The card the
+route carries is therefore always the one floating over the named screen, so
+closing it lands back on the browse page rather than on whatever came before.
+The card used to be a screen of its own, spelled `#/contact/<id>`; `parseRoute`
+still reads those links, mapping them onto the List page with that card open.
 
 The route rides in the **hash**, not the path. The pathname is already spoken
 for — the build serves the same bundle at `/privacy/` and `/home/` (see

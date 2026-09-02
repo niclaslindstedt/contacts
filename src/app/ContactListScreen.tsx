@@ -107,7 +107,8 @@ export function ContactListScreen({
   sync: SyncEngine;
   // Open the framework `SyncDetailsModal` (mounted by the app shell).
   onOpenSyncDetails: () => void;
-  // Open a contact on its card (sets it active and returns to the card view).
+  // Open a contact: sets it active and floats its card in the app shell's
+  // swipe-down modal over this page, which stays put underneath.
   onOpenContact: (id: string) => void;
   // "all" is the List page (every active contact); "favorites" is the
   // Favorites page (only starred cards), same layout over a filtered set.

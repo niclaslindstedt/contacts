@@ -7,6 +7,12 @@ addresses (each with a free-text title), a birthday, other important dates,
 notes, one or more photos, and any files you attach. A card can also be marked
 as a **company** rather than a person.
 
+- **A card always floats over the list.** However you open a contact — tapping
+  a row on the List or Favorites page, picking one in the side menu, or hitting
+  a search result — its card comes up as a **panel over the page you were on**,
+  never replacing it. The overview stays put behind the card, so swiping the
+  card down (or pressing Escape, or tapping outside) drops you straight back to
+  where you left off, scroll position intact.
 - **Read mode by default.** Opening a contact shows it laid out to be read —
   the avatar and name lead the card, phone numbers and emails become tap-to-call
   and tap-to-email links, and the details and notes render as plain, legible

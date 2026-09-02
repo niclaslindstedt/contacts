@@ -108,12 +108,13 @@ type Props = {
   onOpenSettings: () => void;
   onOpenSearch: () => void;
   onOpenChangelog: () => void;
-  // Close the drawer after a navigation (a no-op when the sidebar is docked)
-  // and return the main area to the contact view.
+  // A contact was picked or created here: surface its card (it floats in the
+  // modal over the browse page — the main area keeps showing the list) and
+  // close the drawer, a no-op when the sidebar is docked.
   onNavigate: () => void;
   // The active top-level view — highlights the List / Favorites / Archive
   // buttons when their page shows.
-  view: "contact" | "archive" | "list" | "favorites";
+  view: "archive" | "list" | "favorites";
   onShowArchive: () => void;
   // Open the overview List page (all contacts, grouped by folder).
   onShowList: () => void;
@@ -122,9 +123,6 @@ type Props = {
   // The framework `TrophyButton` in its row form, seated among the footer
   // rows (or nothing when achievements are switched off).
   trophy?: ReactNode;
-  // Notified while a nav row is picked up and dragged, so the host can
-  // suppress competing global gestures (pull-to-refresh) for the duration.
-  onDraggingChange?: (dragging: boolean) => void;
   // How the folder rows are ordered. `alphabetical` sorts them by name;
   // `manual` keeps the hand-dragged order and turns on folder drag-to-reorder.
   folderSort: FolderSort;
@@ -132,7 +130,6 @@ type Props = {
 
 export function SideMenuContent({
   store,
-  onDraggingChange,
   activeNamespace,
   namespaces,
   onSwitchNamespace,
@@ -188,7 +185,6 @@ export function SideMenuContent({
   // each one means (`onDrop`) — reparent into a folder or back to the root,
   // hand a contact / folder to another namespace, or archive it.
   const dnd = useDragDrop<DragItem, DropTarget>({
-    onDraggingChange,
     canDrop: (drag, target) => {
       switch (target.kind) {
         case "folder":
@@ -665,10 +661,7 @@ export function SideMenuContent({
         <NamespaceSwitcher
           namespaces={namespaces}
           activeNamespace={activeNamespace.slug}
-          onSwitch={(slug) => {
-            onSwitchNamespace(slug);
-            onNavigate();
-          }}
+          onSwitch={onSwitchNamespace}
           onManage={onOpenNamespaces}
           dropZone={(slug) =>
             dnd.dropZone(`ns:${slug}`, { kind: "namespace", slug })

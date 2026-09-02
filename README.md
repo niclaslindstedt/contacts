@@ -84,7 +84,10 @@ Enter — and start filling in the card.
 - **In case of emergency** — flip the emergency switch at the bottom of a card's
   edit view (or use a row's menu) to pin it to an **In case of emergency**
   section at the top of the sidebar, in reach no matter which folder it lives in.
-- **Read & edit** — a contact opens in read mode, laid out to scan; the pencil
+- **Read & edit** — a contact always opens as a panel floating over the list,
+  whether you tapped a list row, picked it in the sidebar, or hit a search
+  result; swipe it down (or press Escape) to drop back to the overview. It opens
+  in read mode, laid out to scan; the pencil
   in the toolbar flips it into edit mode (and the check flips it back). Tappable
   phone and email rows — each typed Private or Work — call and compose straight
   from read mode. Phone numbers are entered as plain national digits with the

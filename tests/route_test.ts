@@ -24,11 +24,11 @@ describe("formatRoute", () => {
   });
 
   it("names the open card", () => {
-    expect(formatRoute({ view: "contact", contactId: "contact_7" })).toBe(
-      "#/contact/contact_7",
-    );
     expect(formatRoute({ view: "list", contactId: "contact_7" })).toBe(
       "#/list/contact_7",
+    );
+    expect(formatRoute({ view: "favorites", contactId: "contact_7" })).toBe(
+      "#/favorites/contact_7",
     );
   });
 
@@ -38,13 +38,9 @@ describe("formatRoute", () => {
     );
   });
 
-  it("spells a card-less contact view — an empty address book", () => {
-    expect(formatRoute({ view: "contact", contactId: null })).toBe("#/contact");
-  });
-
   it("escapes an id that would otherwise break the path", () => {
-    expect(formatRoute({ view: "contact", contactId: "a/b c" })).toBe(
-      "#/contact/a%2Fb%20c",
+    expect(formatRoute({ view: "list", contactId: "a/b c" })).toBe(
+      "#/list/a%2Fb%20c",
     );
   });
 });
@@ -55,8 +51,6 @@ describe("parseRoute", () => {
       { view: "list", contactId: null },
       { view: "favorites", contactId: null },
       { view: "archive", contactId: null },
-      { view: "contact", contactId: null },
-      { view: "contact", contactId: "contact_7" },
       { view: "list", contactId: "contact_7" },
       { view: "favorites", contactId: "a/b c" },
     ];
@@ -78,8 +72,8 @@ describe("parseRoute", () => {
   });
 
   it("survives a malformed escape in the id", () => {
-    expect(parseRoute("#/contact/%zz")).toEqual({
-      view: "contact",
+    expect(parseRoute("#/list/%zz")).toEqual({
+      view: "list",
       contactId: "%zz",
     });
   });
@@ -89,17 +83,28 @@ describe("parseRoute", () => {
       view: "archive",
       contactId: null,
     });
-    expect(parseRoute("#//contact/contact_7")).toEqual({
-      view: "contact",
+    expect(parseRoute("#//list/contact_7")).toEqual({
+      view: "list",
       contactId: "contact_7",
     });
   });
 
   it("ignores trailing junk past the id", () => {
-    expect(parseRoute("#/contact/contact_7/edit")).toEqual({
-      view: "contact",
+    expect(parseRoute("#/list/contact_7/edit")).toEqual({
+      view: "list",
       contactId: "contact_7",
     });
+  });
+
+  // The card used to be a screen of its own; those links are still in
+  // bookmarks and history, and now land where the same tap lands today — the
+  // List page with that card floating over it.
+  it("reads a legacy `#/contact/<id>` link as the card over the List page", () => {
+    expect(parseRoute("#/contact/contact_7")).toEqual({
+      view: "list",
+      contactId: "contact_7",
+    });
+    expect(parseRoute("#/contact")).toEqual(DEFAULT_ROUTE);
   });
 
   it("drops a card the archive screen can't show", () => {
@@ -112,16 +117,16 @@ describe("parseRoute", () => {
 
 describe("routeKey", () => {
   it("matches two routes that stand for the same place", () => {
-    expect(routeKey({ view: "contact", contactId: "contact_7" })).toBe(
-      routeKey({ view: "contact", contactId: "contact_7" }),
+    expect(routeKey({ view: "list", contactId: "contact_7" })).toBe(
+      routeKey({ view: "list", contactId: "contact_7" }),
     );
     expect(routeKey({ view: "archive", contactId: "contact_7" })).toBe(
       routeKey({ view: "archive", contactId: null }),
     );
   });
 
-  it("separates the full-page card from the one over a browse page", () => {
-    expect(routeKey({ view: "contact", contactId: "contact_7" })).not.toBe(
+  it("separates the same card open over two different browse pages", () => {
+    expect(routeKey({ view: "favorites", contactId: "contact_7" })).not.toBe(
       routeKey({ view: "list", contactId: "contact_7" }),
     );
   });

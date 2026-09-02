@@ -14,20 +14,26 @@
 // pops these routes lives in `useAppRoute.ts`.
 
 /** The top-level screen the main area shows. */
-export type AppView = "list" | "favorites" | "archive" | "contact";
+export type AppView = "list" | "favorites" | "archive";
 
 /**
- * Where the app is. `contactId` is the open card: under `contact` it is the
- * full-page card (the way in from the sidebar or a search hit); under `list` /
- * `favorites` it is the card floating in the swipe-down modal over that browse
- * page. The `archive` screen never carries one.
+ * Where the app is. `contactId` is the open card — always the one floating in
+ * the swipe-down modal over the browse page underneath, whether it was reached
+ * from a list row, the side menu, or a search hit. The `archive` screen never
+ * carries one.
  */
 export type AppRoute = { view: AppView; contactId: string | null };
 
 /** The app opens on the List page — the overview of every contact. */
 export const DEFAULT_ROUTE: AppRoute = { view: "list", contactId: null };
 
-const VIEWS: readonly AppView[] = ["list", "favorites", "archive", "contact"];
+const VIEWS: readonly AppView[] = ["list", "favorites", "archive"];
+
+// Before the card became a modal over the browse page it was a screen of its
+// own, spelled `#/contact/<id>`. Those links are still out there in bookmarks
+// and history, so they're read as the List page with that card floating over
+// it — the place the same tap lands today.
+const LEGACY_CARD_VIEW = "contact";
 
 // A card only rides in the route on the screens that can actually show one.
 function cardFor(view: AppView, id: string | null): string | null {
@@ -61,9 +67,11 @@ export function parseRoute(hash: string): AppRoute {
     .replace(/^\/+/, "")
     .split("/");
   const decoded = decode(rawView);
+  const id = rawId ? decode(rawId) : null;
+  if (decoded === LEGACY_CARD_VIEW) return { view: "list", contactId: id };
   const view = VIEWS.find((v) => v === decoded);
   if (!view) return DEFAULT_ROUTE;
-  return { view, contactId: cardFor(view, rawId ? decode(rawId) : null) };
+  return { view, contactId: cardFor(view, id) };
 }
 
 /**

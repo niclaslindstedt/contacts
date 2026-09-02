@@ -12,7 +12,8 @@ npm run dev
 On first launch you land in the **Personal** namespace with one blank card.
 
 1. **Create a contact** — the `+` button in the sidebar's action grid, type a
-   full name, press Enter. The card opens in the main area.
+   full name, press Enter. The card opens as a panel over the list — dismiss it
+   with Escape (or a swipe down) to get back to the overview.
 2. **Fill in the card** — phone numbers and emails are lists (add as many as
    you like, label them Mobile/Home/Work); company, address, birthday, and
    notes are plain fields. Every field saves when you leave it.
