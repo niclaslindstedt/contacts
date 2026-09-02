@@ -11,6 +11,7 @@ import {
   ChevronRightIcon,
   FolderOpenIcon,
   GripIcon,
+  ImageUpIcon,
   ListIcon,
   PersonIcon,
   RowActionMenu,
@@ -39,6 +40,7 @@ import {
 import { FavoriteIcon, SectionsToggleIcon } from "./icons.tsx";
 import { MassEditModal } from "./MassEditModal.tsx";
 import { MoveToFolderMenu } from "./MoveToFolderMenu.tsx";
+import { useContactRowPhotoDrop } from "./photoDrop.tsx";
 import { SelectActions, SelectCountBar } from "./SelectToast.tsx";
 import { allTags } from "./tags.ts";
 import { customRelationsInUse } from "./relation.ts";
@@ -54,7 +56,7 @@ import {
   rangeBetween,
   reorderIds,
 } from "./contactList.ts";
-import { toastStore, UNDO_TOAST_MS } from "./toast.ts";
+import { INFO_TOAST_MS, toastStore, UNDO_TOAST_MS } from "./toast.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { SyncEngine } from "./useSyncEngine.ts";
 import type { Contact, Phone } from "./types.ts";
@@ -516,6 +518,31 @@ export function ContactListScreen({
     return () => cancelAnimationFrame(raf);
   }, [dragging]);
 
+  // Dropping an image onto a row gives *that* contact the picture. One zone
+  // covers the whole scrolling list (see `useContactRowPhotoDrop`): the row
+  // under the pointer lights up as the landing place, and releasing over it
+  // opens the circle cropper, after which the photo joins that card's gallery
+  // as its face. A `.vcf` / CSV / JSON drag is untouched and still imports.
+  const photoDrop = useContactRowPhotoDrop({
+    containerRef: scrollRef,
+    // Resolved against the whole document rather than the listed set, so a
+    // filter change (or a collapse) while the cropper is open can't strand the
+    // photo.
+    contactFor: (id) => data.contacts.find((c) => c.id === id),
+    updateContact,
+    // Released over a section header or the empty space past the last row —
+    // there's no card to hand the picture to, so say where it belongs instead
+    // of swallowing the drop.
+    onMissedRow: () => {
+      toastStore.clear();
+      toastStore.push({
+        message: t("list.dropPhotoMissed"),
+        icon: <ImageUpIcon className="h-4 w-4" />,
+        durationMs: INFO_TOAST_MS,
+      });
+    },
+  });
+
   // The "Move to folder" right-click submenu — `movePos` captures where the row
   // was right-clicked; `movePicker` holds the ids to move once the action fires.
   const movePos = useRef<FloatingPoint>({ x: 0, y: 0 });
@@ -693,6 +720,7 @@ export function ContactListScreen({
             settings={settings}
             selecting={selecting}
             selected={selected}
+            photoDropTargetId={photoDrop.targetId}
             rowActionsFor={contactRowActions}
             onCapturePos={(x, y) => {
               movePos.current = { x, y };
@@ -802,7 +830,9 @@ export function ContactListScreen({
                 {expanded && (
                   <ul className="m-0 list-none p-0">
                     {group.contacts.map((contact, i) => (
-                      <li key={contact.id}>
+                      // The row is a photo drop target: an image released over
+                      // it becomes this contact's picture (see `photoDrop`).
+                      <li key={contact.id} data-photo-drop-id={contact.id}>
                         <DraggableContactRow
                           dragHandle={dnd.dragHandle(contact.id)}
                           actions={contactRowActions(contact)}
@@ -827,6 +857,7 @@ export function ContactListScreen({
                               selectRow(contact.id, extend)
                             }
                             onToggleFavorite={() => toggleFavorite(contact)}
+                            photoDropTarget={photoDrop.targetId === contact.id}
                             last={
                               folderBelow && i === group.contacts.length - 1
                             }
@@ -844,6 +875,15 @@ export function ContactListScreen({
 
       {/* The floating count pill — hovers at the bottom over the list. */}
       {selecting && <SelectCountBar count={selectedContacts.length} />}
+
+      {/* While an image is dragged over the list, a click-through pill spells
+          out what a drop does — the rows themselves stay visible (and one of
+          them lit) rather than being covered by a full-area overlay. */}
+      {photoDrop.active && <PhotoDropHint />}
+
+      {/* The circle cropper for a picture dropped on a row — mounted here so it
+          outlives the drag that opened it. */}
+      {photoDrop.cropper}
 
       {/* The "Move to folder" right-click submenu. */}
       <MoveToFolderMenu
@@ -899,6 +939,28 @@ export function ContactListScreen({
         onCancel={() => setConfirmDelete(null)}
         labels={{ close: t("common.close"), cancel: t("common.cancel") }}
       />
+    </div>
+  );
+}
+
+// The hovering hint shown while an image is dragged over the list — the same
+// floating pill shape the select count wears, click-through so it can never
+// swallow the drop it is describing. It says what a release does; the lit row
+// underneath says *who* it does it to.
+function PhotoDropHint() {
+  const t = useT();
+  return (
+    <div
+      className="pointer-events-none absolute inset-x-0 bottom-4 z-40 flex justify-center px-4"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex max-w-full items-center gap-2 rounded-full border border-accent/50 bg-surface-2 px-4 py-1.5 text-fg-bright shadow-lg">
+        <ImageUpIcon className="h-4 w-4 shrink-0 text-accent" />
+        <span className="truncate text-sm font-semibold">
+          {t("list.dropPhotoHint")}
+        </span>
+      </div>
     </div>
   );
 }
@@ -1022,6 +1084,7 @@ function FavoritesReorderList({
   settings,
   selecting,
   selected,
+  photoDropTargetId,
   rowActionsFor,
   onCapturePos,
   onOpenContact,
@@ -1033,6 +1096,9 @@ function FavoritesReorderList({
   settings: AppSettings;
   selecting: boolean;
   selected: ReadonlySet<string>;
+  // The contact an image currently being dragged over the list would land on,
+  // or null — that row lights up as the picture's landing place.
+  photoDropTargetId: string | null;
   // Builds the right-click actions for a row. Favorites rows don't swipe (that
   // stays a List-page affordance), so only the menu actions are used here.
   rowActionsFor: (contact: Contact) => {
@@ -1108,6 +1174,8 @@ function FavoritesReorderList({
             key={contact.id}
             ref={setRef}
             className="relative"
+            // An image released over this row becomes the contact's picture.
+            data-photo-drop-id={contact.id}
             // Record the right-click point (capture phase) so the folder
             // submenu opens there.
             onContextMenuCapture={(e) => onCapturePos(e.clientX, e.clientY)}
@@ -1137,6 +1205,7 @@ function FavoritesReorderList({
                   onToggleSelected(contact.id, extend)
                 }
                 onToggleFavorite={() => onToggleFavorite(contact)}
+                photoDropTarget={photoDropTargetId === contact.id}
                 grip={
                   selecting ? undefined : (
                     <ReorderGrip
@@ -1409,6 +1478,7 @@ function ContactRow({
   onToggleSelected,
   onToggleFavorite,
   grip,
+  photoDropTarget = false,
   favoritesOnly = false,
   last = false,
 }: {
@@ -1424,6 +1494,10 @@ function ContactRow({
   // The drag handle shown at the row's leading edge on the reorderable
   // Favorites page. Absent everywhere else — the row reads exactly as before.
   grip?: ReactNode;
+  // True while an image dragged over the list would land on *this* card. The
+  // row lights up and its avatar wears an "image goes here" badge, so the drop
+  // is aimed before it happens rather than explained after it.
+  photoDropTarget?: boolean;
   // On the Favorites page a card with a designated primary number shows only
   // that one number, not its whole list — so a starred contact reads as a single
   // tap-to-call. The full List page always shows the prioritized set.
@@ -1473,6 +1547,30 @@ function ContactRow({
     </span>
   );
 
+  // The card's face, badged while it's the picture's landing place — the badge
+  // sits on the avatar because that's exactly where the photo ends up.
+  const avatar = (
+    <span className="relative inline-flex shrink-0">
+      <Avatar contact={contact} size={avatarSize} />
+      {photoDropTarget && (
+        <span
+          aria-hidden
+          className="absolute inset-0 flex items-center justify-center rounded-full bg-accent/80 text-white"
+        >
+          <ImageUpIcon className="h-1/2 w-1/2" />
+        </span>
+      )}
+    </span>
+  );
+  // The same ring the side menu draws around a row a card is being filed into,
+  // so "this is the drop target" reads the same everywhere.
+  const dropRing = photoDropTarget ? (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute inset-0 z-10 bg-accent/15 ring-2 ring-accent ring-inset"
+    />
+  ) : null;
+
   if (selecting) {
     return (
       <button
@@ -1484,14 +1582,15 @@ function ContactRow({
         aria-label={t("list.selectContact", {
           name: name || t("contact.unnamed"),
         })}
-        className={`flex w-full cursor-pointer items-center ${borderClass} px-1 text-left ${rowSpacing} ${
+        className={`relative flex w-full cursor-pointer items-center ${borderClass} px-1 text-left ${rowSpacing} ${
           selected ? "bg-accent/10" : "hover:bg-surface-2"
         }`}
       >
+        {dropRing}
         <span className="shrink-0" aria-hidden>
           <CheckboxGlyph checked={selected} />
         </span>
-        <Avatar contact={contact} size={avatarSize} />
+        {avatar}
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           {nameNode}
           <ContactMethodsText
@@ -1523,12 +1622,11 @@ function ContactRow({
         }
       }}
       aria-label={name || t("contact.unnamed")}
-      className={`flex cursor-pointer items-center ${borderClass} px-1 transition-colors hover:bg-surface-2 ${rowSpacing}`}
+      className={`relative flex cursor-pointer items-center ${borderClass} px-1 transition-colors hover:bg-surface-2 ${rowSpacing}`}
     >
+      {dropRing}
       {grip}
-      <span className="shrink-0">
-        <Avatar contact={contact} size={avatarSize} />
-      </span>
+      {avatar}
       {/* Narrow screens stack the methods under the name; from `sm` up there's
           room to sit them to the right of it, so the row reads on one line. A
           lone big pill gets extra space above it (`gap-2`) so it drops toward

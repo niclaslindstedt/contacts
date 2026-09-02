@@ -176,7 +176,9 @@ as a **company** rather than a person.
   reopens the cropper at the same framing so you can re-position later. Quicker
   still: **drag an image straight onto the open contact** — a dashed drop zone
   appears over the card, and releasing opens the same cropper, adding the photo
-  and making it the face — no need to be in edit mode first. In read mode,
+  and making it the face — no need to be in edit mode first. The List and
+  Favorites pages take the same drag: the row under the pointer lights up as the
+  picture's landing place, so a card can be given its photo without being opened. In read mode,
   tapping the photo opens it full-screen; when there are several, **swipe left
   and right** (or use the arrow keys) to page through them, with a count readout
   and a dot per photo. Swipe down (or press Escape) to dismiss. No photo? Pick an

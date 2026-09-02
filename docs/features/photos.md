@@ -12,6 +12,12 @@ later. Quicker still, **drag an image straight onto the open contact** — a das
 drop zone appears, and releasing opens the same cropper and makes the photo the
 face, no edit mode needed.
 
+The same works from the [List](feature:list) and [Favorites](feature:favorites)
+pages: drag a picture over the list and the contact under your pointer lights up
+as its landing place, so you can give a card its photo without opening it. Let go
+over that row and the cropper opens as usual; let go between rows and nothing
+happens — nothing was aimed at.
+
 ## The photo gallery
 
 In edit mode, the avatar's appearance popover has a **Photos** section: a

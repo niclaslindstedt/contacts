@@ -112,6 +112,10 @@ export const sv: Catalog = {
       "Inga kontakter ännu. Lägg till en från sidofältet så visas den här.",
     ungrouped: "Ingen mapp",
     noContactMethods: "Ingen telefon eller e-post",
+    // När en bild dras över listan: den svävande ledtråden, och vad som sägs
+    // när bilden släpps mellan rader i stället för på en kontakt.
+    dropPhotoHint: "Släpp på en kontakt för att ange dess foto",
+    dropPhotoMissed: "Släpp bilden på en kontakt för att ange dess foto",
     select: "Välj",
     selectAll: "Välj alla",
     selectNone: "Avmarkera alla",

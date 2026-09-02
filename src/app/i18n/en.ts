@@ -124,6 +124,10 @@ export const en = {
     empty: "No contacts yet. Add one from the sidebar to see it here.",
     ungrouped: "No folder",
     noContactMethods: "No phone or email",
+    // Dragging an image over the list: the hovering hint, and what's said when
+    // the picture is released between rows rather than on a contact.
+    dropPhotoHint: "Drop on a contact to set their photo",
+    dropPhotoMissed: "Drop the picture on a contact to set their photo",
     select: "Select",
     selectAll: "Select all",
     selectNone: "Select none",
