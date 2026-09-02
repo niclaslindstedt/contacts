@@ -16,6 +16,9 @@ The List page files contacts, too:
 
 - **Drag** a row onto a folder section to move it there — the section lights up,
   and the list auto-scrolls when you drag near its edges.
+- **Drag an image** from your computer onto a row to make it that contact's
+  [photo](feature:photos) — the row lights up as the picture's landing place, and
+  releasing opens the circle cropper.
 - **Swipe** a row — left bares a **Delete** button, right archives the contact.
   This is the home for archiving and deleting on touch: the side menu's rows no
   longer swipe.
