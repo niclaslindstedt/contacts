@@ -190,10 +190,6 @@ export function App() {
   // collapse it to a draggable drawer.
   const pinned = useMediaQuery("(min-width: 768px)");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  // True while a sidebar gesture owns the pointer — the floating button being
-  // dragged, or a nav row picked up to reparent / archive. Both would
-  // otherwise arm the screen's pull-to-refresh behind them.
-  const [sidebarDragging, setSidebarDragging] = useState(false);
   // The sidebar button's resting spot is remembered across reloads by the
   // framework's `usePersistentMenuPosition`.
   const [position, setPosition] = usePersistentMenuPosition(
@@ -201,12 +197,13 @@ export function App() {
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  // Where the app is: the top-level screen the main area shows (the active
-  // contact, the List page, Favorites, or Archive — all reached from the side
-  // menu's action grid), and whether the open card is floating in the modal
-  // over a browse page. Kept in step with the browser's history, so opening one
-  // contact then another leaves Back stepping to the previous card and a
-  // `#/contact/<id>` link is bookmarkable (see `useNavigation`).
+  // Where the app is: the top-level screen the main area shows (the List page,
+  // Favorites, or Archive — all reached from the side menu's action grid), and
+  // whether a card is open over it. The main area is always one of the browse
+  // screens; a card never replaces it, it floats in the modal on top. Kept in
+  // step with the browser's history, so opening one contact then another leaves
+  // Back stepping to the previous card and a `#/list/<id>` link is bookmarkable
+  // (see `useNavigation`).
   const { view, setView, contactModalOpen, setContactModalOpen } =
     useNavigation({
       store,
@@ -219,13 +216,29 @@ export function App() {
   // when the card unmounts, so a swipe- or Escape-close would otherwise drop
   // the in-progress field — blur the active element ourselves first to force
   // its commit. Closing then unmounts the card, which also drops its edit mode:
-  // reopening a card lands in read mode. The sidebar full page is deliberately
-  // different — it keeps edit mode across contact switches so you can edit one
-  // card after another — so only this modal path resets it.
+  // reopening a card lands in read mode. Switching *between* cards while the
+  // modal stays open (picking another contact in a pinned sidebar) keeps the
+  // card mounted, so edit mode carries across that switch — see
+  // `ContactScreen`.
   const closeContactModal = useCallback(() => {
     (document.activeElement as HTMLElement | null)?.blur?.();
     setContactModalOpen(false);
   }, [setContactModalOpen]);
+  // Surface a card: float it in the modal over the browse page. Every way in —
+  // a List / Favorites row, a side-menu pick, a search hit, a freshly created
+  // or pasted contact — lands here, so the main area goes on showing the
+  // contact list underneath and closing the card drops you straight back onto
+  // it. The archive can't show a card, so a pick made from there lands on the
+  // List page.
+  const openContactModal = useCallback(
+    (id?: string) => {
+      if (id) store.setActive(id);
+      if (view === "archive") setView("list");
+      setContactModalOpen(true);
+      if (!pinned) setDrawerOpen(false);
+    },
+    [store, view, setView, setContactModalOpen, pinned],
+  );
   // Pressing a tag on a contact card: close the card, land on the List page,
   // and stash the tag for `ContactListScreen` to apply as the active filter.
   const filterByTag = useCallback(
@@ -500,13 +513,12 @@ export function App() {
         ],
         merges: [],
       });
-      closeContactModal();
-      setView("contact");
+      openContactModal();
       showUndoToast(t("toast.contactCreated"), createGlyph);
     };
     window.addEventListener("paste", handler);
     return () => window.removeEventListener("paste", handler);
-  }, [pinned, store, closeContactModal, setView, showUndoToast, t]);
+  }, [pinned, store, openContactModal, showUndoToast, t]);
 
   // Publish the docked sidebar's footprint as CSS variables so viewport-fixed
   // overlays (the `UpdateToast`) centre over the content band.
@@ -592,7 +604,6 @@ export function App() {
         onClose={() => setDrawerOpen(false)}
         position={position}
         onPositionChange={setPosition}
-        onDraggingChange={setSidebarDragging}
         // On phones the button shows only in "Floating button" mode; in
         // "Right-swipe" mode the edge-swipe gesture opens the drawer instead.
         showButton={!pinned && !swipeToOpen}
@@ -606,10 +617,16 @@ export function App() {
       >
         <SideMenuContent
           store={screenStore}
-          onDraggingChange={setSidebarDragging}
           activeNamespace={ns.activeNamespace}
           namespaces={ns.list}
-          onSwitchNamespace={ns.switchTo}
+          onSwitchNamespace={(slug) => {
+            // A different address book starts on its own List page, with no
+            // card carried over from the one you left.
+            ns.switchTo(slug);
+            closeContactModal();
+            setView("list");
+            if (!pinned) setDrawerOpen(false);
+          }}
           onOpenNamespaces={() => setNamespacesOpen(true)}
           onOpenSettings={() => {
             setDrawerOpen(false);
@@ -624,11 +641,9 @@ export function App() {
             setChangelogOpen(true);
           }}
           onNavigate={() => {
-            // Selecting or creating a contact from the sidebar opens the card
-            // as a full page (never the browse-page modal).
-            closeContactModal();
-            setView("contact");
-            if (!pinned) setDrawerOpen(false);
+            // Selecting or creating a contact from the sidebar surfaces the
+            // card in the modal — the main area keeps showing the list.
+            openContactModal();
           }}
           view={view}
           onShowArchive={() => {
@@ -654,11 +669,11 @@ export function App() {
       <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Drag a `.vcf` (or CSV / JSON) onto the main area to import — the
             drop reads the cards and files them into the address book. Wraps
-            both views so a drop lands whether the card or the archive shows. */}
+            both views so a drop lands whether the list or the archive shows. */}
         <ImportDropZone store={store}>
           {view === "archive" ? (
             <ArchiveScreen store={screenStore} />
-          ) : view === "list" || view === "favorites" ? (
+          ) : (
             <ContactListScreen
               store={screenStore}
               settings={settings}
@@ -670,32 +685,17 @@ export function App() {
               // Tapping a row floats the card up in the swipe-down modal over
               // the browse page, rather than replacing it — closing returns
               // here with the scroll position intact.
-              onOpenContact={(id) => {
-                store.setActive(id);
-                setContactModalOpen(true);
-                if (!pinned) setDrawerOpen(false);
-              }}
-            />
-          ) : (
-            <ContactScreen
-              store={store}
-              sync={sync}
-              settings={settings}
-              onOpenSyncDetails={() => setSyncDetailsOpen(true)}
-              onFilterByTag={filterByTag}
-              // Suppress pull-to-refresh while a sidebar drag owns the pointer,
-              // and while the phone drawer covers the screen.
-              pullEnabled={!sidebarDragging && (pinned || !drawerOpen)}
+              onOpenContact={openContactModal}
             />
           )}
         </ImportDropZone>
       </main>
 
-      {/* The card as a swipe-down modal — the way in from the List / Favorites
-          pages. The framework `Modal` (non-centered) carries the drag-to-
-          dismiss gesture itself; pull-to-refresh is off inside it so the two
-          downward gestures don't fight. Closing lands back on the browse page
-          underneath. */}
+      {/* The card, always as a swipe-down modal — a list row, a side-menu
+          pick and a search hit all land here, so the main area never stops
+          showing the contact list. The framework `Modal` (non-centered)
+          carries the drag-to-dismiss gesture itself. Closing lands back on the
+          browse page underneath, scroll position intact. */}
       <Modal
         open={contactModalOpen && !!store.activeContact}
         onClose={closeContactModal}
@@ -713,8 +713,6 @@ export function App() {
           settings={settings}
           onOpenSyncDetails={() => setSyncDetailsOpen(true)}
           onFilterByTag={filterByTag}
-          pullEnabled={false}
-          inModal
         />
       </Modal>
 
@@ -887,10 +885,8 @@ export function App() {
         onClose={() => setSearchOpen(false)}
         store={store}
         onNavigate={() => {
-          // A search hit opens the card as a full page, like a sidebar pick.
-          closeContactModal();
-          setView("contact");
-          if (!pinned) setDrawerOpen(false);
+          // A search hit surfaces the card in the modal, like a sidebar pick.
+          openContactModal();
         }}
       />
 

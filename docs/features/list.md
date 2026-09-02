@@ -85,6 +85,8 @@ skips whatever is tucked inside a folder you've collapsed. Each folder heading
 also grows its own **checkbox** while selecting — one tap ticks everyone in that
 folder, another clears them.
 
-Opening a contact from the List floats its card over the page — swipe it down
-(or press Escape, or tap outside) to dismiss it and drop back to where you left
-off.
+Opening a contact floats its card over the page — swipe it down (or press
+Escape, or tap outside) to dismiss it and drop back to where you left off. That
+holds wherever you open it from: a list row, a pick in the side menu, or a
+search result all surface the same panel, and the overview never goes away
+behind it.

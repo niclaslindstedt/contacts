@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   CheckIcon,
   CopyButton,
   DownloadIcon,
   PencilIcon,
-  PullToRefreshIndicator,
 } from "@niclaslindstedt/oss-framework/components";
 import { downloadText, MIME_VCARD } from "@niclaslindstedt/oss-framework/files";
-import { usePullToRefresh } from "@niclaslindstedt/oss-framework/hooks";
 import { SyncStatus } from "@niclaslindstedt/oss-framework/sync";
 import { unlock } from "@niclaslindstedt/oss-framework/achievements";
 
@@ -33,19 +31,20 @@ import type { AppSettings } from "./useAppSettings.ts";
 import type { Contact } from "./types.ts";
 import { displayName } from "./types.ts";
 
-// The contact screen — the app's main view. A card opens in read mode: a
-// toolbar (edit toggle, copy / vCard-download, sync glyph) over the card body,
-// where the avatar and name lead and the information is laid out to be read.
-// The toolbar's pencil flips the same card into edit mode, swapping the read
-// body for the field form; the check flips it back.
+// The contact card. It always rides inside the app shell's swipe-down `Modal`,
+// floating over the browse page — every way in (a List / Favorites row, a
+// side-menu pick, a search hit) surfaces it there rather than replacing the
+// main area, so the contact list stays put underneath. A card opens in read
+// mode: a toolbar (edit toggle, copy / vCard-download, sync glyph) over the
+// card body, where the avatar and name lead and the information is laid out to
+// be read. The toolbar's pencil flips the same card into edit mode, swapping
+// the read body for the field form; the check flips it back.
 export function ContactScreen({
   store,
   sync,
   settings,
   onOpenSyncDetails,
   onFilterByTag,
-  pullEnabled = true,
-  inModal = false,
 }: {
   store: ContactStore;
   // The app's sync engine — drives the header `SyncStatus` glyph.
@@ -57,18 +56,8 @@ export function ContactScreen({
   // Pressing a tag chip in the read view opens the List page filtered to that
   // tag (the app closes this card and switches views).
   onFilterByTag?: (tag: string) => void;
-  // Gate the pull-to-refresh gesture. The shell drops this to false while a
-  // sidebar drag owns the pointer or the phone drawer covers the screen — and
-  // whenever the card rides inside the swipe-to-dismiss modal, whose own
-  // downward gesture would otherwise fight pull-to-refresh.
-  pullEnabled?: boolean;
-  // True when this card is shown inside the framework `Modal` (opened from the
-  // List / Favorites pages). The modal supplies the top safe-area inset and a
-  // swipe-down-to-dismiss gesture, so the card drops its own top inset padding
-  // and shows a grab handle instead of a back button.
-  inModal?: boolean;
 }) {
-  const { activeContact, updateContact, reload } = store;
+  const { activeContact, updateContact } = store;
   // The relationship picker and tag field suggest values already in use across
   // the whole address book, so a custom relationship or tag added once is
   // reusable on any other card. Derived from the live document, not stored.
@@ -92,14 +81,6 @@ export function ContactScreen({
     if (activeContact && isEmptyContact(activeContact)) setEditing(true);
   }
 
-  // The pull-to-refresh "sync": re-read the persisted document to pick up
-  // edits from another tab. The header `SyncStatus` glyph reflects the *save*
-  // lifecycle separately; this is the read side.
-  const doPull = useCallback(() => {
-    reload();
-  }, [reload]);
-  const pull = usePullToRefresh(doPull, { enabled: pullEnabled });
-
   if (!activeContact) return null;
 
   return (
@@ -109,22 +90,14 @@ export function ContactScreen({
     <ContactPhotoDropZone
       contact={activeContact}
       updateContact={updateContact}
-      className={`relative mx-auto flex h-full w-full max-w-2xl flex-col px-4 ${
-        inModal ? "pt-3" : "pt-[calc(0.75rem+env(safe-area-inset-top))]"
-      }`}
+      className="relative mx-auto flex h-full w-full max-w-2xl flex-col px-4 pt-3"
     >
       {/* Grab handle — the swipe-down-to-dismiss affordance the modal offers on
           phones. The modal already supplies the desktop backdrop / Escape exit,
           so this is mobile-only. */}
-      {inModal && (
-        <div
-          aria-hidden="true"
-          className="mx-auto mb-2 h-1.5 w-10 shrink-0 rounded-full bg-line sm:hidden"
-        />
-      )}
-      <PullToRefreshIndicator
-        state={pull.state}
-        pullDistance={pull.pullDistance}
+      <div
+        aria-hidden="true"
+        className="mx-auto mb-2 h-1.5 w-10 shrink-0 rounded-full bg-line sm:hidden"
       />
       {/* Key the card by contact id so switching cards remounts it: fresh
           field drafts for the new card. The read/edit mode is held above this

@@ -297,7 +297,8 @@ export function useContactStore(
   }, [markPersist]);
 
   // Re-read the persisted document from localStorage, picking up edits made in
-  // another tab. Drives the pull-to-refresh gesture. Replaces the present
+  // another tab — the sync engine's "reload from backend" runs through here.
+  // Replaces the present
   // without touching the undo history (a refresh isn't an edit you'd undo). A
   // reload adopts what's already on disk, so it never marks the state to persist
   // — writing it straight back would defeat the non-destructive load guard.
