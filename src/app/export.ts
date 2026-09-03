@@ -13,9 +13,12 @@
 // is unit-testable in node (see `tests/export_test.ts`). The download glue
 // (Blob + anchor click) is the framework's (`files` — `downloadText`).
 
-import { formatAddress, hasAddress } from "./address.ts";
+import {
+  formatAddress,
+  hasAddress,
+} from "@niclaslindstedt/oss-framework/format";
 import { activePhotoSrc } from "./contactPhotos.ts";
-import { phoneDialString } from "./format.ts";
+import { phoneDialString } from "@niclaslindstedt/oss-framework/format";
 import { parseFlexDate } from "./importantDates.ts";
 import type { Contact } from "./types.ts";
 import { displayName, methodKind } from "./types.ts";

@@ -14,7 +14,7 @@ import {
   extSuffix,
   groupDigits,
   type ParsedPhone,
-} from "../format.ts";
+} from "@niclaslindstedt/oss-framework/format";
 import type {
   CountryFormat,
   CountrySamples,

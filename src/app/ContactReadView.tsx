@@ -39,7 +39,11 @@ import {
 } from "./attachments.ts";
 import { downloadAttachment, openAttachment } from "./attachmentView.ts";
 import { autoArchiveAction } from "./autoArchive.ts";
-import { addressLines, hasAddress, mapsUrl } from "./address.ts";
+import {
+  addressLines,
+  hasAddress,
+  mapsUrl,
+} from "@niclaslindstedt/oss-framework/format";
 import { exportFileStem } from "./export.ts";
 import {
   birthdayIcs,
@@ -53,7 +57,8 @@ import { relationLabel } from "./relation.ts";
 import { contactTags } from "./tags.ts";
 import { TagIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
-import { formatDate, phoneDialString } from "./format.ts";
+import { phoneDialString } from "@niclaslindstedt/oss-framework/format";
+import { formatDate } from "./format.ts";
 import { formatStoredPhone, formatPostalValue } from "./countries/index.ts";
 import {
   phoneOptions,

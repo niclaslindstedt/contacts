@@ -20,7 +20,7 @@ import { useT } from "./i18n/index.ts";
 import { contactToVCard, exportFileStem } from "./export.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { SyncEngine } from "./useSyncEngine.ts";
-import { hasAddress } from "./address.ts";
+import { hasAddress } from "@niclaslindstedt/oss-framework/format";
 import { hasAttachments } from "./attachments.ts";
 import { allTags, contactTags } from "./tags.ts";
 import { customRelationsInUse } from "./relation.ts";

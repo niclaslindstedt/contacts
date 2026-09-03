@@ -6,7 +6,7 @@
 // adding one file under `countries/` that implements `CountryFormat` and
 // registering it in `index.ts` — nothing else in the app changes.
 
-import type { ParsedPhone } from "../format.ts";
+import type { ParsedPhone } from "@niclaslindstedt/oss-framework/format";
 
 /** The user-facing knobs the Format tab exposes for phone display. A country's
  *  formatter interprets these against its own convention; an option a country

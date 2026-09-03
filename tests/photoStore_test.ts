@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { describe, expect, it } from "vitest";
 
-import type { StorageAdapter } from "@niclaslindstedt/oss-framework/storage";
+import {
+  DEFAULT_TRANSFER_CONCURRENCY,
+  type StorageAdapter,
+} from "@niclaslindstedt/oss-framework/storage";
 
-import { MEDIA_CONCURRENCY } from "../src/app/cloudRetry.ts";
 import { photoPathFor, photoSourcePathFor } from "../src/app/photo.ts";
 import { atlasPackPath } from "../src/app/atlas.ts";
 import { withExternalPhotos, type PhotoStore } from "../src/app/photoStore.ts";
@@ -250,7 +252,7 @@ describe("withExternalPhotos — load", () => {
     await wrapped.load();
 
     expect(peakInFlight()).toBeGreaterThan(1);
-    expect(peakInFlight()).toBeLessThanOrEqual(MEDIA_CONCURRENCY);
+    expect(peakInFlight()).toBeLessThanOrEqual(DEFAULT_TRANSFER_CONCURRENCY);
   });
 
   it("re-indexes a filed photo the document lost track of", async () => {

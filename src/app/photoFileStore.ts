@@ -34,7 +34,10 @@ import {
   type Logger,
 } from "@niclaslindstedt/oss-framework/storage";
 
-import { TransientHttpError, withRetries } from "./cloudRetry.ts";
+import {
+  TransientHttpError,
+  withTransientRetries,
+} from "@niclaslindstedt/oss-framework/storage";
 import { logStore } from "./log.ts";
 
 /** A byte-level file store: the same shape as the framework's `FileStore` but
@@ -83,12 +86,19 @@ function statusError(provider: string, op: string, res: Response): Error {
  *  seam that keeps a transient blip from being mistaken for a missing photo. */
 function retrying(store: PhotoFileStore, log: Logger): PhotoFileStore {
   return {
-    list: () => withRetries("list", () => store.list(), log),
-    read: (path) => withRetries(`read ${path}`, () => store.read(path), log),
+    list: () => withTransientRetries("list", () => store.list(), { log }),
+    read: (path) =>
+      withTransientRetries(`read ${path}`, () => store.read(path), { log }),
     write: (path, bytes, mime) =>
-      withRetries(`write ${path}`, () => store.write(path, bytes, mime), log),
+      withTransientRetries(
+        `write ${path}`,
+        () => store.write(path, bytes, mime),
+        {
+          log,
+        },
+      ),
     remove: (path) =>
-      withRetries(`remove ${path}`, () => store.remove(path), log),
+      withTransientRetries(`remove ${path}`, () => store.remove(path), { log }),
   };
 }
 

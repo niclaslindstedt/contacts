@@ -46,7 +46,10 @@ import {
   type PendingTile,
 } from "./atlas.ts";
 import { bakeTile } from "./atlasTile.ts";
-import { MEDIA_CONCURRENCY, mapLimit } from "./cloudRetry.ts";
+import {
+  DEFAULT_TRANSFER_CONCURRENCY,
+  mapLimit,
+} from "@niclaslindstedt/oss-framework/storage";
 import { logStore } from "./log.ts";
 import type { PhotoStore } from "./photoStore.ts";
 
@@ -91,7 +94,7 @@ export function createAtlas(photos: PhotoStore): Atlas {
       if (!wanted.has(path)) known.delete(path);
     }
     const missing = paths.filter((p) => !known.has(p));
-    await mapLimit(missing, MEDIA_CONCURRENCY, async (path) => {
+    await mapLimit(missing, DEFAULT_TRANSFER_CONCURRENCY, async (path) => {
       const pack = await readOne(path);
       if (pack) known.set(path, { path, seq: 0, index: pack.index });
     });
@@ -119,12 +122,16 @@ export function createAtlas(photos: PhotoStore): Atlas {
 
       // Read every pack once, keeping both its index (cached for the next save)
       // and its tile bytes (needed right now).
-      const loaded = await mapLimit(paths, MEDIA_CONCURRENCY, async (path) => {
-        const pack = await readOne(path);
-        if (!pack) return null;
-        known.set(path, { path, seq: 0, index: pack.index });
-        return { path, ...pack };
-      });
+      const loaded = await mapLimit(
+        paths,
+        DEFAULT_TRANSFER_CONCURRENCY,
+        async (path) => {
+          const pack = await readOne(path);
+          if (!pack) return null;
+          known.set(path, { path, seq: 0, index: pack.index });
+          return { path, ...pack };
+        },
+      );
       const packs = loaded.filter((p) => p !== null);
       if (packs.length === 0) return out;
 
@@ -181,7 +188,7 @@ export function createAtlas(photos: PhotoStore): Atlas {
       if (toBake.length > 0) {
         const baked = await mapLimit(
           toBake,
-          MEDIA_CONCURRENCY,
+          DEFAULT_TRANSFER_CONCURRENCY,
           async (entry): Promise<PendingTile | null> => {
             const bytes = await bakeTile(entry.dataUrl);
             if (!bytes) return null;
@@ -220,7 +227,7 @@ export function createAtlas(photos: PhotoStore): Atlas {
       const dead = deadPacks(input.entries, [...known.values()]);
       if (dead.length === 0) return;
       log.info(`atlas: dropping ${dead.length} pack(s) with no live tiles`);
-      await mapLimit(dead, MEDIA_CONCURRENCY, (path) =>
+      await mapLimit(dead, DEFAULT_TRANSFER_CONCURRENCY, (path) =>
         photos
           .remove(path)
           .then(() => {

@@ -2,13 +2,18 @@
 import { render } from "preact";
 
 // The default UI family (JetBrains Mono) is imported statically so it ships in
-// the main bundle and precaches for offline first paint. The other font
-// families load on demand when selected (the theme engine calls
-// `loadFontFamily` — see the theme README's Fonts section).
+// the main bundle and precaches for offline first paint.
 import "@fontsource/jetbrains-mono/latin-400.css";
 import "@fontsource/jetbrains-mono/latin-ext-400.css";
 import "@fontsource/jetbrains-mono/latin-700.css";
 import "@fontsource/jetbrains-mono/latin-ext-700.css";
+// The other families still load on demand when selected, but since framework
+// 3.0.0 an app has to say where their bytes come from: the framework ships no
+// `@fontsource/*` specifier of its own, so that an app importing one component
+// is never made to resolve font packages it did not install. This import
+// registers the loaders for the three families the presets name, from the
+// `@fontsource/*` packages this app already depends on.
+import "@niclaslindstedt/oss-framework/theme/fontsource";
 
 import "./styles.css";
 import { LanguageRoot } from "./app/i18n/index.ts";

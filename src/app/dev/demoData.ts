@@ -23,7 +23,7 @@
 // a fresh `AppData` each call. Loaded only through the in-memory demo backend
 // (see `seedBackend.ts`) — never persisted, gone on reload.
 
-import { toStoredPhone } from "../format.ts";
+import { toStoredPhone } from "@niclaslindstedt/oss-framework/format";
 import type { AppData, Contact, Folder } from "../types.ts";
 import { type DemoContactSpec, type DemoFolderKey } from "./demoSpec.ts";
 import {

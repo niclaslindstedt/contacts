@@ -4,8 +4,8 @@ import {
   type Versioned,
 } from "@niclaslindstedt/oss-framework/storage";
 
-import { parseAddress } from "./address.ts";
-import { toStoredPhone } from "./format.ts";
+import { parseAddress } from "@niclaslindstedt/oss-framework/format";
+import { toStoredPhone } from "@niclaslindstedt/oss-framework/format";
 import { logStore } from "./log.ts";
 import type { AppData, Contact, Folder } from "./types.ts";
 
