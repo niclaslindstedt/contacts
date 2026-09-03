@@ -92,7 +92,10 @@ import {
 
 import { isAtlasPath, type AtlasInput } from "./atlas.ts";
 import { applyTiles, createAtlas } from "./atlasStore.ts";
-import { MEDIA_CONCURRENCY, mapLimit } from "./cloudRetry.ts";
+import {
+  DEFAULT_TRANSFER_CONCURRENCY,
+  mapLimit,
+} from "@niclaslindstedt/oss-framework/storage";
 import { logStore } from "./log.ts";
 import { parsePhotoPath } from "./photo.ts";
 import { photoPathFor, photoSourcePathFor } from "./photo.ts";
@@ -379,7 +382,7 @@ export function withExternalPhotos(
     const orphans = existing.filter((p) => !isAtlasPath(p) && !desired.has(p));
     if (orphans.length === 0) return;
     log.info(`pruning ${orphans.length} orphaned photo file(s)`);
-    await mapLimit(orphans, MEDIA_CONCURRENCY, (p) =>
+    await mapLimit(orphans, DEFAULT_TRANSFER_CONCURRENCY, (p) =>
       photos
         .remove(p)
         .then(() => {
@@ -549,24 +552,28 @@ export function withExternalPhotos(
 
     let changed = applied > 0;
     let missing = 0;
-    await mapLimit(jobs, MEDIA_CONCURRENCY, async ({ entry, slot, path }) => {
-      try {
-        const bytes = await photos.read(path);
-        if (bytes) {
-          const url = bytesToDataUrl("image/jpeg", bytes);
-          entry[slot.data] = url;
-          written.set(path, fingerprint(url));
-          changed = true;
-        } else {
-          // The file is genuinely gone from the backend — not a read failure,
-          // so it doesn't hold the copy back; the reference is simply stale.
-          log.warn(`no file at ${path} — the reference is stale`);
+    await mapLimit(
+      jobs,
+      DEFAULT_TRANSFER_CONCURRENCY,
+      async ({ entry, slot, path }) => {
+        try {
+          const bytes = await photos.read(path);
+          if (bytes) {
+            const url = bytesToDataUrl("image/jpeg", bytes);
+            entry[slot.data] = url;
+            written.set(path, fingerprint(url));
+            changed = true;
+          } else {
+            // The file is genuinely gone from the backend — not a read failure,
+            // so it doesn't hold the copy back; the reference is simply stale.
+            log.warn(`no file at ${path} — the reference is stale`);
+          }
+        } catch (err) {
+          missing += 1;
+          log.warn(`could not read ${path} (${errMsg(err)})`);
         }
-      } catch (err) {
-        missing += 1;
-        log.warn(`could not read ${path} (${errMsg(err)})`);
-      }
-    });
+      },
+    );
     if (missing > 0) {
       log.warn(
         `${missing} of ${jobs.length} photo file(s) could not be read — ` +

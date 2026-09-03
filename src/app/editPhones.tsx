@@ -17,7 +17,7 @@ import {
   type CountryCode,
 } from "./countries/index.ts";
 import { KindToggle, RemoveButton } from "./editWidgets.tsx";
-import { toStoredPhone } from "./format.ts";
+import { toStoredPhone } from "@niclaslindstedt/oss-framework/format";
 import { useT } from "./i18n/index.ts";
 import { withPrimaryPhone } from "./primaryPhone.ts";
 import { freshId } from "./useContactStore.ts";

@@ -5,7 +5,7 @@ import {
   type MatchRange,
 } from "@niclaslindstedt/oss-framework/search";
 
-import { formatAddress } from "./address.ts";
+import { formatAddress } from "@niclaslindstedt/oss-framework/format";
 import { attachmentList } from "./attachments.ts";
 import { contactTags } from "./tags.ts";
 import type { AppData } from "./types.ts";

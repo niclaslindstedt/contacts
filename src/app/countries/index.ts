@@ -5,7 +5,7 @@
 // `CountryFormat` in a new file and add it to `COUNTRIES` — the settings tab,
 // the read view, and the tests pick it up from here.
 
-import { parsePhone } from "../format.ts";
+import { parsePhone } from "@niclaslindstedt/oss-framework/format";
 import type { CountryFormat, PhoneOptions, PostalOptions } from "./types.ts";
 import { SE } from "./se.ts";
 import { US } from "./us.ts";

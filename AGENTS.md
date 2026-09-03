@@ -127,6 +127,10 @@ The app owns the domain and the stores ("store stays in the app"):
   storage adapters (debounced push, conflict/auth/throttle handling, optional
   `withEncryption` of the cloud copy).
 - `src/app/export.ts` — pure renderers to vCard 3.0 / Outlook CSV / JSON.
+- `src/app/format.ts` — how a stored ISO date renders, and nothing else: the
+  phone parsing and digit grouping that used to sit beside it are the
+  framework's `format` module now, and `countries/` writes each country's
+  convention with those primitives.
 - `src/app/route.ts` + `useAppRoute.ts` — the hand-rolled hash router: the
   route model (screen + open card) and its `#/…` spelling, plus the hook that
   mirrors it into the browser's history so Back / Forward step between cards.
@@ -161,9 +165,14 @@ Before building any UI primitive, gesture, or generic mechanic, **check whether
 UI kit and the reusable mechanics, and the app should consume them rather than
 reinvent them. Its published surface is broad: components (`Button`, `ToggleRow`,
 `SegmentedControl`, `SelectPicker`, `Section`, `Modal`, `ConfirmDialog`,
-`SwipeableRow`, `FloatingPanel`, the icon set including `GripIcon` / `HeartIcon`,
-…), hooks (e.g. `useDragDrop` for touch-friendly drag-and-drop and reordering),
-plus the storage, encryption, glyphs, achievements, and PWA subpaths. Inspect
+`SwipeableRow`, `FloatingPanel`, `ReorderButtons`, `LabeledDateInput`, the icon
+set including `GripIcon` / `HeartIcon`, …), hooks (e.g. `useDragDrop` for
+touch-friendly drag-and-drop and reordering), the `format` helpers this app's
+phone and address rendering is built on (`parsePhone`, `toStoredPhone`,
+`phoneDialString`, `addressLines`, `mapsUrl`, the digit-grouping primitives),
+the bulk-transfer politeness the media sweeps run on (`mapLimit`,
+`withTransientRetries`), plus the storage, encryption, glyphs, achievements,
+and PWA subpaths. Inspect
 what's available under `node_modules/@niclaslindstedt/oss-framework/dist/**` (the
 `.d.ts` files list every export) and prefer an existing primitive over a
 hand-rolled one; only build app-local UI when the framework genuinely has no fit.

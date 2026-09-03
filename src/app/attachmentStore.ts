@@ -38,7 +38,10 @@ import {
   type StorageAdapter,
 } from "@niclaslindstedt/oss-framework/storage";
 
-import { MEDIA_CONCURRENCY, mapLimit } from "./cloudRetry.ts";
+import {
+  DEFAULT_TRANSFER_CONCURRENCY,
+  mapLimit,
+} from "@niclaslindstedt/oss-framework/storage";
 import { exportFileStem } from "./export.ts";
 import { logStore } from "./log.ts";
 import {
@@ -250,7 +253,7 @@ export function withExternalAttachments(
     const orphans = existing.filter((p) => !desired.has(p));
     if (orphans.length === 0) return;
     log.info(`pruning ${orphans.length} orphaned attachment file(s)`);
-    await mapLimit(orphans, MEDIA_CONCURRENCY, (p) =>
+    await mapLimit(orphans, DEFAULT_TRANSFER_CONCURRENCY, (p) =>
       attachments
         .remove(p)
         .then(() => {
@@ -279,7 +282,7 @@ export function withExternalAttachments(
     if (jobs.length === 0) return text;
     let changed = false;
     let missing = 0;
-    await mapLimit(jobs, MEDIA_CONCURRENCY, async (entry) => {
+    await mapLimit(jobs, DEFAULT_TRANSFER_CONCURRENCY, async (entry) => {
       const path = entry.dataPath!;
       try {
         const bytes = await attachments.read(path);

@@ -9,6 +9,7 @@ import {
   GiftIcon,
   InfoIcon,
   LABELED_FIELD_CLASS,
+  LabeledDateInput,
   LabeledInput,
   LabeledTextarea,
   MailIcon,
@@ -17,12 +18,13 @@ import {
   PaperclipIcon,
   PhoneIcon,
   PlusIcon,
+  ReorderButtons,
   Section,
   SegmentedControl,
   SelectPicker,
-  type SelectOption,
   ToggleRow,
   UploadIcon,
+  type SelectOption,
 } from "@niclaslindstedt/oss-framework/components";
 
 import {
@@ -36,12 +38,7 @@ import {
 import { autoArchiveAction, defaultAutoArchiveDate } from "./autoArchive.ts";
 import { companyTogglePatch } from "./companyCard.ts";
 import { filesToAttachments } from "./attachmentIntake.ts";
-import {
-  KindToggle,
-  LabeledDateInput,
-  RemoveButton,
-  ReorderButtons,
-} from "./editWidgets.tsx";
+import { KindToggle, RemoveButton } from "./editWidgets.tsx";
 import { PhoneRows } from "./editPhones.tsx";
 import { IceIcon, TagIcon } from "./icons.tsx";
 import { isValidFlexDate, parseFlexDate } from "./importantDates.ts";

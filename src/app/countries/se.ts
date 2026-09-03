@@ -17,7 +17,7 @@ import {
   extSuffix,
   groupPairsLeadingTriple,
   type ParsedPhone,
-} from "../format.ts";
+} from "@niclaslindstedt/oss-framework/format";
 import type { CountryFormat, PhoneOptions, PostalOptions } from "./types.ts";
 
 // Swedish area codes are the digits after the single trunk 0 and vary in

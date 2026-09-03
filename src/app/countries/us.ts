@@ -15,7 +15,7 @@ import {
   extSuffix,
   groupDigits,
   type ParsedPhone,
-} from "../format.ts";
+} from "@niclaslindstedt/oss-framework/format";
 import type { CountryFormat, PhoneOptions, PostalOptions } from "./types.ts";
 
 export const US: CountryFormat = {

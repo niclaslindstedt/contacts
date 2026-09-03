@@ -22,7 +22,7 @@
 // deterministic (no `Math.random`, no clock) so the same seed always builds
 // the same document — reproducible bug reports, stable tests.
 
-import { toStoredPhone } from "../format.ts";
+import { toStoredPhone } from "@niclaslindstedt/oss-framework/format";
 import type {
   Address,
   AppData,

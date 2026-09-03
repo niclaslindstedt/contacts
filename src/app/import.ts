@@ -12,10 +12,10 @@
 // surface pure and DOM-free so it is unit-testable in node (see
 // `tests/import_test.ts`).
 
-import { hasAddress } from "./address.ts";
+import { hasAddress } from "@niclaslindstedt/oss-framework/format";
 import { attachmentList } from "./attachments.ts";
 import { activePhotoSrc } from "./contactPhotos.ts";
-import { toStoredPhone } from "./format.ts";
+import { toStoredPhone } from "@niclaslindstedt/oss-framework/format";
 import { parseDoc } from "./migrations.ts";
 import type { Attachment, Contact } from "./types.ts";
 import { splitFullName } from "./types.ts";

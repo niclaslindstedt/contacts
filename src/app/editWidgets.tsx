@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-import { useEffect, useRef, type InputHTMLAttributes } from "react";
-
 import {
   BuildingIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  LABELED_FIELD_CLASS,
   PersonIcon,
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
@@ -16,9 +11,9 @@ import type { ContactMethodKind } from "./types.ts";
 // The app-domain building blocks of the edit form, lifted out of
 // `ContactEditView` so that file stays under the source-size cap: the private /
 // work kind toggle and the trash affordance that drops a row. The generic
-// pieces the form once carried here (the labelled inputs, the glyph-titled
-// section) are the framework's now — `LabeledInput`, `LabeledTextarea`, and
-// `Section` (with its `icon` slot) from its components module.
+// pieces the form once carried here are the framework's now — `LabeledInput`,
+// `LabeledTextarea` and `Section` (with its `icon` slot), and since 3.0.0 the
+// `ReorderButtons` pair and the iOS-safe `LabeledDateInput` too.
 
 // The private / work type toggle shared by phone and email rows. A method is
 // one or the other, never both, so this is a single button that swaps between
@@ -62,101 +57,6 @@ export function KindToggle({
         <Icon className="h-4 w-4" />
       </button>
     </span>
-  );
-}
-
-// A stacked up/down pair for hand-ordering a list of rows (the important-date
-// list uses it). The two chevrons sit tight in one column so they cost little
-// row width; each disables itself at the end of the list it can't move past, so
-// the top row can't move up and the bottom row can't move down.
-export function ReorderButtons({
-  upLabel,
-  downLabel,
-  canMoveUp,
-  canMoveDown,
-  onMoveUp,
-  onMoveDown,
-}: {
-  upLabel: string;
-  downLabel: string;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-}) {
-  const btn =
-    "flex h-3.5 w-7 cursor-pointer items-center justify-center text-muted hover:text-fg disabled:cursor-default disabled:opacity-30 disabled:hover:text-muted";
-  return (
-    <span className="flex shrink-0 flex-col">
-      <button
-        type="button"
-        onClick={onMoveUp}
-        disabled={!canMoveUp}
-        aria-label={upLabel}
-        title={upLabel}
-        className={btn}
-      >
-        <ChevronUpIcon className="h-4 w-4" />
-      </button>
-      <button
-        type="button"
-        onClick={onMoveDown}
-        disabled={!canMoveDown}
-        aria-label={downLabel}
-        title={downLabel}
-        className={btn}
-      >
-        <ChevronDownIcon className="h-4 w-4" />
-      </button>
-    </span>
-  );
-}
-
-// A labelled native date field that survives iOS's native date picker. The
-// framework's `LabeledInput` is a *controlled* input: every change re-assigns
-// the element's `value`, and on iOS Safari re-assigning an `<input type="date">`
-// value while its wheel picker is open dismisses the picker — so spinning to a
-// month closed it and you had to tap the field again to get to the day. This
-// variant leaves the input *uncontrolled* (`defaultValue` + a ref, committing on
-// blur like the rest of the form), so React never re-assigns `value`
-// mid-interaction and the picker stays up through month → day → year. Value
-// changes from outside the field (seeding a default, undo/redo, switching cards)
-// sync in through the ref, but only while the field isn't focused so an active
-// edit is never yanked out from under the user.
-export function LabeledDateInput({
-  label,
-  value,
-  onCommit,
-  ...inputProps
-}: {
-  label: string;
-  value: string;
-  onCommit: (next: string) => void;
-} & Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  "value" | "defaultValue" | "onChange" | "onBlur" | "type"
->) {
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (el && el.value !== value && document.activeElement !== el) {
-      el.value = value;
-    }
-  }, [value]);
-  return (
-    <label className="flex min-w-0 flex-col gap-1">
-      <span className="text-xs text-muted">{label}</span>
-      <input
-        {...inputProps}
-        ref={ref}
-        type="date"
-        defaultValue={value}
-        onBlur={(e) => {
-          if (e.currentTarget.value !== value) onCommit(e.currentTarget.value);
-        }}
-        className={LABELED_FIELD_CLASS}
-      />
-    </label>
   );
 }
 

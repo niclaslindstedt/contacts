@@ -20,7 +20,7 @@
 // "Andreas Andersson" arriving for a card that just says "Andreas" — upgrades
 // the stored one. Nothing the user already has is overwritten or removed.
 
-import { digitsOnly } from "./format.ts";
+import { digitsOnly } from "@niclaslindstedt/oss-framework/format";
 import type { ImportedContact } from "./import.ts";
 import type { Contact } from "./types.ts";
 import { displayName } from "./types.ts";
