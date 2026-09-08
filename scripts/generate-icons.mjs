@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // Generate the PWA install icons and the social-preview image from the same
-// geometry as public/icons/icon.svg — a solid person silhouette filled with a
-// green gradient on the app's dark surface (the bold single-glyph style shared
-// with the sibling notes and checklist apps). Pure Node (zlib + a minimal PNG
-// encoder), so the pipeline needs no native image dependencies. Rerun with
-// `npm run icons` / `make icons` after changing the mark.
+// geometry as public/icons/icon.svg — a stylized person drawn as an outline (a
+// head ring over rounded shoulders), stroked in a green gradient on the app's
+// dark surface, in the single-glyph style shared with the sibling notes and
+// checklist apps. Pure Node (zlib + a minimal PNG encoder), so the pipeline
+// needs no native image dependencies. Rerun with `npm run icons` / `make icons`
+// after changing the mark.
 import { deflateSync } from "node:zlib";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -18,22 +19,8 @@ mkdirSync(iconsDir, { recursive: true });
 // the family hue the sibling notes and checklist apps wear. Kept in lockstep
 // with the <linearGradient> stops in public/icons/icon.svg.
 const BG = [11, 13, 16]; // #0b0d10
-const GRAD_TOP = [134, 239, 172]; // #86efac
+const GRAD_TOP = [110, 231, 183]; // #6ee7b7
 const GRAD_BOT = [52, 211, 153]; // #34d399
-// The gradient runs top-to-bottom over the mark's vertical extent (unit space),
-// matching the userSpaceOnUse y1=0.15 / y2=0.84 span in the SVG.
-const GRAD_Y0 = 0.15;
-const GRAD_Y1 = 0.84;
-
-// The mark's ink at unit-space height `y`, interpolated along the gradient.
-function markInk(y) {
-  const t = Math.max(0, Math.min(1, (y - GRAD_Y0) / (GRAD_Y1 - GRAD_Y0)));
-  return [
-    GRAD_TOP[0] + (GRAD_BOT[0] - GRAD_TOP[0]) * t,
-    GRAD_TOP[1] + (GRAD_BOT[1] - GRAD_TOP[1]) * t,
-    GRAD_TOP[2] + (GRAD_BOT[2] - GRAD_TOP[2]) * t,
-  ];
-}
 
 // --- minimal PNG encoder ----------------------------------------------------
 
@@ -105,37 +92,109 @@ function encodePng(width, height, rgba) {
 
 // --- the mark ----------------------------------------------------------------
 
-// Sub-pixel sample offsets, used on both axes (a 4×4 grid per pixel).
-const SAMPLES = [1 / 8, 3 / 8, 5 / 8, 7 / 8];
+// The mark's geometry, written in the SVG's own 64-unit coordinates and mapped
+// into unit space, so the numbers below read straight off public/icons/icon.svg
+// — change one and change the other. `u` is that mapping.
+const u = (v) => v / 64;
 
-// The fillet radius on the two bottom corners of the shoulders dome (unit
-// space; SVG r=4 on the 100 viewBox).
-const FILLET = 0.04;
+// Stroke weight (SVG stroke-width="6"); the outline is every point within half
+// of it of the mark's centre lines.
+const HALF_STROKE = u(3);
 
-// Whether unit-space point (x, y) lands on the solid person silhouette: a head
-// disc over a shoulders dome. Mirrors the <circle>/<path> geometry in
-// public/icons/icon.svg — head at (0.5, 0.31) r=0.16, and a dome that is the
-// circle centred at (0.5, 0.87) r=0.35 cut flat at y=0.84. The cut is a rounded
-// intersection of the two signed distances, which fillets the bottom corners
-// the way the SVG path's r=4 arcs do.
-function inMark(x, y) {
-  if (Math.hypot(x - 0.5, y - 0.31) <= 0.16) return true;
-  const a = Math.hypot(x - 0.5, y - 0.87) - 0.35 + FILLET;
-  const b = y - 0.84 + FILLET;
-  const dome =
-    Math.min(Math.max(a, b), 0) +
-    Math.hypot(Math.max(a, 0), Math.max(b, 0)) -
-    FILLET;
-  return dome <= 0;
+// The head ring: SVG <circle cx="32" cy="21.5" r="8.5">.
+const HEAD = { x: u(32), y: u(21.5), r: u(8.5) };
+
+// The shoulders, "M16 51 V48 a8 8 0 0 1 8 -8 H40 a8 8 0 0 1 8 8 V51", split
+// into the pieces a distance function can handle: three straight runs and the
+// two quarter-circle corners that join them. Round caps and joins come for
+// free — a distance-to-segment already rounds off at the ends.
+const CORNER_R = u(8);
+const SEGMENTS = [
+  [u(16), u(51), u(16), u(48)], // left side, below the corner
+  [u(24), u(40), u(40), u(40)], // the flat shoulder top
+  [u(48), u(48), u(48), u(51)], // right side, below the corner
+];
+// Each corner is the quarter of a circle lying in the (sx, sy) direction from
+// its centre: the top-left corner is the up-and-left quarter, and so on.
+const CORNERS = [
+  { x: u(24), y: u(48), sx: -1, sy: -1 },
+  { x: u(40), y: u(48), sx: 1, sy: -1 },
+];
+
+// The gradient runs top-to-bottom over the mark's outer extent — the top of the
+// head ring to the bottom of the shoulders' round caps — matching the
+// userSpaceOnUse y1=10 / y2=54 span in the SVG.
+const GRAD_Y0 = HEAD.y - HEAD.r - HALF_STROKE;
+const GRAD_Y1 = u(51) + HALF_STROKE;
+
+// The mark's ink at unit-space height `y`, interpolated along the gradient.
+function markInk(y) {
+  const t = Math.max(0, Math.min(1, (y - GRAD_Y0) / (GRAD_Y1 - GRAD_Y0)));
+  return [
+    GRAD_TOP[0] + (GRAD_BOT[0] - GRAD_TOP[0]) * t,
+    GRAD_TOP[1] + (GRAD_BOT[1] - GRAD_TOP[1]) * t,
+    GRAD_TOP[2] + (GRAD_BOT[2] - GRAD_TOP[2]) * t,
+  ];
 }
 
-// Render size×size RGBA. The mark carries its own margin inside the 100-unit
+// Distance from (px, py) to the line segment a→b.
+function distSegment(px, py, ax, ay, bx, by) {
+  const vx = bx - ax;
+  const vy = by - ay;
+  const len2 = vx * vx + vy * vy;
+  const t = Math.max(
+    0,
+    Math.min(1, len2 === 0 ? 0 : ((px - ax) * vx + (py - ay) * vy) / len2),
+  );
+  return Math.hypot(px - ax - t * vx, py - ay - t * vy);
+}
+
+// Distance from (px, py) to a quarter circle of radius `r` around `c`, spanning
+// the quadrant `c` points at. Inside that quadrant the nearest point is on the
+// arc itself; outside it, it is whichever of the arc's two ends is closer.
+function distCorner(px, py, c, r) {
+  const dx = px - c.x;
+  const dy = py - c.y;
+  if (dx * c.sx >= 0 && dy * c.sy >= 0) {
+    return Math.abs(Math.hypot(dx, dy) - r);
+  }
+  return Math.min(Math.hypot(dx - c.sx * r, dy), Math.hypot(dx, dy - c.sy * r));
+}
+
+// Distance from unit-space (x, y) to the mark's centre lines. The outline is
+// `markDist(x, y) <= HALF_STROKE`; keeping the raw distance rather than a
+// boolean is what lets the renderers antialias the edge exactly (see
+// `renderIcon`), which matters for a 1.5 px stroke at favicon sizes.
+function markDist(x, y) {
+  let d = Math.abs(Math.hypot(x - HEAD.x, y - HEAD.y) - HEAD.r);
+  for (const [ax, ay, bx, by] of SEGMENTS) {
+    d = Math.min(d, distSegment(x, y, ax, ay, bx, by));
+  }
+  for (const c of CORNERS) d = Math.min(d, distCorner(x, y, c, CORNER_R));
+  return d;
+}
+
+// How much of the pixel at unit-space (x, y) the stroke covers, given how many
+// pixels one unit spans. Antialiasing straight from the signed distance — the
+// same trick the rounded-rect background below uses, and exact for a stroke in
+// a way supersampling only approximates.
+function markCoverage(x, y, pxPerUnit) {
+  return Math.max(
+    0,
+    Math.min(1, 0.5 - (markDist(x, y) - HALF_STROKE) * pxPerUnit),
+  );
+}
+
+// Render size×size RGBA. The mark carries its own margin inside the 64-unit
 // box, so `pad` is 0 by default and only the maskable icon insets further for
 // its safe zone; `radius` rounds the background corners (0 = square, for
 // maskable).
 function renderIcon(size, { pad = 0, radius = 0.2 } = {}) {
   const rgba = Buffer.alloc(size * size * 4);
   const r = radius * size;
+  // Pixels per unit of mark space, which is what turns the mark's distance
+  // function into an antialiased edge.
+  const pxPerUnit = size * (1 - 2 * pad);
   for (let py = 0; py < size; py++) {
     for (let px = 0; px < size; px++) {
       const i = (py * size + px) * 4;
@@ -150,19 +209,12 @@ function renderIcon(size, { pad = 0, radius = 0.2 } = {}) {
         Math.min(Math.max(qx, qy), 0) -
         r;
       const bgAlpha = Math.max(0, Math.min(1, 0.5 - outside));
-      // Mark coverage in padded unit space, 4×4 supersampled so the
-      // silhouette's curved edges stay smooth down to 16 px. The gradient ink
-      // is sampled at the pixel's own height so the mark shades top-to-bottom.
-      let hit = 0;
-      for (const oy of SAMPLES) {
-        for (const ox of SAMPLES) {
-          const sx = ((px + ox) / size - pad) / (1 - 2 * pad);
-          const sy = ((py + oy) / size - pad) / (1 - 2 * pad);
-          if (inMark(sx, sy)) hit += 1 / (SAMPLES.length * SAMPLES.length);
-        }
-      }
-      const [br, bg2, bb] = BG;
+      // Mark coverage at the pixel centre in padded unit space. The gradient
+      // ink is sampled at that same height, so the mark shades top-to-bottom.
+      const sx = ((px + 0.5) / size - pad) / (1 - 2 * pad);
       const sy = ((py + 0.5) / size - pad) / (1 - 2 * pad);
+      const hit = markCoverage(sx, sy, pxPerUnit);
+      const [br, bg2, bb] = BG;
       const [fr, fg2, fb] = markInk(sy);
       rgba[i] = Math.round(br + (fr - br) * hit);
       rgba[i + 1] = Math.round(bg2 + (fg2 - bg2) * hit);
@@ -195,16 +247,22 @@ function renderOg() {
     for (let px = 0; px < w; px++) {
       const i = (py * w + px) * 4;
       let [cr, cg, cb] = BG;
-      // The person silhouette, drawn with the same gradient ink as the icons.
+      // The person mark, stroked with the same gradient ink as the icons.
       if (
         px >= markX &&
         px < markX + markSize &&
         py >= markY &&
         py < markY + markSize
       ) {
-        const sx = (px - markX) / markSize;
-        const sy = (py - markY) / markSize;
-        if (inMark(sx, sy)) [cr, cg, cb] = markInk(sy).map(Math.round);
+        const sx = (px + 0.5 - markX) / markSize;
+        const sy = (py + 0.5 - markY) / markSize;
+        const hit = markCoverage(sx, sy, markSize);
+        if (hit > 0) {
+          const ink = markInk(sy);
+          cr = Math.round(cr + (ink[0] - cr) * hit);
+          cg = Math.round(cg + (ink[1] - cg) * hit);
+          cb = Math.round(cb + (ink[2] - cb) * hit);
+        }
       }
       // The row bars.
       for (const rrow of rows) {
