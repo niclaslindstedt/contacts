@@ -126,6 +126,10 @@ Enter — and start filling in the card.
   steps to the contact you were looking at before; Forward retraces. Every card
   has its own address, so you can bookmark one or share the link and land
   straight back on it.
+- **Copy as Markdown** — the copy button in the card header puts the contact's
+  information on the clipboard as Markdown: the name as a heading, then the read
+  view's sections (Get in touch, Details, Tags, Addresses, Notes) as they stand,
+  ready to paste into a note or a message.
 - **Export** — the download button in the card header (single vCard) or
   Settings → Storage (all contacts as `.vcf`, CSV, or JSON).
 - **Import** — drag a `.vcf` (or CSV / JSON backup) straight onto the contact

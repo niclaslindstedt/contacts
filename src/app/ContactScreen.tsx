@@ -17,6 +17,7 @@ import { ContactPhotoDropZone } from "./ContactPhotoDropZone.tsx";
 import { ContactReadView } from "./ContactReadView.tsx";
 import { FavoriteIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
+import { contactToMarkdown } from "./contactMarkdown.ts";
 import { contactToVCard, exportFileStem } from "./export.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { SyncEngine } from "./useSyncEngine.ts";
@@ -27,7 +28,11 @@ import { customRelationsInUse } from "./relation.ts";
 import { hasPhoto } from "./contactPhotos.ts";
 import { contactStamp } from "./contactTimestamps.ts";
 import { isValidFlexDate } from "./importantDates.ts";
-import type { AppSettings } from "./useAppSettings.ts";
+import {
+  phoneOptions,
+  postalOptions,
+  type AppSettings,
+} from "./useAppSettings.ts";
 import type { Contact } from "./types.ts";
 import { displayName } from "./types.ts";
 
@@ -215,9 +220,20 @@ function ContactCard({
 
         <div className="min-w-0 flex-1" />
 
-        {/* Copy the whole card as a vCard block — pasteable anywhere. */}
+        {/* Copy the card's information as Markdown — the read view's sections
+            as a small document, pasteable into a note, a chat, or a ticket.
+            The vCard (photo and all) is what the download button beside it is
+            for. */}
         <CopyButton
-          value={() => contactToVCard(contact)}
+          value={() =>
+            contactToMarkdown(contact, {
+              t,
+              dateFormat: settings.dateFormat,
+              country: settings.country,
+              phone: phoneOptions(settings),
+              postal: postalOptions(settings),
+            })
+          }
           labels={{ copy: t("contact.copyCard"), copied: t("contact.copied") }}
         />
         <button
