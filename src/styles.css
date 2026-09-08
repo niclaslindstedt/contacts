@@ -76,6 +76,30 @@
   backdrop-filter: blur(var(--modal-backdrop-blur, 0px));
 }
 
+/* ── Side menu over the contact card ─────────────────────────────────────────
+   On a phone the contact card rides in the framework `Modal`, which portals
+   itself to the end of `<body>` at `z-50`. The side menu's drawer sits at the
+   same `z-50` from inside the app shell and its floating button at `z-40`, so
+   an open card buried both: the menu became unreachable until the card was
+   shut, even though picking another contact from it is a supported move (the
+   card stays open and simply swaps, see `onNavigate` in `App.tsx`).
+
+   Lift the two menu layers into the gap between the modal (50) and the toast
+   viewport (60) so the button floats over the card and the drawer opens in
+   front of it. Gated on the `menu-over-card` class the shell writes while the
+   card is the *top* surface — every other dialog is a detour that owns the
+   screen, and several of them open from the menu itself with the card still up
+   behind, so the class comes straight back off and the menu drops behind them.
+   The two selectors name the framework's own markup: the floating menu button
+   is the one fixed `z-40` button carrying `aria-haspopup="menu"`, and the
+   drawer's overlay is the fixed layer holding the `drawer-backdrop` scrim.
+   Anything portalled over the card from inside it — the picture cropper
+   (`z-90`), the appearance popover — still lands above both. */
+.menu-over-card button.fixed.z-40[aria-haspopup="menu"],
+.menu-over-card div.fixed.z-50:has(> .drawer-backdrop) {
+  z-index: 55;
+}
+
 /* ── Changelog / feature-doc modal safe-area inset ───────────────────────────
    The framework `Modal` clears the notch by rendering a `bg-surface-3` spacer
    of `env(safe-area-inset-top)` above its header, but `ChangelogModal` — the
