@@ -83,6 +83,10 @@ import { localDocBackend, useContactStore } from "./app/useContactStore.ts";
 import { useMediaCache } from "./app/useMediaCache.ts";
 import { useNavigation } from "./app/useNavigation.ts";
 import { useSwipeNavigationGuard } from "./app/useSwipeNavigationGuard.ts";
+import {
+  CONTACT_MODAL_LABEL_ID,
+  useCardEdgeSwipeOpen,
+} from "./app/useCardEdgeSwipeOpen.ts";
 import { AppToastViewport } from "./app/AppToastViewport.tsx";
 import { toastStore, UNDO_TOAST_MS } from "./app/toast.ts";
 import { useNamespaces } from "./app/useNamespaces.ts";
@@ -453,6 +457,34 @@ export function App() {
     onOpen: () => setDrawerOpen(true),
   });
 
+  // The contact card is a browse surface, not a detour: it floats over the
+  // list, and picking another contact from the side menu while it is up keeps
+  // it open (see `onNavigate` below). So on a phone the menu stays reachable
+  // from behind an open card — the floating button rises over it and the edge
+  // swipe re-arms — rather than the card sealing the screen until it is shut.
+  //
+  // Only while the card is the *top* surface, though. Every other dialog the
+  // shell can raise is a detour that owns the screen, and several of them open
+  // from the menu itself with the card still up behind them, so an open one
+  // stands the menu back down until it is closed.
+  const cardOnTop =
+    !pinned &&
+    contactModalOpen &&
+    !!store.activeContact &&
+    !settingsOpen &&
+    !searchOpen &&
+    !changelogOpen &&
+    !namespacesOpen &&
+    !syncDetailsOpen &&
+    !tourOpen &&
+    !unlockOpen &&
+    !sync.pendingSetup;
+  useCardEdgeSwipeOpen({
+    side: position.side,
+    enabled: swipeToOpen && !drawerOpen && cardOnTop,
+    onOpen: () => setDrawerOpen(true),
+  });
+
   // Horizontal swipes belong to the app, not to the browser's history: a drag
   // in from an edge (or a two-finger trackpad flick) no longer goes Back or
   // Forward, so it can't hijack a row's archive/delete swipe or the drawer's
@@ -602,8 +634,14 @@ export function App() {
     );
   }, [active, activeNamespace]);
 
+  // `menu-over-card` lifts the drawer and its floating button above the card
+  // modal's layer (see `styles.css`) — the CSS half of `cardOnTop`.
   return (
-    <div className="flex h-[var(--app-height,100svh)] overflow-hidden bg-page-bg text-fg">
+    <div
+      className={`flex h-[var(--app-height,100svh)] overflow-hidden bg-page-bg text-fg ${
+        cardOnTop ? "menu-over-card" : ""
+      }`}
+    >
       <Sidebar
         pinned={pinned}
         open={drawerOpen}
@@ -706,10 +744,10 @@ export function App() {
       <Modal
         open={contactModalOpen && !!store.activeContact}
         onClose={closeContactModal}
-        labelledBy="contact-modal-title"
+        labelledBy={CONTACT_MODAL_LABEL_ID}
         closeLabel={t("common.close")}
       >
-        <h2 id="contact-modal-title" className="sr-only">
+        <h2 id={CONTACT_MODAL_LABEL_ID} className="sr-only">
           {store.activeContact
             ? displayName(store.activeContact) || t("contact.unnamed")
             : ""}

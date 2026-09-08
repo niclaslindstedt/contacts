@@ -770,6 +770,12 @@ export function ContactListScreen({
             const groupIds = group.contacts.map((c) => c.id);
             const groupAllSelected =
               groupIds.length > 0 && groupIds.every((id) => selected.has(id));
+            // An expanded, non-empty section's heading sits directly on top of
+            // its first contact row, so the two read as one block: the band
+            // squares off its bottom corners and drops the gap beneath it. A
+            // collapsed (or empty) folder has nothing to join, so it keeps its
+            // fully rounded pill shape.
+            const joined = expanded && group.contacts.length > 0;
             const selectCheckbox =
               selecting && groupIds.length > 0 ? (
                 <SectionSelectCheckbox
@@ -815,6 +821,7 @@ export function ContactListScreen({
                       deleteLabel={t("menu.deleteFolder")}
                       menuLabel={t("menu.folderActions")}
                       selectCheckbox={selectCheckbox}
+                      joined={joined}
                     />
                   ) : (
                     // The trailing "no folder" section is a grouping, not a
@@ -826,6 +833,7 @@ export function ContactListScreen({
                       onToggle={() => toggleSection(key)}
                       dropOver={dropOver}
                       leading={selectCheckbox}
+                      joined={joined}
                     />
                   ))}
                 {expanded && (
@@ -1265,6 +1273,7 @@ function SectionHeader({
   onToggle,
   dropOver = false,
   flush = false,
+  joined = false,
   leading,
 }: {
   name: string;
@@ -1277,6 +1286,12 @@ function SectionHeader({
   // paint the wrapper's full box (`inset-0`), so a margin left inside it
   // renders as a strip of action colour taller than the visible band.
   flush?: boolean;
+  // The band's contact rows follow immediately below it. The heading then reads
+  // as the cap of one block rather than a floating pill: it rounds only at the
+  // top and gives up the gap under it, so the first row butts straight against
+  // it. Left off when the section is collapsed or empty — there is nothing
+  // below to join, so the band keeps all four corners.
+  joined?: boolean;
   // An interactive control shown at the band's leading edge, before the caret —
   // the select-mode folder checkbox. It sits *beside* the collapse button (a
   // button can't nest inside another), so when it's present the band becomes a
@@ -1284,12 +1299,16 @@ function SectionHeader({
   // row so the two align on one band.
   leading?: ReactNode;
 }) {
+  // The gap under the band — dropped when it is joined to the rows below (and
+  // when the caller carries it instead, see `flush` / `leading`).
+  const gapClass = flush || joined ? "" : "mb-0.5";
+  const radiusClass = joined ? "rounded-t-md" : "rounded-md";
   const button = (
     <button
       type="button"
       onClick={onToggle}
       aria-expanded={expanded}
-      className={`${flush || leading ? "" : "mb-0.5"} flex ${leading ? "flex-1" : "w-full"} cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${
+      className={`${leading ? "" : gapClass} flex ${leading ? "flex-1" : "w-full"} cursor-pointer items-center gap-2 ${radiusClass} px-2 py-1.5 text-left transition-colors ${
         dropOver
           ? "bg-accent/15 text-fg-bright ring-1 ring-accent/50"
           : "bg-surface-2 text-muted hover:bg-surface-3 hover:text-fg"
@@ -1310,7 +1329,7 @@ function SectionHeader({
   );
   if (!leading) return button;
   return (
-    <div className={`${flush ? "" : "mb-0.5"} flex items-center gap-1`}>
+    <div className={`${gapClass} flex items-center gap-1`}>
       {leading}
       {button}
     </div>
@@ -1335,6 +1354,7 @@ function FolderSectionHeader({
   deleteLabel,
   menuLabel,
   selectCheckbox,
+  joined,
 }: {
   name: string;
   count: number;
@@ -1349,6 +1369,9 @@ function FolderSectionHeader({
   // The select-mode folder checkbox, shown at the heading's leading edge while
   // a selection is being made — ticks or clears every contact in the folder.
   selectCheckbox?: ReactNode;
+  // The folder's contact rows follow directly below, so the band caps the block
+  // instead of floating above it. See `SectionHeader`.
+  joined?: boolean;
 }) {
   const archiveAction: RowAction = {
     label: archiveLabel,
@@ -1373,7 +1396,7 @@ function FolderSectionHeader({
           margin) and same rounded clip — for the revealed buttons to match the
           row at every font scale and density. */}
       <SwipeableRow
-        className="mb-0.5 rounded-md"
+        className={joined ? "rounded-t-md" : "mb-0.5 rounded-md"}
         actions={[deleteAction]}
         leading={{
           kind: "commit",
@@ -1389,6 +1412,7 @@ function FolderSectionHeader({
           onToggle={onToggle}
           dropOver={dropOver}
           flush
+          joined={joined}
           leading={selectCheckbox}
         />
       </SwipeableRow>
