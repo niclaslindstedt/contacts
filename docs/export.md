@@ -26,6 +26,10 @@ selection to a vCard / CSV file:
   order, the **relationship** and **tags**, and **attachments** (none of which
   have a vCard or CSV field, so they survive only in a JSON backup).
 
+The copy button on an open card is a different thing: it copies that one card as
+**Markdown** — for pasting into a note, a message, or a ticket rather than
+importing elsewhere. See [the contacts documentation](contacts.md).
+
 ## Import
 
 Bring contacts in from another address book two ways:

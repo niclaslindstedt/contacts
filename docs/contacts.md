@@ -170,6 +170,18 @@ as a **company** rather than a person.
   mode; the check flips it back. In edit mode, tap the name to rename and fill in
   the field form. Every field commits when you leave it, and each committed edit
   is one undo step. A brand-new contact opens straight in edit mode.
+- **Copy a card as Markdown.** The copy button in the toolbar puts the card's
+  information on the clipboard as **Markdown** — the name as a heading, then the
+  same sections the read view shows: Get in touch (phone numbers and email
+  addresses, each typed Private or Work, with the primary number marked),
+  Details (company, relationship, website, birthday and other important dates),
+  Tags, Addresses, and Notes. Values are copied the way you see them, in your
+  chosen date, phone, and postal formats, and the headings follow the app
+  language. Only the sections the card actually carries are written, so a sparse
+  card copies as sparsely as it reads. Photos and attachments stay behind (no
+  paste can carry them), as do the card's app-only settings — the emergency
+  flag, favorite, and the auto-archive schedule. To hand a card to another
+  address book instead, use the download button beside it for a vCard.
 - **Photos.** A contact can hold **several photos** and swap between them
   whenever you like — no need to delete and re-upload to go back to an earlier
   one. In edit mode, tap the avatar to open the appearance popover. Its
