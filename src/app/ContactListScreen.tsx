@@ -1547,7 +1547,13 @@ function ContactRow({
   // room, so a spacious list reads bigger throughout, not just its photos.
   const spacious = settings.listDensity === "spacious";
   const avatarSize = spacious ? "list-spacious" : "list-compact";
-  const rowSpacing = spacious ? "gap-4 py-3" : "gap-3 py-2";
+  // The leading padding matches the row's own gap, so the photo carries the
+  // same air on its left as it does between itself and the name — it used to
+  // sit on a 4px `px-1` inset and read as if it were pushed against the edge.
+  // The trailing side keeps that 4px: the favourite heart is a 36px box around
+  // a 20px glyph, so its 8px of built-in slack already brings the optical gap
+  // out to the same width.
+  const rowSpacing = spacious ? "gap-4 py-3 pl-4" : "gap-3 py-2 pl-3";
   // A spacious row wears a big 64px photo, so a lone small phone pill hugging
   // the name leaves an unbalanced gap of dead space beneath it. When there's a
   // single number, blow that one pill up and push it down off the name so the
@@ -1607,7 +1613,7 @@ function ContactRow({
         aria-label={t("list.selectContact", {
           name: name || t("contact.unnamed"),
         })}
-        className={`relative flex w-full cursor-pointer items-center ${borderClass} px-1 text-left ${rowSpacing} ${
+        className={`relative flex w-full cursor-pointer items-center ${borderClass} pr-1 text-left ${rowSpacing} ${
           selected ? "bg-accent/10" : "hover:bg-surface-2"
         }`}
       >
@@ -1647,7 +1653,7 @@ function ContactRow({
         }
       }}
       aria-label={name || t("contact.unnamed")}
-      className={`relative flex cursor-pointer items-center ${borderClass} px-1 transition-colors hover:bg-surface-2 ${rowSpacing}`}
+      className={`relative flex cursor-pointer items-center ${borderClass} pr-1 transition-colors hover:bg-surface-2 ${rowSpacing}`}
     >
       {dropRing}
       {grip}
