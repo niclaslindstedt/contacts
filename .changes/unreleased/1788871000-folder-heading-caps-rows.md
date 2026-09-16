@@ -3,4 +3,4 @@ type: Changed
 title: Folders read as one block
 ---
 
-A folder heading on the List page now caps the contacts under it — rounded only at the top and sitting flush on the first row — instead of floating above them as a separate pill.
+A folder on the List page now reads as one block: the heading caps it at the top, rounded and flush on the first row, and the folder's last contact closes it off with a matching rounded foot.
