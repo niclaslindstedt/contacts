@@ -249,18 +249,6 @@ export function ContactListScreen({
     }
     return false;
   };
-  // The key of the last section that still renders a header band (visible, not
-  // folded under a collapsed ancestor). Every section above it has a folder
-  // below, so its last row drops its bottom rule; the final section keeps it.
-  const lastVisibleSectionKey = (() => {
-    let key: string | null = null;
-    for (const g of groups) {
-      if (!isSectionHidden(g.folder?.id ?? null)) {
-        key = g.folder?.id ?? UNGROUPED;
-      }
-    }
-    return key;
-  })();
   // The section keys the header's collapse-all button folds (and unfolds) in one
   // tap — every group that shows a heading (a folder, plus the ungrouped group
   // when it isn't the whole list). `allCollapsed` flips the button to "expand
@@ -750,9 +738,6 @@ export function ContactListScreen({
             // the rows read as one flat list. Otherwise every section, the
             // ungrouped one included, gets a collapsible header.
             const showHeader = group.folder !== null || groups.length > 1;
-            // True while another folder section renders below this one, so this
-            // section's last row should drop its trailing rule.
-            const folderBelow = key !== lastVisibleSectionKey;
             // Each section is a drop zone — dropping a card (or the whole
             // selection) here files it into this folder, or un-groups it to the
             // root over the ungrouped section.
@@ -838,42 +823,52 @@ export function ContactListScreen({
                   ))}
                 {expanded && (
                   <ul className="m-0 list-none p-0">
-                    {group.contacts.map((contact, i) => (
-                      // The row is a photo drop target: an image released over
-                      // it becomes this contact's picture (see `photoDrop`).
-                      <li key={contact.id} data-photo-drop-id={contact.id}>
-                        <DraggableContactRow
-                          dragHandle={dnd.dragHandle(contact.id)}
-                          actions={contactRowActions(contact)}
-                          menuLabel={t("menu.contactActions")}
-                          archiveLabel={t("menu.archive")}
-                          onCapturePos={(x, y) => {
-                            movePos.current = { x, y };
-                          }}
-                          onModifiedClick={
-                            selecting
-                              ? undefined
-                              : () => enterSelectWith(contact.id)
-                          }
-                        >
-                          <ContactRow
-                            contact={contact}
-                            settings={settings}
-                            selecting={selecting}
-                            selected={selected.has(contact.id)}
-                            onOpen={() => onOpenContact(contact.id)}
-                            onToggleSelected={(extend) =>
-                              selectRow(contact.id, extend)
+                    {group.contacts.map((contact, i) => {
+                      // The block's closing row: it rounds off at the bottom so
+                      // the section reads as one capped card — the heading band
+                      // rounds the top, this row rounds the foot. A headless
+                      // (folder-less) document has no cap to mirror, so its
+                      // flat list keeps square corners.
+                      const endsSection =
+                        showHeader && joined && i === group.contacts.length - 1;
+                      return (
+                        // The row is a photo drop target: an image released over
+                        // it becomes this contact's picture (see `photoDrop`).
+                        <li key={contact.id} data-photo-drop-id={contact.id}>
+                          <DraggableContactRow
+                            dragHandle={dnd.dragHandle(contact.id)}
+                            actions={contactRowActions(contact)}
+                            menuLabel={t("menu.contactActions")}
+                            archiveLabel={t("menu.archive")}
+                            roundedBottom={endsSection}
+                            onCapturePos={(x, y) => {
+                              movePos.current = { x, y };
+                            }}
+                            onModifiedClick={
+                              selecting
+                                ? undefined
+                                : () => enterSelectWith(contact.id)
                             }
-                            onToggleFavorite={() => toggleFavorite(contact)}
-                            photoDropTarget={photoDrop.targetId === contact.id}
-                            last={
-                              folderBelow && i === group.contacts.length - 1
-                            }
-                          />
-                        </DraggableContactRow>
-                      </li>
-                    ))}
+                          >
+                            <ContactRow
+                              contact={contact}
+                              settings={settings}
+                              selecting={selecting}
+                              selected={selected.has(contact.id)}
+                              onOpen={() => onOpenContact(contact.id)}
+                              onToggleSelected={(extend) =>
+                                selectRow(contact.id, extend)
+                              }
+                              onToggleFavorite={() => toggleFavorite(contact)}
+                              photoDropTarget={
+                                photoDrop.targetId === contact.id
+                              }
+                              roundedBottom={endsSection}
+                            />
+                          </DraggableContactRow>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </section>
@@ -986,6 +981,7 @@ function DraggableContactRow({
   actions,
   menuLabel,
   archiveLabel,
+  roundedBottom = false,
   onCapturePos,
   onModifiedClick,
   children,
@@ -998,6 +994,10 @@ function DraggableContactRow({
   };
   menuLabel: string;
   archiveLabel: string;
+  // True for the row that closes a folder section — the swipe container rounds
+  // its bottom corners so the block's foot curves (and the revealed swipe
+  // buttons follow the same clip, the way the heading band's do at the top).
+  roundedBottom?: boolean;
   onCapturePos: (x: number, y: number) => void;
   // Called when the row is clicked with Ctrl / Cmd held (enter select mode).
   // Absent while already selecting, so a modified click just toggles as usual.
@@ -1025,6 +1025,7 @@ function DraggableContactRow({
         actions={actions}
         menuLabel={menuLabel}
         archiveLabel={archiveLabel}
+        roundedBottom={roundedBottom}
       >
         {children}
       </ContactRowActions>
@@ -1042,6 +1043,7 @@ function ContactRowActions({
   menuLabel,
   archiveLabel,
   swipe = true,
+  roundedBottom = false,
   children,
 }: {
   actions: {
@@ -1055,6 +1057,10 @@ function ContactRowActions({
   // default for the List page; the Favorites page turns it off — swipe is a
   // List-page affordance, so a Favorites row only carries the right-click menu.
   swipe?: boolean;
+  // The row closes a folder section: the swipe container carries the rounded
+  // foot too, so the surface that slides under the finger — and the buttons
+  // revealed beneath it — are clipped to the same curve as the row itself.
+  roundedBottom?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -1065,6 +1071,7 @@ function ContactRowActions({
     >
       {swipe ? (
         <SwipeableRow
+          className={roundedBottom ? "rounded-b-md" : ""}
           actions={[actions.deleteAction]}
           leading={{
             kind: "commit",
@@ -1505,7 +1512,7 @@ function ContactRow({
   grip,
   photoDropTarget = false,
   favoritesOnly = false,
-  last = false,
+  roundedBottom = false,
 }: {
   contact: Contact;
   settings: AppSettings;
@@ -1527,10 +1534,11 @@ function ContactRow({
   // that one number, not its whole list — so a starred contact reads as a single
   // tap-to-call. The full List page always shows the prioritized set.
   favoritesOnly?: boolean;
-  // The last row of a section that has another folder section below it drops
-  // its bottom rule, so a group reads as an enclosed block instead of drawing a
-  // divider straight into the following folder's header band.
-  last?: boolean;
+  // The closing row of a folder section. It rounds off at the bottom so the
+  // section reads as one capped block: the heading band rounds the top corners,
+  // this row rounds the bottom two — and its rule, hover tint, and selected
+  // wash all follow that curve.
+  roundedBottom?: boolean;
 }) {
   const t = useT();
   const name = displayName(contact);
@@ -1559,10 +1567,12 @@ function ContactRow({
   // single number, blow that one pill up and push it down off the name so the
   // name + pill together fill the photo's height and the row reads deliberate.
   const bigPill = spacious && phones.length === 1;
-  // Every row rules off from the next with a bottom border, except the last row
-  // of a section that has a folder below it — there the folder's own header band
-  // is the divider, so a trailing rule just doubles it up.
-  const borderClass = last ? "" : "border-b border-line";
+  // Every row rules off from the next with a bottom border. On the row that
+  // closes a section that same rule is the block's foot, and `rounded-b-md`
+  // curls it (along with the row's surface, hover tint, and selected wash) up at
+  // both ends — so a folder closes the way its heading band's `rounded-t-md`
+  // opens it.
+  const radiusClass = roundedBottom ? "rounded-b-md" : "";
 
   // Names wrap onto as many lines as they need rather than truncating, so a
   // long full name reads in full; `[overflow-wrap:anywhere]` also breaks a
@@ -1613,7 +1623,7 @@ function ContactRow({
         aria-label={t("list.selectContact", {
           name: name || t("contact.unnamed"),
         })}
-        className={`relative flex w-full cursor-pointer items-center ${borderClass} pr-1 text-left ${rowSpacing} ${
+        className={`relative flex w-full cursor-pointer items-center border-b border-line ${radiusClass} pr-1 text-left ${rowSpacing} ${
           selected ? "bg-accent/10" : "hover:bg-surface-2"
         }`}
       >
@@ -1653,7 +1663,7 @@ function ContactRow({
         }
       }}
       aria-label={name || t("contact.unnamed")}
-      className={`relative flex cursor-pointer items-center ${borderClass} pr-1 transition-colors hover:bg-surface-2 ${rowSpacing}`}
+      className={`relative flex cursor-pointer items-center border-b border-line ${radiusClass} pr-1 transition-colors hover:bg-surface-2 ${rowSpacing}`}
     >
       {dropRing}
       {grip}
