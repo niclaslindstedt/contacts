@@ -3,8 +3,8 @@
 A local-first contacts PWA built on
 [`@niclaslindstedt/oss-framework`](https://github.com/niclaslindstedt/oss-framework)
 — your address book lives on your device as JSON, optionally syncs to a local
-folder, Dropbox, or Google Drive (with encryption at rest), and exports as
-vCard/CSV for Outlook, iOS, and Android.
+folder, Dropbox, Google Drive, or (in the App Store build) iCloud Drive (with
+encryption at rest), and exports as vCard/CSV for Outlook, iOS, and Android.
 
 [![CI](https://github.com/niclaslindstedt/contacts/actions/workflows/ci.yml/badge.svg)](https://github.com/niclaslindstedt/contacts/actions/workflows/ci.yml)
 [![Pages](https://github.com/niclaslindstedt/contacts/actions/workflows/pages.yml/badge.svg)](https://github.com/niclaslindstedt/contacts/actions/workflows/pages.yml)
@@ -19,6 +19,8 @@ vCard/CSV for Outlook, iOS, and Android.
   browsable, git-trackable tree — no account, no network) or connect Dropbox or
   Google Drive, and the app keeps an off-device copy in sync — optionally
   wrapped in an AES-GCM envelope keyed by a passphrase that never leaves memory.
+  The App Store build adds **iCloud Drive**: no account to create, nobody else
+  holding the file, and the synced tree visible in the Files app.
 - **Never locked in.** One tap exports vCard 3.0 (imports straight into
   Outlook, iOS, and Android/Google Contacts), Outlook-compatible CSV, or a
   versioned JSON backup.
@@ -141,14 +143,22 @@ Enter — and start filling in the card.
   a dated, compressed `.zip` (photos and attachments included) or restore one
   from disk. Connect a local folder or cloud drive to browse, take, and restore
   dated snapshots kept off-device in a `backups/` folder.
-- **Sync** — Settings → Storage: pick a local folder or connect Dropbox or
-  Google Drive; the sync glyph in the card header shows the save state and opens
+- **Sync** — Settings → Storage: pick a local folder or connect Dropbox,
+  Google Drive, or (in the app) iCloud Drive; the sync glyph in the card header
+  shows the save state and opens
   the sync command centre, where an **Open in {provider}** button jumps straight
   to your synced files on the drive's own web UI. Connecting a backend that
   already holds contacts asks whether to keep the synced copy or replace it with
   this device.
 
 ### Install as an app
+
+Contacts also ships as a native app for iPhone, iPad and Android — a thin
+Expo / React Native wrapper in [`native/`](native/README.md) that carries this
+web build inside it and serves it from a loopback origin, so it works with no
+network at all. The wrapper adds one thing the browser cannot do: syncing
+through your own iCloud Drive. Builds run on EAS and are cut by dispatching the
+`native` workflow; see [`native/RELEASING.md`](native/RELEASING.md).
 
 The deployed site is an installable PWA: use your browser's _Install app_
 affordance (or on iOS, Safari → Share → _Add to Home Screen_). The installed
@@ -172,6 +182,10 @@ see [docs/configuration.md](docs/configuration.md):
 | `VITE_DONATE_URL`         | Donate link target (defaults to the project's GitHub Sponsors page)     |
 | `VITE_BASE`               | Deploy base path — `/` (release), `/preview/` (main), `/branch/` (slot) |
 
+iCloud Drive needs none of these: it is not a service the web build talks to,
+and its container is pinned in the native wrapper's own config
+(`native/app.config.js`).
+
 ## Examples
 
 See [`examples/`](examples/) for a sample exported vCard and CSV, exactly as
@@ -190,6 +204,7 @@ the app produces them.
 - [Getting started](docs/getting-started.md)
 - [Configuration](docs/configuration.md)
 - [Architecture](docs/architecture.md)
+- [The native wrapper](native/README.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## Contributing

@@ -6,8 +6,19 @@ import globals from "globals";
 
 export default [
   {
-    // Build output and dependencies are out of scope for the linter.
-    ignores: ["dist/**", "node_modules/**", "coverage/**"],
+    // Build output and dependencies are out of scope for the linter — and
+    // `native/ios` / `native/android` are exactly that: `expo prebuild`
+    // regenerates them from `native/app.config.js` and its config plugins, so
+    // anything the linter said about them would be said about generated code.
+    ignores: [
+      "dist/**",
+      "node_modules/**",
+      "coverage/**",
+      "native/node_modules/**",
+      "native/ios/**",
+      "native/android/**",
+      "native/.expo/**",
+    ],
   },
   js.configs.recommended,
   {
@@ -22,9 +33,26 @@ export default [
     },
   },
   {
+    // The native wrapper's Node-side JavaScript: its Expo config, its config
+    // plugin, its Metro config and its bundle script. All CommonJS or ESM
+    // under Node, none of it shipped to a device.
+    files: ["native/**/*.{js,mjs}"],
+    languageOptions: {
+      sourceType: "module",
+      ecmaVersion: 2022,
+      globals: { ...globals.node },
+    },
+  },
+  {
     files: [
       "src/**/*.{ts,tsx}",
       "tests/**/*.{ts,tsx}",
+      // The native wrapper's app sources. Linted from here rather than from a
+      // second config inside `native/`, so there is one set of rules for the
+      // repo — but note `native/` has its own dependency tree and its own
+      // `tsc` (`npm --prefix native run typecheck`), which is what actually
+      // type-checks these against react-native and expo.
+      "native/**/*.{ts,tsx}",
       "vite.config.ts",
       "vitest.config.ts",
       "pwa-plugin.ts",

@@ -30,6 +30,16 @@ make fmt-check     # verify formatting (CI)
 make icons         # regenerate the PWA icons + og image from the app mark
 ```
 
+The native wrapper in `native/` has a **dependency tree of its own** — `make
+install` does not touch it, and neither does `npm ci` at the root:
+
+```sh
+make native-install    # npm --prefix native install
+make native-bundle     # build the web app into native/assets/webroot.zip
+make native-typecheck  # the wrapper's own tsc
+make native-prebuild   # inspect what the config plugin generates
+```
+
 The `@niclaslindstedt/oss-framework` dependency comes from the **GitHub
 Packages** npm registry (see `.npmrc`). GitHub Packages requires auth even for
 public packages, so local installs need a `read:packages` token in `~/.npmrc`
@@ -103,6 +113,34 @@ The framework owns the UI kit and the generic mechanics: the `Sidebar` shell,
 modals, theme engine, glyph catalogue, search matcher, storage adapters
 (localStorage / Dropbox / Google Drive), the AES-GCM encryption wrapper, the
 achievements engine, i18n runtime, logging, and the PWA update state machine.
+
+### The native wrapper is optional, and outside all of this
+
+`native/` is a thin Expo / React Native shell that bundles this web build and
+serves it in a `WebView`, so the app can ship to the App Store and Google Play.
+It is a **separate npm project** with its own lockfile, its own `tsc`, and no
+share of the root's dependency tree.
+
+Two rules keep it thin, and both are load-bearing:
+
+1. **Nothing in `src/` may learn that the wrapper exists.** The web app asks
+   whether a _capability_ is present (`src/app/icloudHost.ts` looks for an
+   iCloud provider on `window`), never whether it is running natively, on which
+   platform, or in which build. A browser has no provider and the feature is
+   simply absent; a second host offering the same methods would light it up
+   with no change in `src/`.
+2. **The wrapper owns no domain.** It moves opaque files between the page and a
+   folder in iCloud Drive. What the document is called, how photos are filed
+   beside it, what a conflict means and when a save is due stay in
+   `src/app/useSyncEngine.ts`, against the framework's storage adapters.
+
+A root test (`tests/native_icloud_test.ts`) imports one module from that tree
+to pin the two sides of the seam against each other — which is why
+`native/src/icloudBridge.ts` takes its types from the import-free
+`native/src/icloudWire.ts`, and why `native/tsconfig.json` does not extend
+Expo's base: a root `npm ci` installs none of `native/`'s dependencies, and
+anything reachable from that test which imports `expo` turns a fully-installed
+machine green and CI red. See [`native/README.md`](native/README.md).
 
 ### The renderer is Preact
 
@@ -187,13 +225,14 @@ stale copy.
 
 ## Where new code goes
 
-| Change type | Goes in                                                               |
-| ----------- | --------------------------------------------------------------------- |
-| New feature | `src/app/...`                                                         |
-| Tests       | `tests/...`                                                           |
-| Docs update | `docs/...`                                                            |
-| Examples    | `examples/...`                                                        |
-| LLM prompt  | `prompts/<name>/<major>_<minor>_<patch>.md` (see `prompts/README.md`) |
+| Change type    | Goes in                                                               |
+| -------------- | --------------------------------------------------------------------- |
+| New feature    | `src/app/...`                                                         |
+| Native wrapper | `native/...` (a separate npm project — see above)                     |
+| Tests          | `tests/...`                                                           |
+| Docs update    | `docs/...`                                                            |
+| Examples       | `examples/...`                                                        |
+| LLM prompt     | `prompts/<name>/<major>_<minor>_<patch>.md` (see `prompts/README.md`) |
 
 ## Test conventions
 
@@ -217,6 +256,7 @@ stale copy.
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | the contact model or export formats | `docs/export.md`, `docs/features/export.md`, `tests/export_test.ts`, `README.md`                          |
 | sync backends / encryption          | `docs/sync.md`, `docs/features/cloud-sync.md`, `docs/configuration.md`                                    |
+| the native wrapper                  | `native/README.md`, `native/RELEASING.md`, `docs/features/native-app.md`                                  |
 | settings surface                    | `docs/getting-started.md`                                                                                 |
 | user-visible features               | a `.changes/unreleased/` changeset fragment + `docs/features/*.md` (the in-app "What's new" renders both) |
 
@@ -294,8 +334,20 @@ edit needs no fragment of its own.
 - The service-worker contract (cache id, `sw.js`, `version.json`,
   `precache-manifest.json`) is shared between `src/app/pwa.ts` and
   `pwa-plugin.ts`; change them together.
-- `public/icons/*` are generated — edit `scripts/generate-icons.mjs` (and the
-  hand-written `public/icons/icon.svg` to match) and rerun `make icons`.
+- `public/icons/*` **and `native/assets/*.png`** are generated — edit
+  `scripts/generate-icons.mjs` (and the hand-written `public/icons/icon.svg` to
+  match) and rerun `make icons`. The app mark is cut once so the store icon and
+  the installed PWA icon cannot drift into two products that resemble each
+  other.
+- The iCloud container id is pinned in three files that must agree:
+  `native/app.config.js` (the entitlements), `native/plugins/with-icloud.js`
+  (the Files-app declaration) and `native/modules/icloud-store/index.ts` (and
+  its Swift twin). Changing it after release strands every synced copy in the
+  old container.
+- The iCloud bridge's property and event names are a contract between
+  `native/src/icloudBridge.ts` and `src/app/icloudHost.ts`. A rename on either
+  side is not an error — it is a storage backend that never appears.
+  `tests/native_icloud_test.ts` is what makes it one.
 
 ## Maintenance skills
 

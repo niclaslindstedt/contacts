@@ -8,3 +8,9 @@ package-lock.json
 CHANGELOG.md
 # Verbatim copy of the governing spec.
 OSS_SPEC.md
+# The native wrapper's generated trees: `expo prebuild` output (regenerated
+# from native/app.config.js and its plugin) and the packed web build.
+native/ios/
+native/android/
+native/.expo/
+native/assets/

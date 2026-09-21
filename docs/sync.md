@@ -12,6 +12,9 @@ keeps a copy in sync:
   the app's folder as `contacts-<namespace>.json`.
 - **Google Drive** — Google Identity Services consent; the document lives in a
   `Contacts` folder in My Drive.
+- **iCloud Drive** — only in the App Store build, where the app's own iCloud
+  container is filed under `Contacts` in the Files app. No account to create and
+  no consent screen: the device is already signed in, or it is not.
 
 Saves are debounced, retried with backoff on transient failures, and guarded by
 optimistic concurrency — if another device (or another tool editing the same
@@ -42,6 +45,36 @@ The picker is only offered in browsers that expose the File System Access API
 (Chromium-based ones today). In Firefox and Safari the option is hidden, and the
 cloud backends or the on-device copy are used instead.
 
+## iCloud Drive
+
+The **iCloud Drive** backend only exists in the App Store build. The web app
+asks its host whether an iCloud provider is present and offers the backend only
+when one is; in a browser there is none, so the option is not in the picker at
+all. (The seam is `src/app/icloudHost.ts`; the provider is installed by the
+native wrapper in `native/`. Nothing in `src/` knows the wrapper exists — it
+asks about a _capability_, not about what it is running inside.)
+
+Underneath it is the local-folder backend with a different transport: the
+document is written as `contacts-<namespace>.json` in the app's own iCloud
+container, with photos and attachments filed beside it under `photos/` and
+`attachments/` as real image and document files, and dated backups under
+`backups/`. iCloud syncs that folder between your Apple devices; the app never
+talks to a network itself. Because the container is published as a document
+scope, the whole tree shows up under **Contacts** in the Files app, so you can
+browse, copy, or back it up like any other folder.
+
+Two states are worth telling apart, and Settings → Storage does:
+
+- **Connected** — the container resolved and the app is syncing to it.
+- **Not signed in to iCloud** — the build carries the container but the device
+  has no iCloud account, or iCloud Drive is switched off. The sync glyph flags
+  it and **Reconnect** simply re-asks, so turning iCloud Drive on in the system
+  settings is enough; nothing has to be reconnected or re-authorised.
+
+Disconnecting stops writing to the container. It does not empty it — the files
+stay in iCloud Drive, and reconnecting picks them back up (through the same
+replace-or-adopt prompt as any other backend).
+
 ## Connecting a drive that already has contacts
 
 When you connect a cloud drive that **already holds an address book**, the app
@@ -67,7 +100,9 @@ new tab, pointed at the synced files — the `Apps/<folder>` app folder in
 Dropbox, or a filename search in Google Drive — so you can see, download, or
 manage the raw `contacts-<namespace>.json` document and its photo files
 directly. The button doesn't appear for the on-device backend (that copy lives
-in the browser's local storage and has no web location) or the local folder —
+in the browser's local storage and has no web location), for iCloud Drive (that
+copy is a folder in the Files app, not a page a browser can be pointed at), or
+the local folder —
 for the folder you already picked the directory, so you can open it in your file
 manager directly; the command centre shows its path (`<folder>/contacts-<namespace>.json`).
 

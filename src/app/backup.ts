@@ -28,6 +28,8 @@ import {
   type PhotoFileStore,
 } from "./photoFileStore.ts";
 import { folderFileStore } from "./folderFileStore.ts";
+import type { ICloudHost } from "./icloudHost.ts";
+import { icloudPhotoFileStore } from "./icloudStore.ts";
 import type { AppData } from "./types.ts";
 
 /** The single file inside every backup archive. */
@@ -64,6 +66,11 @@ export function dropboxBackupStore(
 /** The Google Drive backup store, in the app folder's `backups/` tree. */
 export function gdriveBackupStore(token: string): BackupStore {
   return scopeToBackups(gdrivePhotoFileStore(token));
+}
+
+/** The iCloud Drive backup store, in the container's `backups/` tree. */
+export function icloudBackupStore(host: ICloudHost): BackupStore {
+  return scopeToBackups(icloudPhotoFileStore(host));
 }
 
 /** The local-folder backup store, in the picked directory's `backups/` tree. */
