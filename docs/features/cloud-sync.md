@@ -7,12 +7,31 @@ the app keeps a copy in sync:
   app's folder as `contacts-<namespace>.json`.
 - **Google Drive** — Google Identity Services consent; the document lives in a
   `Contacts` folder in My Drive.
+- **iCloud Drive** — in the App Store app only. See below.
 
 (Prefer no account or network? See [Local folder](feature:local-folder).)
 
 Saves are debounced and retried with backoff on transient failures. Photos and
 attachments are filed out of the document as real files — see
 [Cloud photo files](feature:photo-files).
+
+## iCloud Drive
+
+In the [App Store app](feature:native-app) there is a fourth choice, and it's
+the simplest one: **iCloud Drive**. There's no account to create and no consent
+screen — your iPhone or iPad is already signed in to iCloud, so connecting is a
+single tap and your address book starts following you between your own devices.
+Nobody else is holding the file.
+
+What lands there is an ordinary folder. The app files its document, your photos,
+your attachments and your dated backups into its own **Contacts** folder in
+iCloud Drive, so you can open it in the Files app on any of your devices and see
+exactly what's synced — or copy the whole thing somewhere else as a backup.
+
+If a device isn't signed in to iCloud (or iCloud Drive is switched off), the app
+says so instead of failing quietly, and picks up as soon as you turn it on. The
+option simply isn't offered in a browser, because a browser can't write to your
+iCloud Drive.
 
 ## Choosing which copy wins when connecting
 

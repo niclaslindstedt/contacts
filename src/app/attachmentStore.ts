@@ -50,6 +50,8 @@ import {
   type PhotoFileStore,
 } from "./photoFileStore.ts";
 import { folderFileStore } from "./folderFileStore.ts";
+import type { ICloudHost } from "./icloudHost.ts";
+import { icloudPhotoFileStore } from "./icloudStore.ts";
 import type { Contact } from "./types.ts";
 
 const log = logStore.createLogger("attachments");
@@ -86,6 +88,11 @@ export function dropboxAttachmentStore(
 /** The Google Drive attachment store, in the app folder's `attachments/` tree. */
 export function gdriveAttachmentStore(token: string): AttachmentStore {
   return scopeToAttachments(gdrivePhotoFileStore(token));
+}
+
+/** The iCloud Drive attachment store, in the container's `attachments/` tree. */
+export function icloudAttachmentStore(host: ICloudHost): AttachmentStore {
+  return scopeToAttachments(icloudPhotoFileStore(host));
 }
 
 /** The local-folder attachment store, filing binary files to `attachments/…`

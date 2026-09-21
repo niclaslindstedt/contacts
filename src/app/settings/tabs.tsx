@@ -579,10 +579,20 @@ export function StorageTab({
   // A cloud backend only appears in the picker when its OAuth identifier is
   // baked into the build — an unconfigured backend can't be connected, so we
   // hide it rather than offer a dead option. The local folder appears only in
-  // browsers that expose the File System Access API (Chromium-based). `local`
-  // is always available.
+  // browsers that expose the File System Access API (Chromium-based), and
+  // iCloud Drive only where a host offers one (see `icloudHost.ts`) — in a
+  // browser there is none, so the option simply isn't there. `local` is always
+  // available.
   const backendOptions = [
     { value: "local" as const, label: t("settings.storage.backendThisDevice") },
+    ...(sync.icloudAvailable
+      ? [
+          {
+            value: "icloud" as const,
+            label: t("settings.storage.backendICloud"),
+          },
+        ]
+      : []),
     ...(FOLDER_BACKEND_AVAILABLE
       ? [
           {
@@ -623,6 +633,7 @@ export function StorageTab({
     void fn().finally(() => setConnecting(false));
   };
   const pickedFolder = picked === "folder";
+  const pickedICloud = picked === "icloud";
   const pickedCloud =
     picked === "dropbox" || picked === "gdrive" ? picked : null;
   // Unconfigured backends are hidden above, so this only fires for a backend
@@ -736,6 +747,60 @@ export function StorageTab({
           options={backendOptions}
           ariaLabel={t("settings.storage.backendTitle")}
         />
+        {pickedICloud && (
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-muted">
+              {t("settings.storage.icloudHint")}
+            </p>
+            {sync.backend === "icloud" && sync.connected ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-success">
+                  {t("settings.storage.icloudConnected")}
+                </span>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    sync.disconnect();
+                    setPicked("local");
+                  }}
+                >
+                  {t("settings.storage.disconnect")}
+                </Button>
+              </div>
+            ) : !sync.icloudAvailable ? (
+              // Only reachable for a backend a previous build connected and
+              // this one cannot offer — the option is hidden above otherwise.
+              // Still worth explaining rather than leaving a Connect button
+              // that does nothing.
+              <p className="text-xs text-warning">
+                {t("settings.storage.icloudUnavailable")}
+              </p>
+            ) : (
+              <>
+                {sync.icloudSignedOut && (
+                  <p className="text-sm text-warning">
+                    {t("settings.storage.icloudSignedOut")}
+                  </p>
+                )}
+                <Button
+                  variant="primary"
+                  className="self-start"
+                  disabled={connecting}
+                  onClick={() => runConnect(() => sync.connectICloud())}
+                >
+                  <span className="flex items-center gap-1.5">
+                    {connecting && (
+                      <SpinnerIcon className="h-4 w-4 animate-spin" />
+                    )}
+                    {t("settings.storage.connect", {
+                      name: PROVIDER_NAMES.icloud,
+                    })}
+                  </span>
+                </Button>
+              </>
+            )}
+          </div>
+        )}
         {pickedFolder && (
           <div className="flex flex-col gap-2">
             <p className="text-xs text-muted">

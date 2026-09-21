@@ -744,12 +744,20 @@ export const sv: Catalog = {
         "Var dina kontakter finns. De sparas alltid på den här enheten; anslut en lokal mapp eller en molntjänst för att hålla en kopia synkad utanför enheten.",
       backendTitle: "Var din data finns",
       backendThisDevice: "Den här enheten",
+      backendICloud: "iCloud Drive",
       backendFolder: "Lokal mapp",
       backendDropbox: "Dropbox",
       backendGdrive: "Google Drive",
       connect: "Anslut {name}",
       connectedAs: "Ansluten — synkar till {name}.",
       disconnect: "Koppla från",
+      icloudHint:
+        "Synka via ditt eget iCloud Drive — dina kontakter följer med mellan dina Apple-enheter utan något konto att skapa och utan att någon annan håller i filen. De skrivs som ett JSON-dokument i appens Contacts-mapp, med foton och bilagor arkiverade bredvid som riktiga bild- och dokumentfiler du kan öppna i Filer.",
+      icloudConnected: "Ansluten — synkar till iCloud Drive.",
+      icloudSignedOut:
+        "Den här enheten är inte inloggad på iCloud, eller så är iCloud Drive avstängt. Slå på det i systeminställningarna och anslut sedan igen.",
+      icloudUnavailable:
+        "Den här kopian av appen når inte iCloud — det erbjuds bara i App Store-appen. Dina kontakter finns kvar på den här enheten; välj en annan lagring för att hålla en kopia synkad utanför enheten.",
       folderHint:
         "Synka till en mapp på den här datorn. Dina kontakter skrivs som ett JSON-dokument, med foton och bilagor arkiverade bredvid som riktiga bild- och dokumentfiler — ett bläddringsbart, git-spårbart träd som du kan säkerhetskopiera eller redigera med andra verktyg.",
       folderChoose: "Välj en mapp…",

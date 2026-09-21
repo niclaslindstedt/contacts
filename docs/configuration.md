@@ -14,6 +14,13 @@ server and no runtime config file). Vite reads these from the environment:
 | `VITE_SEED`               | _(unset)_                                                      | Boot into a developer in-memory backend, seeded with sample contacts. `1`/`true`/`sample` loads the curated edge-case set; a number loads roughly that many contacts; `large` loads a big stress-test spread; `demo` loads the presentation-grade demo address book; `0` or unset starts on the real address book. In-memory only — nothing is persisted. `npm run dev` sets this to `large` by default. See [Fake data](#fake-data--seeded-dev-server) below. |
 | `VITE_DONATE_URL`         | [GitHub Sponsors](https://github.com/sponsors/niclaslindstedt) | The link target for the side menu's **Donate** row. Set it to point the button at a different sponsorship page; when unset it falls back to the project's GitHub Sponsors page.                                                                                                                                                                                                                                                                                |
 
+None of these touch the **iCloud Drive** backend: it has no client id and no
+folder name to configure, because it is not a service the web build talks to. It
+appears only where a host offers an iCloud provider — the App Store build — and
+the container it writes to is pinned in the native wrapper's own config
+(`native/app.config.js`), which is also where its Files-app folder name lives.
+See [`native/README.md`](../native/README.md).
+
 Example production build:
 
 ```sh
@@ -105,3 +112,13 @@ cloud copy. The one exception is the **local-folder** backend's picked-directory
 handle, which is kept in IndexedDB (localStorage can't hold a
 `FileSystemDirectoryHandle`) so the folder grant survives reloads. Clearing site
 data resets the app.
+
+## The native app
+
+The App Store / Play build lives in [`native/`](../native/README.md) and has a
+dependency tree and configuration of its own — none of the `VITE_*` variables
+above reach it, and none of its own reach the web build. Its knobs are
+`EAS_PROJECT_ID` and `EXPO_TOKEN` (build plumbing) plus
+`EXPO_PUBLIC_CONTACTS_URL`, a debugging-only override that points the app at a
+deployed slot instead of the copy of the web build packed inside it. See
+`native/.env.example`.

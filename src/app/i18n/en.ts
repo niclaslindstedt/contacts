@@ -774,12 +774,20 @@ export const en = {
         "Where your contacts live. They are always saved on this device; connect a local folder or a cloud drive to keep an off-device copy in sync.",
       backendTitle: "Where your data lives",
       backendThisDevice: "This device",
+      backendICloud: "iCloud Drive",
       backendFolder: "Local folder",
       backendDropbox: "Dropbox",
       backendGdrive: "Google Drive",
       connect: "Connect {name}",
       connectedAs: "Connected — syncing to {name}.",
       disconnect: "Disconnect",
+      icloudHint:
+        "Sync through your own iCloud Drive — your contacts follow you between your Apple devices with no account to create and nobody else holding the file. They are written as a JSON document in the app's Contacts folder, with photos and attachments filed beside it as real image and document files you can open in the Files app.",
+      icloudConnected: "Connected — syncing to iCloud Drive.",
+      icloudSignedOut:
+        "This device isn't signed in to iCloud, or iCloud Drive is switched off. Turn it on in the system settings, then connect again.",
+      icloudUnavailable:
+        "This copy of the app can't reach iCloud — it's only offered in the App Store app. Your contacts are still on this device; pick another backend to keep an off-device copy in sync.",
       folderHint:
         "Sync to a folder on this computer. Your contacts are written as a JSON document, with photos and attachments filed beside it as real image and document files — a browsable, git-trackable tree you can back up or edit with other tools.",
       folderChoose: "Choose a folder…",

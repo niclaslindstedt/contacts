@@ -298,6 +298,27 @@ writeFileSync(
 );
 writeFileSync(join(root, "public", "og.png"), renderOg());
 
+// The native wrapper's assets (native/assets), cut from the same mark so the
+// app on a home screen and the PWA on a home screen are one product rather
+// than two that resemble each other. Written here rather than kept as a
+// separate set of files precisely so they cannot drift.
+//   icon          — iOS wants a square, fully opaque icon and applies its own
+//                   mask, so the tile is not pre-rounded.
+//   adaptive-icon — Android masks the foreground to whatever shape the
+//                   launcher uses, so the mark is inset to the safe zone and
+//                   the tile runs to the edges (app.config.js paints the same
+//                   ink behind it).
+//   splash-icon   — the launch screen's mark, on the app's own surface, so
+//                   this one keeps its rounded corners.
+const nativeAssets = join(root, "native", "assets");
+mkdirSync(nativeAssets, { recursive: true });
+writeFileSync(join(nativeAssets, "icon.png"), renderIcon(1024, { radius: 0 }));
+writeFileSync(
+  join(nativeAssets, "adaptive-icon.png"),
+  renderIcon(1024, { pad: 0.18, radius: 0 }),
+);
+writeFileSync(join(nativeAssets, "splash-icon.png"), renderIcon(512));
+
 // favicon.ico — the browser-tab fallback for engines that ignore the SVG
 // favicon (Safari, search crawlers) and for the implicit /favicon.ico request.
 // Packs the mark at the three classic tab sizes. Lives at the public root so it
@@ -307,5 +328,6 @@ writeFileSync(
   encodeIco([16, 32, 48].map((size) => ({ size, data: renderIcon(size) }))),
 );
 console.log(
-  "icons: wrote pwa-192/512/512-maskable, apple-touch-180, og.png, favicon.ico",
+  "icons: wrote pwa-192/512/512-maskable, apple-touch-180, og.png, favicon.ico, " +
+    "native icon/adaptive-icon/splash-icon",
 );

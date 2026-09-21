@@ -105,6 +105,8 @@ import {
   type PhotoFileStore,
 } from "./photoFileStore.ts";
 import { folderFileStore } from "./folderFileStore.ts";
+import type { ICloudHost } from "./icloudHost.ts";
+import { icloudPhotoFileStore } from "./icloudStore.ts";
 
 const log = logStore.createLogger("photos");
 
@@ -141,6 +143,13 @@ export function dropboxPhotoStore(
 /** The Google Drive photo store, in the app folder's `photos/` tree. */
 export function gdrivePhotoStore(token: string): PhotoStore {
   return scopeToPhotos(gdrivePhotoFileStore(token));
+}
+
+/** The iCloud Drive photo store, in the container's `photos/` tree. Untiered,
+ *  like the local folder's: the files are on the device's own disk by the time
+ *  they are read, so there is no rate limit for the atlas to spare. */
+export function icloudPhotoStore(host: ICloudHost): PhotoStore {
+  return scopeToPhotos(icloudPhotoFileStore(host));
 }
 
 /** The local-folder photo store, filing binary JPEGs to `photos/…` inside the

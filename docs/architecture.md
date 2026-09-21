@@ -165,6 +165,16 @@ when the user opts in — `withEncryption`, so the cloud copy is an AES-GCM
 envelope. The passphrase lives in a mutable in-memory ref; after a reload the
 cloud copy is "locked" until re-entered (the framework's `UnlockGate`).
 
+The **local folder** and **iCloud Drive** backends are the same shape with a
+different transport: a `FileStore` handed to the framework's
+`createFileStoreAdapter`, with no `withLocalCache` (the bytes are already on
+this device) and the retry schedule off (there is no network error to ride
+out). iCloud's store is `src/app/icloudStore.ts`, built over whatever host
+offers the capability `src/app/icloudHost.ts` looks for — see
+[the native wrapper](../native/README.md), and "The native wrapper is optional"
+in `AGENTS.md` for why the app asks about a capability rather than about what
+it is running inside.
+
 ## Photo transport
 
 Photos are the one part of the document big enough to need a transport of its
@@ -222,3 +232,14 @@ under it (its scope `/` is a prefix of `/preview/` and `/branch/`). See
 `src/output.ts` is the central output module (OSS_SPEC §19.4): semantic
 helpers (`status`/`info`/`warn`/`error`/`header`) over the in-app log store,
 which the Logs settings tab and the sync command centre's log panel render.
+
+## The native wrapper
+
+`native/` is a separate npm project: an Expo / React Native shell that packs
+this web build into `assets/webroot.zip`, unpacks it on first launch, serves it
+from a fixed loopback origin, and points a `WebView` at it. Nothing in `src/`
+imports from it or knows it exists; the one seam between them is a capability
+the wrapper installs on `window` and `src/app/icloudHost.ts` validates.
+`tests/native_icloud_test.ts` pins the two sides against each other, because
+every failure mode on that seam is silent. See
+[`native/README.md`](../native/README.md).
