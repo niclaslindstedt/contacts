@@ -160,7 +160,7 @@ working copy. When a cloud backend is connected the engine:
    as a new baseline.
 
 Adapters come from the framework (`createDropboxAdapter` /
-`createGdriveAdapter`), wrapped with `withLocalCache` (offline reads) and —
+), wrapped with `withLocalCache` (offline reads) and —
 when the user opts in — `withEncryption`, so the cloud copy is an AES-GCM
 envelope. The passphrase lives in a mutable in-memory ref; after a reload the
 cloud copy is "locked" until re-entered (the framework's `UnlockGate`).
