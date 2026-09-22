@@ -83,7 +83,7 @@ export function buildManifest(base: string): string {
     name,
     short_name,
     description:
-      "A privacy-first contacts PWA: local-only or cloud-synced (Dropbox, Google Drive), optional encryption at rest, themes, achievements, and vCard/CSV export.",
+      "A privacy-first contacts PWA: local-only or cloud-synced (Dropbox, Dropbox), optional encryption at rest, themes, achievements, and vCard/CSV export.",
     id: base,
     start_url: base,
     scope: base,

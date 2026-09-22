@@ -46,7 +46,6 @@ import { exportFileStem } from "./export.ts";
 import { logStore } from "./log.ts";
 import {
   dropboxPhotoFileStore,
-  gdrivePhotoFileStore,
   type PhotoFileStore,
 } from "./photoFileStore.ts";
 import { folderFileStore } from "./folderFileStore.ts";
@@ -83,11 +82,6 @@ export function dropboxAttachmentStore(
   appKey: string | undefined,
 ): AttachmentStore {
   return scopeToAttachments(dropboxPhotoFileStore(auth, appKey));
-}
-
-/** The Google Drive attachment store, in the app folder's `attachments/` tree. */
-export function gdriveAttachmentStore(token: string): AttachmentStore {
-  return scopeToAttachments(gdrivePhotoFileStore(token));
 }
 
 /** The iCloud Drive attachment store, in the container's `attachments/` tree. */

@@ -72,7 +72,6 @@ import type { ContactStore } from "../useContactStore.ts";
 import {
   DROPBOX_APP_KEY,
   FOLDER_BACKEND_AVAILABLE,
-  GOOGLE_CLIENT_ID,
   PROVIDER_NAMES,
   type MutablePasswordRef,
   type SyncEngine,
@@ -609,14 +608,6 @@ export function StorageTab({
           },
         ]
       : []),
-    ...(GOOGLE_CLIENT_ID
-      ? [
-          {
-            value: "gdrive" as const,
-            label: t("settings.storage.backendGdrive"),
-          },
-        ]
-      : []),
   ];
 
   // The picker shows the *target* backend; an unconnected backend shows its
@@ -635,13 +626,11 @@ export function StorageTab({
   const pickedFolder = picked === "folder";
   const pickedICloud = picked === "icloud";
   const pickedCloud =
-    picked === "dropbox" || picked === "gdrive" ? picked : null;
+    picked === "dropbox" ? picked : null;
   // Unconfigured backends are hidden above, so this only fires for a backend
   // persisted by an earlier build that had the key and this one doesn't —
   // still worth explaining rather than leaving the picker silently stuck.
-  const missingKey =
-    (pickedCloud === "dropbox" && !DROPBOX_APP_KEY) ||
-    (pickedCloud === "gdrive" && !GOOGLE_CLIENT_ID);
+  const missingKey = pickedCloud === "dropbox" && !DROPBOX_APP_KEY;
 
   const exportable = store.data.contacts.filter(
     (c) => c.firstName || c.lastName || c.company || c.phones.length > 0,
@@ -858,9 +847,7 @@ export function StorageTab({
         )}
         {pickedCloud && missingKey && (
           <p className="text-xs text-warning">
-            {pickedCloud === "dropbox"
-              ? t("settings.storage.missingKeyDropbox")
-              : t("settings.storage.missingKeyGdrive")}
+            {t("settings.storage.missingKeyDropbox")}
           </p>
         )}
         {pickedCloud && !missingKey && (
@@ -886,13 +873,7 @@ export function StorageTab({
               <Button
                 variant="primary"
                 disabled={connecting}
-                onClick={() =>
-                  runConnect(() =>
-                    pickedCloud === "dropbox"
-                      ? sync.connectDropbox()
-                      : sync.connectGdrive(),
-                  )
-                }
+                onClick={() => runConnect(() => sync.connectDropbox())}
               >
                 <span className="flex items-center gap-1.5">
                   {connecting && (

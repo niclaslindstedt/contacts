@@ -3,7 +3,7 @@
 A local-first contacts PWA built on
 [`@niclaslindstedt/oss-framework`](https://github.com/niclaslindstedt/oss-framework)
 — your address book lives on your device as JSON, optionally syncs to a local
-folder, Dropbox, Google Drive, or (in the App Store build) iCloud Drive (with
+folder, Dropbox or (in the App Store build) iCloud Drive (with
 encryption at rest), and exports as vCard/CSV for Outlook, iOS, and Android.
 
 [![CI](https://github.com/niclaslindstedt/contacts/actions/workflows/ci.yml/badge.svg)](https://github.com/niclaslindstedt/contacts/actions/workflows/ci.yml)
@@ -16,8 +16,8 @@ encryption at rest), and exports as vCard/CSV for Outlook, iOS, and Android.
 - **Your contacts are yours.** Everything lives on your device first — no
   account, no server, works fully offline as an installable PWA.
 - **Sync when you want it.** Point it at a local folder on your computer (a
-  browsable, git-trackable tree — no account, no network) or connect Dropbox or
-  Google Drive, and the app keeps an off-device copy in sync — optionally
+  browsable, git-trackable tree — no account, no network) or connect Dropbox
+  and the app keeps an off-device copy in sync — optionally
   wrapped in an AES-GCM envelope keyed by a passphrase that never leaves memory.
   The App Store build adds **iCloud Drive**: no account to create, nobody else
   holding the file, and the synced tree visible in the Files app.
@@ -143,8 +143,8 @@ Enter — and start filling in the card.
   a dated, compressed `.zip` (photos and attachments included) or restore one
   from disk. Connect a local folder or cloud drive to browse, take, and restore
   dated snapshots kept off-device in a `backups/` folder.
-- **Sync** — Settings → Storage: pick a local folder or connect Dropbox,
-  Google Drive, or (in the app) iCloud Drive; the sync glyph in the card header
+- **Sync** — Settings → Storage: pick a local folder or connect Dropbox
+  or (in the app) iCloud Drive; the sync glyph in the card header
   shows the save state and opens
   the sync command centre, where an **Open in {provider}** button jumps straight
   to your synced files on the drive's own web UI. Connecting a backend that
@@ -176,9 +176,7 @@ see [docs/configuration.md](docs/configuration.md):
 | Variable                  | Purpose                                                                 |
 | ------------------------- | ----------------------------------------------------------------------- |
 | `VITE_DROPBOX_APP_KEY`    | Dropbox app key (PKCE flow, no secret)                                  |
-| `VITE_GOOGLE_CLIENT_ID`   | Google OAuth client id (GIS token flow)                                 |
 | `VITE_DROPBOX_APP_FOLDER` | Dropbox app-folder name for the "Open in" link (defaults to `Contacts`) |
-| `VITE_GDRIVE_APP_FOLDER`  | Google Drive folder name for stored documents (defaults to `Contacts`)  |
 | `VITE_DONATE_URL`         | Donate link target (defaults to the project's GitHub Sponsors page)     |
 | `VITE_BASE`               | Deploy base path — `/` (release), `/preview/` (main), `/branch/` (slot) |
 

@@ -33,7 +33,7 @@ const PRIVACY_ROUTE: RouteSeo = {
   title: "Privacy — Contacts",
   description:
     "Contacts privacy: local-first by default — no account, no cookies, no " +
-    "analytics, no tracking. Optional Dropbox / Google Drive sync only when " +
+    "analytics, no tracking. Optional Dropbox sync only when " +
     "you connect it.",
   ogType: "article",
 };

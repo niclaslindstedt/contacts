@@ -174,7 +174,7 @@ export function App() {
   const [changelogOpen, setChangelogOpen] = useState(false);
   const { settings, setSettings } = useAppSettings();
 
-  // The real sync engine — pushes the document to Dropbox / Google Drive when
+  // The real sync engine — pushes the document to Dropbox when
   // connected (see `useSyncEngine`). The passphrase for the encrypted cloud
   // copy lives only in this in-memory ref; the framework's encryption wrapper
   // reads it fresh on every operation and stores it nowhere.

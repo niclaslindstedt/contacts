@@ -7,7 +7,7 @@
 // back most of the base64 bloat those inline images add.
 //
 // Backups live in a `backups/` folder on whichever file-backed backend is
-// active (a picked local folder, Dropbox, or Google Drive), one file per
+// active (a picked local folder, Dropbox,), one file per
 // snapshot, named `contacts-<slug>-<ts>-c<n>-f<m>.zip`. The counts and
 // timestamp ride in the file name so the browse list renders instantly from a
 // directory listing alone — no need to download every archive to describe it.
@@ -24,7 +24,6 @@ import { createZip, readZip } from "@niclaslindstedt/oss-framework/zip";
 import { serializeDoc } from "./migrations.ts";
 import {
   dropboxPhotoFileStore,
-  gdrivePhotoFileStore,
   type PhotoFileStore,
 } from "./photoFileStore.ts";
 import { folderFileStore } from "./folderFileStore.ts";
@@ -61,11 +60,6 @@ export function dropboxBackupStore(
   appKey: string | undefined,
 ): BackupStore {
   return scopeToBackups(dropboxPhotoFileStore(auth, appKey));
-}
-
-/** The Google Drive backup store, in the app folder's `backups/` tree. */
-export function gdriveBackupStore(token: string): BackupStore {
-  return scopeToBackups(gdrivePhotoFileStore(token));
 }
 
 /** The iCloud Drive backup store, in the container's `backups/` tree. */

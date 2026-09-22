@@ -585,7 +585,7 @@ export const en = {
       },
       synced: {
         name: "Cloud Walker",
-        condition: "Sync to a folder, Dropbox, or Google Drive.",
+        condition: "Sync to a folder, Dropbox,.",
         learnMore:
           "Point the app at a local folder or connect a cloud drive and it keeps an off-device copy in sync — photos and attachments filed beside the document as real files.",
       },
@@ -777,7 +777,6 @@ export const en = {
       backendICloud: "iCloud Drive",
       backendFolder: "Local folder",
       backendDropbox: "Dropbox",
-      backendGdrive: "Google Drive",
       connect: "Connect {name}",
       connectedAs: "Connected — syncing to {name}.",
       disconnect: "Disconnect",
@@ -797,8 +796,6 @@ export const en = {
         "This folder is no longer accessible — its permission was reset (a common browser behaviour between sessions). Reconnect to resume syncing.",
       missingKeyDropbox:
         "Dropbox sync needs a Dropbox app key baked into the build (VITE_DROPBOX_APP_KEY).",
-      missingKeyGdrive:
-        "Google Drive sync needs a Google OAuth client id baked into the build (VITE_GOOGLE_CLIENT_ID).",
       encryptionTitle: "Encryption at rest",
       encryptCloud: "Encrypt the cloud copy",
       encryptCloudHint:
@@ -877,7 +874,7 @@ export const en = {
         "Rescan the connected drive's photos/ folder and reconnect any photo file that isn't linked to a contact — recovering lost photos, and adopting images you dropped in yourself under the photos/<name>-<contactId>-<photoId>.jpg pattern. Watch the Logs tab for the per-file detail.",
       reindexDone: "Reconnected {reconnected} photo(s); {total} now linked.",
       reindexNoBackend:
-        "Connect a local folder, Dropbox, or Google Drive first — there are no photo files to reindex without one.",
+        "Connect a local folder, Dropbox, first — there are no photo files to reindex without one.",
       reindexEncrypted:
         "The cloud copy is encrypted, so photos live inside the envelope, not as separate files — there's nothing to reindex.",
       reindexEmpty: "The backend holds no document yet.",

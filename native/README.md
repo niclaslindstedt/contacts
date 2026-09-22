@@ -121,7 +121,7 @@ There is no iCloud on Android, and the module says so rather than pretending:
 `modules/icloud-store` declares only the `apple` platform, so
 `requireOptionalNativeModule` returns `null` there and the backend is reported
 unavailable — which means the web app never lists it. The Android build is the
-same offline-capable address book with the same Dropbox, Google Drive and
+same offline-capable address book with the same Dropbox and
 on-device backends the website has.
 
 ## Things that will bite you

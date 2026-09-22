@@ -5,8 +5,6 @@ the app keeps a copy in sync:
 
 - **Dropbox** — OAuth (PKCE) with silent token refresh; the document lives in the
   app's folder as `contacts-<namespace>.json`.
-- **Google Drive** — Google Identity Services consent; the document lives in a
-  `Contacts` folder in My Drive.
 - **iCloud Drive** — in the App Store app only. See below.
 
 (Prefer no account or network? See [Local folder](feature:local-folder).)

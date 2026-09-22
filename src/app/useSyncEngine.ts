@@ -10,7 +10,6 @@ import {
   completeDropboxAuth,
   createDropboxAdapter,
   createFolderAdapter,
-  createGdriveAdapter,
   ensurePermission,
   hasPendingDropboxAuth,
   isFolderBackendAvailable,
@@ -19,7 +18,6 @@ import {
   localCacheKey,
   saveDirectoryHandle,
   startDropboxAuth,
-  startGdriveAuth,
   withLocalCache,
   type StorageAdapter,
 } from "@niclaslindstedt/oss-framework/storage";
@@ -27,7 +25,6 @@ import { withEncryption } from "@niclaslindstedt/oss-framework/encryption";
 import {
   dropboxPhotoStore,
   folderPhotoStore,
-  gdrivePhotoStore,
   icloudPhotoStore,
   withExternalPhotos,
   type PhotoStore,
@@ -36,7 +33,6 @@ import { setPhotoSourceReader } from "./photoSource.ts";
 import {
   dropboxAttachmentStore,
   folderAttachmentStore,
-  gdriveAttachmentStore,
   icloudAttachmentStore,
   withExternalAttachments,
 } from "./attachmentStore.ts";
@@ -54,7 +50,6 @@ import { serializeDoc } from "./migrations.ts";
 import {
   dropboxBackupStore,
   folderBackupStore,
-  gdriveBackupStore,
   icloudBackupStore,
   type BackupStore,
 } from "./backup.ts";
@@ -77,14 +72,14 @@ import { docKey, type ContactStore } from "./useContactStore.ts";
 // (localStorage, written by `useContactStore`) is always the working copy;
 // when a cloud backend is connected the engine pushes the serialized document
 // there (debounced on the store's edit counter) and can pull the backend's
-// copy back down. Dropbox and Google Drive ride the framework's storage
+// copy back down. Dropbox ride the framework's storage
 // adapters; the optional at-rest encryption wraps the byte boundary with
 // `withEncryption`, so what lands in the cloud is an AES-GCM envelope.
 
 const syncLog = logStore.createLogger("sync");
 
 export type SyncBackendId =
-  "local" | "folder" | "dropbox" | "gdrive" | "icloud";
+  "local" | "folder" | "dropbox" | "icloud";
 
 /** True in browsers that expose the File System Access API directory picker
  *  (Chromium-based). The local-folder backend is hidden where this is false. */
@@ -92,7 +87,9 @@ export const FOLDER_BACKEND_AVAILABLE = isFolderBackendAvailable();
 
 const BACKEND_KEY = "contacts:sync:backend";
 const DROPBOX_TOKENS_KEY = "contacts:sync:dropbox";
-const GDRIVE_TOKEN_KEY = "contacts:sync:gdrive";
+// Dropbox is gone as a backend. The key stays named so a token a device
+// may still hold is cleared rather than left sitting in storage.
+const RETIRED_GDRIVE_TOKEN_KEY = "contacts:sync:gdrive";
 const ENCRYPTED_KEY = "contacts:sync:encrypted";
 
 const SAVE_DEBOUNCE_MS = 1200;
@@ -101,8 +98,6 @@ const SAVE_DEBOUNCE_MS = 1200;
 // backend's Connect button explains what to configure instead of failing.
 export const DROPBOX_APP_KEY: string =
   (import.meta.env.VITE_DROPBOX_APP_KEY as string | undefined) ?? "";
-export const GOOGLE_CLIENT_ID: string =
-  (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? "";
 
 // Dropbox fixes the app-folder name from the app's own configuration (an
 // "App folder"-scoped app lives under `Apps/<name>/`), so it isn't always
@@ -118,16 +113,6 @@ export const DROPBOX_APP_FOLDER: string =
 // this is only the app's copy of it for the "File location" line.
 const ICLOUD_FOLDER = "Contacts";
 
-// Google Drive's folder, unlike Dropbox's, is created by us — this name is the
-// `Contacts` folder we make in the user's My Drive. It's build-time
-// configurable so a deployment can file documents under its own folder name
-// (and the "Open in Google Drive" search / displayed location follow suit);
-// changing it points a fresh build at a differently-named folder. Defaults to
-// "Contacts".
-export const GDRIVE_APP_FOLDER: string =
-  (import.meta.env.VITE_GDRIVE_APP_FOLDER as string | undefined)?.trim() ||
-  "Contacts";
-
 /** The mutable in-memory box the session passphrase lives in. Structurally
  *  satisfies the framework's read-only `PasswordRef`, while the app's unlock
  *  and setup flows can write to it. */
@@ -136,7 +121,6 @@ export type MutablePasswordRef = { current: string | null };
 export const PROVIDER_NAMES: Record<Exclude<SyncBackendId, "local">, string> = {
   folder: "Local folder",
   dropbox: "Dropbox",
-  gdrive: "Google Drive",
   icloud: "iCloud Drive",
 };
 
@@ -159,7 +143,6 @@ export type PendingCloudSetup = {
 function readBackend(): SyncBackendId {
   const raw = localStorage.getItem(BACKEND_KEY);
   return raw === "dropbox" ||
-    raw === "gdrive" ||
     raw === "folder" ||
     raw === "icloud"
     ? raw
@@ -192,11 +175,10 @@ export function cloudFileName(slug: string): string {
 
 /** The document's human-readable location on the active cloud backend — the
  *  `Apps/<folder>` app folder on Dropbox, the `<folder>` My Drive folder on
- *  Google Drive. Shown under "File location" in the command centre. */
+ *  Dropbox. Shown under "File location" in the command centre. */
 function backendPath(backend: SyncBackendId, slug: string): string {
   const file = cloudFileName(slug);
   if (backend === "dropbox") return `Apps/${DROPBOX_APP_FOLDER}/${file}`;
-  if (backend === "gdrive") return `${GDRIVE_APP_FOLDER}/${file}`;
   // The Files-app folder the container is published under — see
   // `native/plugins/with-icloud.js`, which is where that name is set.
   if (backend === "icloud") return `iCloud Drive/${ICLOUD_FOLDER}/${file}`;
@@ -211,13 +193,6 @@ function backendWebUrl(backend: SyncBackendId, slug: string): string | null {
   if (backend === "dropbox") {
     return `https://www.dropbox.com/home/Apps/${encodeURIComponent(
       DROPBOX_APP_FOLDER,
-    )}`;
-  }
-  if (backend === "gdrive") {
-    // The document lives in the My Drive folder above; a filename search opens
-    // Drive straight onto it without our having to resolve the folder id.
-    return `https://drive.google.com/drive/search?q=${encodeURIComponent(
-      cloudFileName(slug),
     )}`;
   }
   return null;
@@ -256,7 +231,6 @@ export type SyncEngine = {
   unlock: (password: string) => Promise<void>;
   // Connect flows (the Storage settings tab drives these).
   connectDropbox: () => Promise<void>;
-  connectGdrive: () => Promise<void>;
   /** Pick a local folder (File System Access API) and switch to it. No-op where
    *  the picker is unavailable ({@link FOLDER_BACKEND_AVAILABLE} is false). */
   connectFolder: () => Promise<void>;
@@ -317,9 +291,6 @@ export function useSyncEngine(
   const [backend, setBackendState] = useState<SyncBackendId>(readBackend);
   const [dropboxTokens, setDropboxTokens] = useState<DropboxTokens | null>(
     readDropboxTokens,
-  );
-  const [gdriveToken, setGdriveToken] = useState<string | null>(() =>
-    sessionStorage.getItem(GDRIVE_TOKEN_KEY),
   );
   // The picked local folder (File System Access API). `null` until the boot
   // probe rehydrates the stored grant, the user picks one, or a revoked grant
@@ -394,9 +365,9 @@ export function useSyncEngine(
   // A "remote" backend is anything that pushes the document through a
   // `StorageAdapter` (folder or cloud) — it drives the dirty flag, auto-save,
   // and the reload / save-status machinery. "Cloud" is the OAuth subset
-  // (Dropbox / Google Drive); "folder" is the picked local directory.
+  // (Dropbox); "folder" is the picked local directory.
   const isRemote = backend !== "local";
-  const isCloud = backend === "dropbox" || backend === "gdrive";
+  const isCloud = backend === "dropbox";
   const isFolder = backend === "folder";
   // iCloud is neither: it needs no OAuth (so none of the `isCloud` connect and
   // reconnect paths apply) and no picked handle (so none of `isFolder`'s
@@ -407,7 +378,6 @@ export function useSyncEngine(
   const connected =
     backend === "local" ||
     (backend === "dropbox" && dropboxTokens !== null) ||
-    (backend === "gdrive" && gdriveToken !== null) ||
     (backend === "folder" && folderHandle !== null) ||
     (backend === "icloud" && icloudReady);
 
@@ -466,30 +436,6 @@ export function useSyncEngine(
             dropboxAttachmentStore(dropboxAuth, DROPBOX_APP_KEY || undefined),
           );
     }
-    if (backend === "gdrive" && gdriveToken) {
-      const cloud = createGdriveAdapter(gdriveToken, {
-        appFolderName: GDRIVE_APP_FOLDER,
-        fileName: cloudFileName(slug),
-        logger: logStore.createLogger("gdrive"),
-      });
-      const cached = withLocalCache(cloud, {
-        storage: localStorage,
-        key: localCacheKey("gdrive", slug),
-      });
-      return encrypted
-        ? withEncryption(cached, passwordRef, {
-            logger: logStore.createLogger("encrypt"),
-          })
-        : withExternalAttachments(
-            withExternalPhotos(
-              cached,
-              gdrivePhotoStore(gdriveToken),
-              () => setPhotoSweep(true),
-              { tiered: true },
-            ),
-            gdriveAttachmentStore(gdriveToken),
-          );
-    }
     if (backend === "folder" && folderHandle) {
       // The whole-document adapter files `contacts-<slug>.json` under the picked
       // directory. Unlike the cloud adapters there's no `withLocalCache` — the
@@ -542,7 +488,6 @@ export function useSyncEngine(
   }, [
     backend,
     dropboxTokens,
-    gdriveToken,
     folderHandle,
     icloud.host,
     icloudReady,
@@ -572,12 +517,6 @@ export function useSyncEngine(
         provider: PROVIDER_NAMES.dropbox,
       };
     }
-    if (backend === "gdrive" && gdriveToken) {
-      return {
-        store: gdriveBackupStore(gdriveToken),
-        provider: PROVIDER_NAMES.gdrive,
-      };
-    }
     if (backend === "folder" && folderHandle) {
       return {
         store: folderBackupStore(folderHandle, markFolderPermissionLost),
@@ -594,7 +533,6 @@ export function useSyncEngine(
   }, [
     backend,
     dropboxTokens,
-    gdriveToken,
     folderHandle,
     icloud.host,
     icloudReady,
@@ -625,9 +563,6 @@ export function useSyncEngine(
         DROPBOX_APP_KEY || undefined,
       );
     }
-    if (backend === "gdrive" && gdriveToken) {
-      return gdrivePhotoStore(gdriveToken);
-    }
     if (backend === "folder" && folderHandle) {
       return folderPhotoStore(folderHandle, markFolderPermissionLost);
     }
@@ -638,7 +573,6 @@ export function useSyncEngine(
   }, [
     backend,
     dropboxTokens,
-    gdriveToken,
     folderHandle,
     icloud.host,
     icloudReady,
@@ -984,22 +918,6 @@ export function useSyncEngine(
     await startDropboxAuth(DROPBOX_APP_KEY); // redirects away
   }, []);
 
-  const connectGdrive = useCallback(async () => {
-    if (!GOOGLE_CLIENT_ID) return;
-    syncLog.info("gdrive: requesting consent…");
-    const token = await startGdriveAuth(
-      GOOGLE_CLIENT_ID,
-      logStore.createLogger("gdrive"),
-    );
-    sessionStorage.setItem(GDRIVE_TOKEN_KEY, token);
-    // Mark this adapter adoption as a fresh connect so the baseline read raises
-    // the replace-or-adopt prompt if the backend already holds data.
-    justConnected.current = true;
-    setGdriveToken(token);
-    setBackend("gdrive");
-    syncLog.info("gdrive: connected");
-  }, [setBackend]);
-
   // Pick a local folder and switch to it. The framework persists the handle to
   // IndexedDB so the grant survives reloads; marking this a fresh connect lets
   // the baseline read raise the replace-or-adopt prompt when the folder already
@@ -1071,9 +989,8 @@ export function useSyncEngine(
 
   const disconnect = useCallback(() => {
     writeDropboxTokens(null);
-    sessionStorage.removeItem(GDRIVE_TOKEN_KEY);
+    sessionStorage.removeItem(RETIRED_GDRIVE_TOKEN_KEY);
     setDropboxTokens(null);
-    setGdriveToken(null);
     void clearDirectoryHandle();
     setFolderHandle(null);
     setFolderReconnectNeeded(false);
@@ -1236,7 +1153,6 @@ export function useSyncEngine(
   // Re-run the backend's consent flow — the command centre's "Reconnect".
   const reconnect = useCallback(async () => {
     if (backend === "dropbox") await connectDropbox();
-    else if (backend === "gdrive") await connectGdrive();
     else if (backend === "folder") {
       await reconnectFolder();
       return; // reconnectFolder clears the fault only on a granted re-confirm.
@@ -1247,7 +1163,7 @@ export function useSyncEngine(
       if ((await icloud.refresh()) !== "ready") return;
     }
     setFault("none");
-  }, [backend, connectDropbox, connectGdrive, reconnectFolder, icloud]);
+  }, [backend, connectDropbox, reconnectFolder, icloud]);
 
   const checkConnection =
     useCallback(async (): Promise<ConnectionProbeResult> => {
@@ -1295,7 +1211,6 @@ export function useSyncEngine(
     resolveSetup,
     unlock,
     connectDropbox,
-    connectGdrive,
     connectFolder,
     reconnectFolder,
     folderReconnectNeeded,

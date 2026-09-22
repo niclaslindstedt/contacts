@@ -3,7 +3,7 @@
 // path switch and the `emit-showcase-alias` plugin in `vite.config.ts`). It is
 // the page linked from the app's Google OAuth consent screen as the "app
 // homepage": it identifies the app, fully describes what it does, and explains
-// — with transparency — why the app asks for access to Google Drive / Dropbox,
+// — with transparency — why the app asks for access to Dropbox,
 // then links to the privacy policy. It renders for visitors who have not (and
 // need not) log in, since the app itself has no account at all. English-only by
 // design, like `PrivacyPage`.
@@ -164,8 +164,7 @@ export function ShowcasePage() {
         >
           <p>
             The app requests access to{" "}
-            <strong className="text-fg-bright">Google Drive</strong> (and,
-            separately, <strong className="text-fg-bright">Dropbox</strong>){" "}
+            <strong className="text-fg-bright">Dropbox</strong>{" "}
             <strong className="text-fg-bright">
               only if you choose to turn on cloud sync
             </strong>{" "}
@@ -182,11 +181,10 @@ export function ShowcasePage() {
           <p>
             The app uses the narrowest scope that allows this — an{" "}
             <strong className="text-fg-bright">app-specific folder</strong>{" "}
-            (Google Drive&apos;s <code className="text-meta">drive.file</code> /
-            app-data scope; Dropbox&apos;s app folder). It can read and write
-            only the files it created for you. It{" "}
+            (Dropbox&apos;s app folder). It can read and write only the files
+            it created for you. It{" "}
             <strong className="text-fg-bright">
-              cannot see the rest of your Drive or Dropbox
+              cannot see the rest of your Dropbox
             </strong>
             , and it is used for nothing but storing your contacts. We do not
             use your data for advertising, analytics, or training, and we never

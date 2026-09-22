@@ -553,7 +553,7 @@ export const sv: Catalog = {
       },
       synced: {
         name: "Molnvandrare",
-        condition: "Synka till en mapp, Dropbox eller Google Drive.",
+        condition: "Synka till en mapp, Dropbox eller Dropbox.",
         learnMore:
           "Peka appen mot en lokal mapp eller anslut en molnenhet så håller den en kopia synkad utanför enheten — foton och bilagor sparas bredvid dokumentet som riktiga filer.",
       },
@@ -747,7 +747,6 @@ export const sv: Catalog = {
       backendICloud: "iCloud Drive",
       backendFolder: "Lokal mapp",
       backendDropbox: "Dropbox",
-      backendGdrive: "Google Drive",
       connect: "Anslut {name}",
       connectedAs: "Ansluten — synkar till {name}.",
       disconnect: "Koppla från",
@@ -767,8 +766,6 @@ export const sv: Catalog = {
         "Den här mappen är inte längre åtkomlig — behörigheten återställdes (ett vanligt webbläsarbeteende mellan sessioner). Återanslut för att återuppta synken.",
       missingKeyDropbox:
         "Dropbox-synk kräver en Dropbox-appnyckel i bygget (VITE_DROPBOX_APP_KEY).",
-      missingKeyGdrive:
-        "Google Drive-synk kräver ett Google OAuth-klient-id i bygget (VITE_GOOGLE_CLIENT_ID).",
       encryptionTitle: "Kryptering i vila",
       encryptCloud: "Kryptera molnkopian",
       encryptCloudHint:
@@ -847,7 +844,7 @@ export const sv: Catalog = {
         "Sök igenom den anslutna enhetens photos/-mapp igen och återkoppla varje fotofil som inte är länkad till en kontakt — så att förlorade foton återfås och bilder du själv lagt in enligt mönstret photos/<namn>-<contactId>-<photoId>.jpg tas upp. Se Loggar-fliken för detaljerna per fil.",
       reindexDone: "Återkopplade {reconnected} foto(n); {total} är nu länkade.",
       reindexNoBackend:
-        "Anslut en lokal mapp, Dropbox eller Google Drive först — utan en sådan finns inga fotofiler att indexera om.",
+        "Anslut en lokal mapp, Dropbox eller Dropbox först — utan en sådan finns inga fotofiler att indexera om.",
       reindexEncrypted:
         "Molnkopian är krypterad, så foton ligger inuti kuvertet och inte som separata filer — det finns inget att indexera om.",
       reindexEmpty: "Lagringen innehåller inget dokument ännu.",

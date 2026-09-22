@@ -77,7 +77,7 @@ editor — sits at the very bottom of the tab, below the Dialogs controls.
 
 Settings → Storage → _Where your data lives_: pick a **local folder** (a
 directory on this computer — no account, Chromium-based browsers only), or
-**Dropbox** / **Google Drive**, and hit Connect. See
+**Dropbox**, and hit Connect. See
 [sync.md](sync.md) and [configuration.md](configuration.md)
 for the OAuth setup a self-hosted build needs (the local folder needs none).
 

@@ -30,7 +30,7 @@ import type { ContactStore } from "./useContactStore.ts";
 import type { BackupTarget } from "./useSyncEngine.ts";
 
 // The browse-backups command centre. It opens over a connected, file-backed
-// backend (a picked folder, Dropbox, or Google Drive — see `BackupTarget`) and
+// backend (a picked folder, Dropbox, — see `BackupTarget`) and
 // paints the `backups/` folder: take a fresh snapshot, download one to disk,
 // restore an older one, or prune the list. Restoring first files the current
 // document as its own backup — a safety net — then adopts the chosen snapshot,

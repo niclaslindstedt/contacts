@@ -111,7 +111,7 @@ checklists to contacts.
 
 The framework owns the UI kit and the generic mechanics: the `Sidebar` shell,
 modals, theme engine, glyph catalogue, search matcher, storage adapters
-(localStorage / Dropbox / Google Drive), the AES-GCM encryption wrapper, the
+(localStorage / Dropbox), the AES-GCM encryption wrapper, the
 achievements engine, i18n runtime, logging, and the PWA update state machine.
 
 ### The native wrapper is optional, and outside all of this

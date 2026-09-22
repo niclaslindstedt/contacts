@@ -3,7 +3,7 @@
 // text-only — its `read` does `res.text()` and its `write` sends the string as
 // the body — so it can round-trip a base64 string but not raw image bytes: a
 // JPEG pushed through it comes back mangled by UTF-8 decoding. This module talks
-// to the Dropbox and Google Drive content APIs directly to move *bytes*, so what
+// to the Dropbox content APIs directly to move *bytes*, so what
 // lands on the drive is a genuine `.jpg` you can preview, not a base64 blob.
 //
 // It leans on the framework's proven text `FileStore` for the metadata-only
@@ -24,7 +24,6 @@ import {
   RateLimitError,
   bearerAuthHeader,
   createDropboxFileStore,
-  createGdriveFileStore,
   dropboxApiArg,
   parseRetryAfterMs,
   readErrorBody,
@@ -171,160 +170,5 @@ export function dropboxPhotoFileStore(
   );
 }
 
-// --- Google Drive ------------------------------------------------------------
+// --- Dropbox ------------------------------------------------------------
 
-/** A binary Google Drive photo store in the app folder's `photos/` tree.
- *  `list`/`remove` reuse the framework's text store (folder resolution and all);
- *  `read`/`write` move bytes through the media-upload endpoint. */
-export function gdrivePhotoFileStore(token: string): PhotoFileStore {
-  const log = logStore.createLogger("gdrive");
-  const meta: FileStore = createGdriveFileStore(token, {
-    appFolderName: "Contacts",
-    logger: log,
-  });
-  const auth = () => bearerAuthHeader(token);
-  const dirIds = new Map<string, string>();
-
-  async function searchOne(query: string): Promise<string | null> {
-    const url = `${DRIVE_FILES}?q=${encodeURIComponent(query)}&spaces=drive&fields=files(id)`;
-    const res = await fetch(url, { headers: auth() });
-    if (!res.ok) throw await driveError("search", res);
-    const json = (await res.json()) as { files?: { id: string }[] };
-    return json.files?.[0]?.id ?? null;
-  }
-
-  async function createFolder(
-    name: string,
-    parentId: string | null,
-  ): Promise<string> {
-    const body: { name: string; mimeType: string; parents?: string[] } = {
-      name,
-      mimeType: FOLDER_MIME,
-    };
-    if (parentId) body.parents = [parentId];
-    const res = await fetch(`${DRIVE_FILES}?fields=id`, {
-      method: "POST",
-      headers: { ...auth(), "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw await driveError("folder", res);
-    return ((await res.json()) as { id: string }).id;
-  }
-
-  // Resolve (creating when asked) the id of a folder path under "Contacts".
-  async function resolveDir(
-    relDir: string,
-    create: boolean,
-  ): Promise<string | null> {
-    const cached = dirIds.get(relDir);
-    if (cached) return cached;
-    let appId = await searchOne(
-      `name='Contacts' and mimeType='${FOLDER_MIME}' and 'root' in parents and trashed=false`,
-    );
-    if (!appId) {
-      if (!create) return null;
-      appId = await createFolder("Contacts", null);
-    }
-    let parentId = appId;
-    for (const seg of relDir.split("/").filter(Boolean)) {
-      let id = await searchOne(
-        `name='${seg}' and mimeType='${FOLDER_MIME}' and '${parentId}' in parents and trashed=false`,
-      );
-      if (!id) {
-        if (!create) return null;
-        id = await createFolder(seg, parentId);
-      }
-      parentId = id;
-    }
-    dirIds.set(relDir, parentId);
-    return parentId;
-  }
-
-  function split(path: string): { dir: string; name: string } {
-    const i = path.lastIndexOf("/");
-    return i === -1
-      ? { dir: "", name: path }
-      : { dir: path.slice(0, i), name: path.slice(i + 1) };
-  }
-
-  async function fileId(path: string): Promise<string | null> {
-    const { dir, name } = split(path);
-    const dirId = await resolveDir(dir, false);
-    if (!dirId) return null;
-    return searchOne(
-      `name='${name}' and '${dirId}' in parents and trashed=false`,
-    );
-  }
-
-  return retrying(
-    {
-      list: () => meta.list().then((e) => e.map((f) => f.path)),
-      remove: (path) => meta.remove(path),
-      read,
-      write,
-    },
-    log,
-  );
-
-  async function read(path: string): Promise<Uint8Array | null> {
-    const id = await fileId(path);
-    if (!id) return null;
-    const res = await fetch(`${DRIVE_FILES}/${id}?alt=media`, {
-      headers: auth(),
-    });
-    if (res.status === 404) return null;
-    if (!res.ok) throw await driveError("download", res);
-    return new Uint8Array(await res.arrayBuffer());
-  }
-
-  async function write(
-    path: string,
-    bytes: Uint8Array,
-    mime?: string,
-  ): Promise<void> {
-    const { dir, name } = split(path);
-    const dirId = await resolveDir(dir, true);
-    if (!dirId) throw new Error(`Google Drive: cannot resolve ${dir}`);
-    const existing = await searchOne(
-      `name='${name}' and '${dirId}' in parents and trashed=false`,
-    );
-    // Upload the raw bytes: PATCH an existing file's media, or create the file
-    // (metadata first, so it lands with the right name/parent) then its media.
-    // The content type defaults to JPEG (the photo case); an attachment passes
-    // its own so a filed PDF is stored as a PDF.
-    const id = existing ?? (await createEmpty(dirId, name));
-    const res = await fetch(`${DRIVE_UPLOAD}/${id}?uploadType=media`, {
-      method: "PATCH",
-      headers: { ...auth(), "Content-Type": mime ?? JPEG_MIME },
-      body: bytes as BodyInit,
-    });
-    if (!res.ok) throw await driveError("upload", res);
-  }
-
-  async function createEmpty(parentId: string, name: string): Promise<string> {
-    const res = await fetch(`${DRIVE_FILES}?fields=id`, {
-      method: "POST",
-      headers: { ...auth(), "Content-Type": "application/json" },
-      body: JSON.stringify({ name, parents: [parentId] }),
-    });
-    if (!res.ok) throw await driveError("create", res);
-    return ((await res.json()) as { id: string }).id;
-  }
-
-  // A 401 is the reconnect signal; a 429 / 5xx is worth waiting out (see
-  // `statusError`); anything else is a genuine failure, reported with the
-  // provider's own body so the log names the cause.
-  async function driveError(op: string, res: Response): Promise<Error> {
-    if (res.status === 401) {
-      return new AuthError(
-        `Google Drive ${op} failed: 401 ${await readErrorBody(res)}`,
-      );
-    }
-    if (res.status === 429 || res.status >= 500) {
-      return statusError("Google Drive", op, res);
-    }
-    return new Error(
-      `Google Drive ${op} failed: ${res.status} ${await readErrorBody(res)}`,
-    );
-  }
-}

@@ -5,7 +5,7 @@ This is a **frontend-only, local-first PWA** built on
 It was seeded from the framework's reference app (its `demo/` — see the
 framework's `demo/ADOPTION.md` seam manifest) and rescoped from checklists to
 contacts. There is no server: the document lives on-device, and cloud sync
-talks directly to Dropbox / Google Drive from the browser.
+talks directly to Dropbox from the browser.
 
 ## The seam: framework vs. app
 

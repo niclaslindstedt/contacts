@@ -10,8 +10,6 @@ keeps a copy in sync:
   Arc); hidden elsewhere.
 - **Dropbox** — OAuth (PKCE) with silent token refresh; the document lives in
   the app's folder as `contacts-<namespace>.json`.
-- **Google Drive** — Google Identity Services consent; the document lives in a
-  `Contacts` folder in My Drive.
 - **iCloud Drive** — only in the App Store build, where the app's own iCloud
   container is filed under `Contacts` in the Files app. No account to create and
   no consent screen: the device is already signed in, or it is not.
@@ -97,7 +95,7 @@ _conflict_, handled by the header glyph as above.)
 The **Sync** command centre (the header glyph) shows an **Open in {provider}**
 button while a cloud drive is connected. It opens the drive's own web UI in a
 new tab, pointed at the synced files — the `Apps/<folder>` app folder in
-Dropbox, or a filename search in Google Drive — so you can see, download, or
+Dropbox — so you can see, download, or
 manage the raw `contacts-<namespace>.json` document and its photo files
 directly. The button doesn't appear for the on-device backend (that copy lives
 in the browser's local storage and has no web location), for iCloud Drive (that
@@ -134,7 +132,7 @@ on the device.
 
 ## Photo files
 
-On a folder or cloud backend (local folder, Dropbox, or Google Drive), each
+On a folder or cloud backend (local folder, Dropbox,), each
 photo in a contact's gallery is filed out of the document into its own **binary
 JPEG** files at deterministic paths — the display crop at
 `photos/<name>-<id>-<photoId>.jpg` and the larger
@@ -155,7 +153,7 @@ photo simply stays inline in the document that save — it is never lost.
 
 Reading those files back one at a time is fine for a handful of photos and
 punishing for a few hundred — it is exactly the burst of requests a cloud drive
-answers by throttling. So on **Dropbox and Google Drive** the app also keeps a
+answers by throttling. So on **Dropbox** the app also keeps a
 small **photo atlas**: every contact's picture, shrunk to avatar size, bundled
 into a few `.zip` packs under `photos/atlas/`. Opening the address book on a new
 device reads those handful of packs instead of hundreds of image files, and the

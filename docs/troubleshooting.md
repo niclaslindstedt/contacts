@@ -10,10 +10,10 @@ authentication even for public packages. Add a personal access token with
 //npm.pkg.github.com/:_authToken=<token>
 ```
 
-## Dropbox / Google Drive is missing from the storage backend picker
+## Dropbox is missing from the storage backend picker
 
 The OAuth identities are baked in at build time (`VITE_DROPBOX_APP_KEY`,
-`VITE_GOOGLE_CLIENT_ID`); a backend whose identifier is unset is hidden from
+); a backend whose identifier is unset is hidden from
 the picker rather than offered as a dead option. See
 [configuration.md](configuration.md).
 

@@ -1,6 +1,6 @@
 # Cloud photo files
 
-On a folder or cloud backend (local folder, Dropbox, or Google Drive), each
+On a folder or cloud backend (local folder, Dropbox,), each
 photo in a contact's gallery is filed out of the document into its own **binary
 JPEG** — a display crop at `photos/<name>-<tag>-<number>.jpg` and the larger
 original beside it — instead of riding along as base64 text. The name is the
@@ -24,7 +24,7 @@ the old name removed.
 
 Reading those files back one at a time is what makes opening a big address book
 on a new device slow — and it's the burst of requests a drive answers by
-throttling. So on **Dropbox and Google Drive** the app keeps a **photo atlas**
+throttling. So on **Dropbox** the app keeps a **photo atlas**
 beside them: every contact's picture, shrunk to the size an avatar is actually
 drawn at, bundled into a few `.zip` packs under `photos/atlas/`. A fresh device
 reads those few packs instead of hundreds of image files, and the faces are

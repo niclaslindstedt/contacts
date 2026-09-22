@@ -92,7 +92,7 @@ From **Settings → Storage → Backups** you can:
   connected it files a safety-net backup of the current data before overwriting.
 
 When a **file-backed backend is connected** (a picked local folder, Dropbox, or
-Google Drive) and the copy isn't encrypted, **Browse backups** opens a manager
+Dropbox) and the copy isn't encrypted, **Browse backups** opens a manager
 over a `backups/` folder on that backend, mirroring what other snapshot UIs
 offer:
 

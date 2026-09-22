@@ -101,7 +101,6 @@ import { parsePhotoPath } from "./photo.ts";
 import { photoPathFor, photoSourcePathFor } from "./photo.ts";
 import {
   dropboxPhotoFileStore,
-  gdrivePhotoFileStore,
   type PhotoFileStore,
 } from "./photoFileStore.ts";
 import { folderFileStore } from "./folderFileStore.ts";
@@ -138,11 +137,6 @@ export function dropboxPhotoStore(
   appKey: string | undefined,
 ): PhotoStore {
   return scopeToPhotos(dropboxPhotoFileStore(auth, appKey));
-}
-
-/** The Google Drive photo store, in the app folder's `photos/` tree. */
-export function gdrivePhotoStore(token: string): PhotoStore {
-  return scopeToPhotos(gdrivePhotoFileStore(token));
 }
 
 /** The iCloud Drive photo store, in the container's `photos/` tree. Untiered,
