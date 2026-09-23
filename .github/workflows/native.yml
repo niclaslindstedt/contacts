@@ -10,11 +10,11 @@ name: native
 #   EXPO_TOKEN       (secret)   an Expo access token — a robot token is the
 #                               right kind, from
 #                               https://expo.dev/accounts/<account>/settings/access-tokens
-#   EAS_PROJECT_ID   (variable) the EAS project's id. `eas init` prints it but
+#   EAS_PROJECT_ID   (secret)   the EAS project's id. `eas init` prints it but
 #                               cannot write it into a dynamic config, so
 #                               native/app.config.js reads it from here.
-#   APP_DISPLAY_NAME (variable) the listing name, and the name under the icon
-#   APP_BUNDLE_ID    (variable) iOS bundle identifier / Android package
+#   APP_DISPLAY_NAME (secret)   the listing name, and the name under the icon
+#   APP_BUNDLE_ID    (secret)   iOS bundle identifier / Android package
 # The same names are set as EAS environment variables, because EAS evaluates
 # app.config.js again on its builder.
 #
@@ -95,9 +95,9 @@ jobs:
       - name: Queue the build on EAS
         working-directory: native
         env:
-          APP_DISPLAY_NAME: ${{ vars.APP_DISPLAY_NAME }}
-          APP_BUNDLE_ID: ${{ vars.APP_BUNDLE_ID }}
-          EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
+          APP_DISPLAY_NAME: ${{ secrets.APP_DISPLAY_NAME }}
+          APP_BUNDLE_ID: ${{ secrets.APP_BUNDLE_ID }}
+          EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
           PLATFORM: ${{ inputs.platform }}
           PROFILE: ${{ inputs.profile }}
           SUBMIT: ${{ inputs.submit }}

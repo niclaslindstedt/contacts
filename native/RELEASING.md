@@ -18,12 +18,12 @@ npx eas-cli init          # prints the project id
 config (`app.config.js`), which it cannot write to, so the id is passed in
 instead:
 
-- **CI**: set it as the repository **variable** `EAS_PROJECT_ID`
-  (Settings → Secrets and variables → Actions → Variables).
+- **CI**: set it as the repository **secret** `EAS_PROJECT_ID`
+  (Settings → Secrets and variables → Actions → Secrets).
 - **Locally**: `native/.env` (`cp .env.example .env`).
 
 The identity the stores know the app by is not in the tree either. Set both as
-repository **variables** and as EAS environment variables on the project (EAS
+repository **secrets** and as EAS environment variables on the project (EAS
 evaluates `app.config.js` again on its builder), under the same names in every
 app:
 
