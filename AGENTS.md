@@ -53,15 +53,17 @@ make tauri-package-debug  # …debug profile: minutes faster, much bigger
 ```
 
 It is a **thin** wrapper: a window, the built site served from a private
-`contacts://` scheme, and nothing else. **The page is never told it is inside
-it** — no injected global, no Tauri command. `tauri/shell/` holds every
-decision and needs no GUI toolkit; `tauri/src-tauri/` holds every effect. One
-seam reaches back into this tree, `VITE_SHELL_BUILD`, set by the shell's site
-build, which switches off the service-worker half of `appPwa` and — through
-`__SHELL_BUILD__` — the in-app update prompt. A desktop build updates by being replaced. The package's
-name and identifier come from `APP_DISPLAY_NAME` and `APP_BUNDLE_ID` at
-packaging time (`tauri/scripts/package.mjs`), like the phone app's. See
-[`tauri/README.md`](tauri/README.md).
+`contacts://` scheme, and one capability a page cannot have — the loopback
+listener that lets Dropbox sign in (`tauri/shell/src/oauth.rs`,
+`tauri/src-tauri/src/loopback.rs`). **The page is never told it is inside it**
+— no injected global, no Tauri command. `tauri/shell/` holds every decision and
+needs no GUI toolkit; `tauri/src-tauri/` holds every effect. One seam reaches
+back into this tree, `VITE_SHELL_BUILD`, set by the shell's site build, which
+switches off the service-worker half of `appPwa` and — through
+`__SHELL_BUILD__` — the in-app update prompt. A desktop build updates by being
+replaced. The package's name and identifier come from `APP_DISPLAY_NAME` and
+`APP_BUNDLE_ID` at packaging time (`tauri/scripts/package.mjs`), like the phone
+app's. See [`tauri/README.md`](tauri/README.md).
 
 The `@niclaslindstedt/oss-framework` dependency comes from the **GitHub
 Packages** npm registry (see `.npmrc`). GitHub Packages requires auth even for

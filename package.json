@@ -36,7 +36,7 @@
     "@fontsource/jetbrains-mono": "^5.2.5",
     "@fontsource/opendyslexic": "^5.2.5",
     "@fontsource/source-serif-4": "^5.2.5",
-    "@niclaslindstedt/oss-framework": "^3.3.3",
+    "@niclaslindstedt/oss-framework": "^3.5.0",
     "preact": "^10.29.8",
     "workbox-window": "^7.0.0"
   },

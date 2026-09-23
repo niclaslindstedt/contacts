@@ -8,17 +8,20 @@ import {
   backoffDelayMs,
   clearDirectoryHandle,
   completeDropboxAuth,
+  connectDropboxLoopback,
   createDropboxAdapter,
   createFolderAdapter,
   ensurePermission,
   hasPendingDropboxAuth,
   isFolderBackendAvailable,
+  isDesktopShellOrigin,
   isRetryableSaveError,
   loadDirectoryHandle,
   localCacheKey,
   saveDirectoryHandle,
   startDropboxAuth,
   withLocalCache,
+  type DropboxAuthResult,
   type StorageAdapter,
 } from "@niclaslindstedt/oss-framework/storage";
 import { withEncryption } from "@niclaslindstedt/oss-framework/encryption";
@@ -590,6 +593,23 @@ export function useSyncEngine(
     return () => setPhotoSourceReader(null, null);
   }, [photoBytes, hydrateMediaFrom]);
 
+  // Persist a finished sign-in's tokens and adopt the backend — the one ending
+  // both connect flows share (the redirect's, below, and the desktop's).
+  const adoptDropbox = useCallback((result: DropboxAuthResult) => {
+    const tokens: DropboxTokens = {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken ?? null,
+    };
+    writeDropboxTokens(tokens);
+    // Mark this adapter adoption as a fresh connect so the baseline read
+    // raises the replace-or-adopt prompt if the backend already holds data.
+    justConnected.current = true;
+    setDropboxTokens(tokens);
+    localStorage.setItem(BACKEND_KEY, "dropbox");
+    setBackendState("dropbox");
+    syncLog.info("dropbox: connected");
+  }, []);
+
   // Complete a Dropbox OAuth redirect: trade the `?code=` for tokens, persist
   // them, and adopt the backend. Runs once on boot when a flow is mid-flight.
   useEffect(() => {
@@ -598,19 +618,7 @@ export function useSyncEngine(
     if (!code) return;
     void (async () => {
       try {
-        const result = await completeDropboxAuth(DROPBOX_APP_KEY, code);
-        const tokens: DropboxTokens = {
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken ?? null,
-        };
-        writeDropboxTokens(tokens);
-        // Mark this adapter adoption as a fresh connect so the baseline read
-        // raises the replace-or-adopt prompt if the backend already holds data.
-        justConnected.current = true;
-        setDropboxTokens(tokens);
-        localStorage.setItem(BACKEND_KEY, "dropbox");
-        setBackendState("dropbox");
-        syncLog.info("dropbox: connected");
+        adoptDropbox(await completeDropboxAuth(DROPBOX_APP_KEY, code));
       } catch (err) {
         syncLog.error(
           `dropbox: connect failed — ${err instanceof Error ? err.message : String(err)}`,
@@ -622,7 +630,7 @@ export function useSyncEngine(
         window.history.replaceState(null, "", url.toString());
       }
     })();
-  }, []);
+  }, [adoptDropbox]);
 
   // Folder boot probe: when the saved backend is the local folder, rehydrate
   // the stored directory handle from IndexedDB and ask the OS whether the grant
@@ -914,9 +922,23 @@ export function useSyncEngine(
 
   const connectDropbox = useCallback(async () => {
     if (!DROPBOX_APP_KEY) return;
+    // In the desktop app the redirect has nowhere to land (its origin is a
+    // private scheme), so the sign-in runs in the user's browser and the
+    // shell's loopback listener hands the result back — in place, no reload.
+    if (isDesktopShellOrigin()) {
+      syncLog.info("dropbox: signing in through the browser…");
+      try {
+        adoptDropbox(await connectDropboxLoopback(DROPBOX_APP_KEY));
+      } catch (err) {
+        syncLog.error(
+          `dropbox: connect failed — ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+      return;
+    }
     syncLog.info("dropbox: starting OAuth…");
     await startDropboxAuth(DROPBOX_APP_KEY); // redirects away
-  }, []);
+  }, [adoptDropbox]);
 
   // Pick a local folder and switch to it. The framework persists the handle to
   // IndexedDB so the grant survives reloads; marking this a fresh connect lets
