@@ -22,6 +22,19 @@ instead:
   (Settings → Secrets and variables → Actions → Variables).
 - **Locally**: `native/.env` (`cp .env.example .env`).
 
+The identity the stores know the app by is not in the tree either. Set both as
+repository **variables** and as EAS environment variables on the project (EAS
+evaluates `app.config.js` again on its builder), under the same names in every
+app:
+
+| Variable           | Becomes                                                    |
+| ------------------ | ---------------------------------------------------------- |
+| `APP_DISPLAY_NAME` | `expo.name` — the listing name and the name under the icon |
+| `APP_BUNDLE_ID`    | `ios.bundleIdentifier` and `android.package`               |
+
+Unset, a checkout builds as the project's own name under a development id; the
+`production` profile refuses to build without them (`identifiers.js`).
+
 ### 2. The CI token
 
 Create a **robot** access token at
@@ -53,7 +66,7 @@ The app declares one iCloud container, `iCloud.se.agilator.contacts`.
 Before the first store build, in the Apple Developer portal:
 
 1. **Identifiers → iCloud Containers** — create that container id.
-2. **Identifiers → App IDs → `se.agilator.contacts`** — enable
+2. **Identifiers → App IDs → the app's `APP_BUNDLE_ID`** — enable
    **iCloud** with **iCloud Documents**, and tick that container.
 
 An entitlement the App ID does not carry fails code signing, and a container
