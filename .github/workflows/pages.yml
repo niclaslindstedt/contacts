@@ -125,15 +125,15 @@ jobs:
           # serving the released shell in place of preview/branch — see
           # pwa-plugin.ts `ignorePaths`.
           VITE_PWA_IGNORE_PATHS: /preview/,/branch/
-          # Cloud-sync client identifiers. These are public (the OAuth
-          # flows are PKCE, no secret), so they're supplied as repository
-          # variables and injected at build time; unset -> the backend is
-          # hidden from the storage picker.
-          VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
+          # Cloud-sync client identifiers. Public once built (the OAuth
+          # flows are PKCE, no client secret), but every setting in this repo
+          # is a repository secret; injected at build time. Unset -> the
+          # backend is hidden from the storage picker.
+          VITE_DROPBOX_APP_KEY: ${{ secrets.VITE_DROPBOX_APP_KEY }}
           # App-folder names for the "Open in" link / stored documents; unset ->
           # both default to "Contacts".
-          VITE_DROPBOX_APP_FOLDER: ${{ vars.VITE_DROPBOX_APP_FOLDER }}
-          VITE_DONATE_URL: ${{ vars.VITE_DONATE_URL }}
+          VITE_DROPBOX_APP_FOLDER: ${{ secrets.VITE_DROPBOX_APP_FOLDER }}
+          VITE_DONATE_URL: ${{ secrets.VITE_DONATE_URL }}
 
       - name: Stash production dist
         if: steps.tag.outputs.has_release == 'true'
@@ -166,11 +166,11 @@ jobs:
           # string is falsy in a GitHub Actions expression and would fall
           # through to the paths even in the release case.
           VITE_PWA_IGNORE_PATHS: ${{ steps.tag.outputs.has_release == 'false' && '/preview/,/branch/' || '' }}
-          VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
+          VITE_DROPBOX_APP_KEY: ${{ secrets.VITE_DROPBOX_APP_KEY }}
           # App-folder names for the "Open in" link / stored documents; unset ->
           # both default to "Contacts".
-          VITE_DROPBOX_APP_FOLDER: ${{ vars.VITE_DROPBOX_APP_FOLDER }}
-          VITE_DONATE_URL: ${{ vars.VITE_DONATE_URL }}
+          VITE_DROPBOX_APP_FOLDER: ${{ secrets.VITE_DROPBOX_APP_FOLDER }}
+          VITE_DONATE_URL: ${{ secrets.VITE_DONATE_URL }}
 
       # ---- Optional /branch/ build + persist to orphan branch ----
       - name: Stash preview dist
@@ -194,11 +194,11 @@ jobs:
         run: npm run build
         env:
           VITE_BASE: /branch/
-          VITE_DROPBOX_APP_KEY: ${{ vars.VITE_DROPBOX_APP_KEY }}
+          VITE_DROPBOX_APP_KEY: ${{ secrets.VITE_DROPBOX_APP_KEY }}
           # App-folder names for the "Open in" link / stored documents; unset ->
           # both default to "Contacts".
-          VITE_DROPBOX_APP_FOLDER: ${{ vars.VITE_DROPBOX_APP_FOLDER }}
-          VITE_DONATE_URL: ${{ vars.VITE_DONATE_URL }}
+          VITE_DROPBOX_APP_FOLDER: ${{ secrets.VITE_DROPBOX_APP_FOLDER }}
+          VITE_DONATE_URL: ${{ secrets.VITE_DONATE_URL }}
 
       - name: Persist /branch/ build to orphan branch
         if: steps.dispatch.outputs.has_dispatch == 'true'

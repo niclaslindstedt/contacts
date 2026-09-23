@@ -80,7 +80,7 @@ const ABOUT_PLACEMENT: FloatingPlacement = {
 // (Source code).
 const SOURCE_URL = "https://github.com/niclaslindstedt/contacts";
 // The donate link is configurable at build time (`VITE_DONATE_URL`, wired up
-// as a repository variable in the deploy workflows) so the sponsorship target
+// as a repository secret in the deploy workflows) so the sponsorship target
 // can change without a code edit; it falls back to the project's GitHub
 // Sponsors page when unset. See `docs/configuration.md`.
 const DONATE_URL =

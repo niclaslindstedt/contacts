@@ -5,13 +5,13 @@ name: Mirror
 # with full history — even from sandboxes where github.com egress is blocked
 # (403). Provider-agnostic: GitLab, Codeberg / Gitea, Bitbucket, self-hosted.
 #
-# Setup (the job is a no-op until configured):
-#   - variable MIRROR_URL    e.g. `gitlab.com/<ns>/contacts.git`
-#   - secret   MIRROR_TOKEN  a push token / PAT with write access
-#   - variable MIRROR_USER   (optional) basic-auth username paired with
-#                            the token; defaults to `oauth2` (GitLab). Use
-#                            `x-token-auth` for Bitbucket, your username
-#                            for Gitea / Codeberg.
+# Setup (the job is a no-op until configured) — all repository secrets:
+#   - MIRROR_URL    e.g. `gitlab.com/<ns>/contacts.git`
+#   - MIRROR_TOKEN  a push token / PAT with write access
+#   - MIRROR_USER   (optional) basic-auth username paired with
+#                   the token; defaults to `oauth2` (GitLab). Use
+#                   `x-token-auth` for Bitbucket, your username for
+#                   Gitea / Codeberg.
 
 on:
   push:
@@ -29,20 +29,27 @@ concurrency:
 jobs:
   mirror:
     runs-on: ubuntu-latest
-    # Inert (skipped) until the mirror is configured.
-    if: vars.MIRROR_URL != ''
+    # Inert until the mirror is configured. A secret cannot be tested in an
+    # `if:`, so it is mapped into the job's env and each step tests that.
+    env:
+      MIRROR_URL: ${{ secrets.MIRROR_URL }}
     steps:
+      - name: Mirror not configured
+        if: env.MIRROR_URL == ''
+        run: echo "MIRROR_URL is not set — nothing to mirror."
+
       # fetch-depth: 0 so the mirror gets full history and stays cloneable
       # with history, not just the latest commit.
       - uses: actions/checkout@v7
+        if: env.MIRROR_URL != ''
         with:
           fetch-depth: 0
 
       - name: Push main to the mirror
+        if: env.MIRROR_URL != ''
         env:
           MIRROR_TOKEN: ${{ secrets.MIRROR_TOKEN }}
-          MIRROR_URL: ${{ vars.MIRROR_URL }}
-          MIRROR_USER: ${{ vars.MIRROR_USER }}
+          MIRROR_USER: ${{ secrets.MIRROR_USER }}
         run: |
           if [ -z "$MIRROR_TOKEN" ]; then
             echo "::error::MIRROR_URL is set but the MIRROR_TOKEN secret is missing."

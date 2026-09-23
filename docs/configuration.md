@@ -28,9 +28,9 @@ npm run build
 ```
 
 For the GitHub Actions deploy, set `VITE_DROPBOX_APP_KEY` /
-`VITE_DROPBOX_APP_FOLDER` /
-`VITE_DONATE_URL` as repository **variables** (they are public identifiers, not
-secrets) and the deploy workflows pass them through under the same names.
+`VITE_DROPBOX_APP_FOLDER` / `VITE_DONATE_URL` as repository **secrets** (every
+setting in this repository is a secret, even a public identifier like these)
+and the deploy workflows pass them through under the same names.
 
 ## Fake data / seeded dev server
 
