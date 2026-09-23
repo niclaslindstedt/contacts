@@ -19,11 +19,12 @@
 
 const { withInfoPlist } = require("expo/config-plugins");
 
-// Pinned in three places that must agree — here, ../app.config.js and
-// ../modules/icloud-store/{index.ts,ios/ICloudStoreModule.swift}. Changing it
-// after release strands every synced copy in the old container.
-const { BUNDLE_ID } = require("../identifiers.js");
-const CONTAINER_ID = `iCloud.${BUNDLE_ID}`;
+// The same committed id the entitlements name (../identifiers.js), never one
+// built from the bundle id: this declaration and the entitlement have to name
+// the same container, and the Swift side spells it as a literal
+// (../modules/icloud-store). Changing it after release strands every synced
+// copy in the old container.
+const { ICLOUD_CONTAINER: CONTAINER_ID } = require("../identifiers.js");
 
 // What the folder is called in the Files app. Not the bundle id: this is the
 // only string in the whole arrangement a reader ever sees.
