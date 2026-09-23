@@ -9,8 +9,11 @@ const { version } = require("../package.json");
 
 // The listing's name and identifier, and the container the document syncs
 // through. Build variables rather than literals — see ./identifiers.js.
-const { DISPLAY_NAME, BUNDLE_ID, ICLOUD_CONTAINER } = require("./identifiers.js");
-
+const {
+  DISPLAY_NAME,
+  BUNDLE_ID,
+  ICLOUD_CONTAINER,
+} = require("./identifiers.js");
 
 // The app's dark surface (src/app/look.ts's own default). Only paints the
 // splash and the chrome before the page reports its live theme.
@@ -30,7 +33,7 @@ const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID ?? "";
 module.exports = () => ({
   expo: {
     name: DISPLAY_NAME,
-    slug: "nird-contacts",
+    slug: "contacts",
     version,
     // The app is a one-column address book — a list of cards and one card
     // open at a time. Landscape is not broken, but it is not what the layout
@@ -40,7 +43,7 @@ module.exports = () => ({
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     icon: "./assets/icon.png",
-    scheme: "nird-contacts",
+    scheme: "contacts",
     backgroundColor: BRAND_BG,
     assetBundlePatterns: ["**/*"],
 
