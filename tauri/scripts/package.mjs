@@ -76,8 +76,23 @@ if (Object.keys(override).length > 0) {
   console.log("• packaging under the development identity");
 }
 
+// THE MAC APP IS NEVER UNSIGNED. Apple Silicon refuses to execute unsigned
+// arm64 code and tells the user "the app is damaged", the same wording it uses
+// for a corrupted download. An ad-hoc signature ("-") satisfies the kernel and
+// is what a developer build and a CI run with no certificate get; a Developer
+// ID identity (APPLE_SIGNING_IDENTITY, exported by
+// .github/actions/apple-signing once it has imported the certificate) is the
+// real thing, with notarization on top. `tauri build` reads the variable ahead
+// of the config, so an EMPTY one is replaced here rather than handed on as an
+// identity called "".
+const env = { ...process.env };
+if (process.platform === "darwin" && !env.APPLE_SIGNING_IDENTITY?.trim()) {
+  env.APPLE_SIGNING_IDENTITY = "-";
+  console.log("• macOS: no signing identity — signing ad hoc");
+}
+
 execFileSync(
   WINDOWS ? "npx.cmd" : "npx",
   ["tauri", "build", ...configArgs, ...forwarded],
-  { cwd: APP_DIR, stdio: "inherit", shell: WINDOWS },
+  { cwd: APP_DIR, env, stdio: "inherit", shell: WINDOWS },
 );

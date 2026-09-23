@@ -179,7 +179,32 @@ a build nobody is going to install.
 `.github/workflows/desktop-tauri.yml` can also be dispatched to build all three
 platforms without cutting a release.
 
+### Signing and notarizing the Mac app
+
 **macOS is never signed with nothing** — Apple Silicon refuses to execute
 unsigned arm64 code and reports it to the user as "the app is damaged", so the
-default is an ad-hoc signature and the user answers one Gatekeeper prompt. Set
-the `MAC_SIGN_IDENTITY` repository secret and the same job signs for real.
+default is an ad-hoc signature (`scripts/package.mjs` passes `-`) and the user
+answers one Gatekeeper prompt. That is what a local build, a fork and any run
+without the secrets below gets, and it needs nothing configured.
+
+Both `release.yml` and a dispatch of `desktop-tauri.yml` sign and notarize for
+real once these repository **secrets** are set. They go through
+`.github/actions/package-desktop`, which runs `.github/actions/apple-signing` on
+the macOS runner: it imports the certificate into a throwaway keychain and only
+then exports `APPLE_SIGNING_IDENTITY` for the bundler — an identity is never
+passed on without its certificate.
+
+| Secret                        | What it is                                                                                                        |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `MAC_CSC_LINK`                | The **Developer ID Application** certificate with its private key, exported as `.p12`, then `base64 -i cert.p12`. |
+| `MAC_CSC_KEY_PASSWORD`        | The password the `.p12` was exported with.                                                                        |
+| `MAC_SIGN_IDENTITY`           | Optional. `Developer ID Application: Name (TEAMID)`; read out of the certificate when unset.                      |
+| `APPLE_ID`                    | The Apple Account that notarizes.                                                                                 |
+| `APPLE_APP_SPECIFIC_PASSWORD` | An app-specific password for that account (account.apple.com → Sign-In and Security).                             |
+| `APPLE_TEAM_ID`               | The Developer Program team ID (10 characters).                                                                    |
+
+The certificate pair alone gives a Developer ID signature; the three `APPLE_*`
+secrets add notarization, which is what lets the first launch open without the
+Gatekeeper prompt. The release notes say which of the two a release got. A
+dispatch of `desktop-tauri.yml` with `platform: macos` is the rehearsal — it
+signs and notarizes exactly as a release does, without tagging one.

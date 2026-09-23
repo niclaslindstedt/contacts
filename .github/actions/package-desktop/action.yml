@@ -43,6 +43,34 @@ inputs:
     description: VITE_DROPBOX_APP_FOLDER for the same build.
     required: false
     default: ""
+  # macOS signing and notarization — see .github/actions/apple-signing. All
+  # optional: with no certificate the app is ad-hoc signed, as a fork's is.
+  mac-certificate:
+    description: MAC_CSC_LINK — the Developer ID Application .p12, base64.
+    required: false
+    default: ""
+  mac-certificate-password:
+    description: MAC_CSC_KEY_PASSWORD — the password the .p12 was exported with.
+    required: false
+    default: ""
+  mac-sign-identity:
+    description: >
+      MAC_SIGN_IDENTITY — optional; read out of the certificate when empty,
+      and ignored when there is no certificate.
+    required: false
+    default: ""
+  apple-id:
+    description: APPLE_ID — the Apple Account that notarizes.
+    required: false
+    default: ""
+  apple-app-specific-password:
+    description: APPLE_APP_SPECIFIC_PASSWORD — an app-specific password for it.
+    required: false
+    default: ""
+  apple-team-id:
+    description: APPLE_TEAM_ID — the Developer Program team.
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -81,6 +109,17 @@ runs:
       shell: bash
       run: npm ci --prefix tauri
 
+    # Turns package.mjs's ad-hoc fallback into a real signature by exporting
+    # APPLE_SIGNING_IDENTITY — only once a certificate is actually imported.
+    # A no-op with a warning when the certificate is empty.
+    - name: Apple signing
+      if: inputs.target == 'macos'
+      uses: ./.github/actions/apple-signing
+      with:
+        certificate: ${{ inputs.mac-certificate }}
+        certificate-password: ${{ inputs.mac-certificate-password }}
+        identity: ${{ inputs.mac-sign-identity }}
+
     # `npm run package` is `scripts/package.mjs`: `bundle-web.mjs` (which
     # builds the site with the service worker off), then `tauri build` with the
     # identity below merged over the committed config. Going through the
@@ -94,7 +133,18 @@ runs:
         RELEASE: ${{ inputs.release }}
         VITE_DROPBOX_APP_KEY: ${{ inputs.dropbox-app-key }}
         VITE_DROPBOX_APP_FOLDER: ${{ inputs.dropbox-app-folder }}
+        # NOTARIZATION. `APPLE_PASSWORD` is the bundler's name for the
+        # app-specific password.
+        APPLE_ID: ${{ inputs.apple-id }}
+        APPLE_PASSWORD: ${{ inputs.apple-app-specific-password }}
+        APPLE_TEAM_ID: ${{ inputs.apple-team-id }}
       run: |
+        # The bundler notarizes whatever it signed whenever these are set —
+        # the ad-hoc signature included, which Apple rejects. So they reach it
+        # only when the Apple signing step imported a real certificate.
+        if [ -z "${APPLE_SIGNING_IDENTITY:-}" ]; then
+          unset APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID
+        fi
         # An empty input is "not provided", not an empty value: the app falls
         # back to its defaults only for a variable that is absent.
         [ -n "$VITE_DROPBOX_APP_KEY" ] || unset VITE_DROPBOX_APP_KEY
