@@ -14,3 +14,6 @@ native/ios/
 native/android/
 native/.expo/
 native/assets/
+# The desktop shell's build output and the site copied into it.
+tauri/target/
+tauri/webroot/

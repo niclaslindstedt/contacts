@@ -199,6 +199,7 @@ the app produces them.
 
 ## Documentation
 
+- [The desktop app](docs/features/desktop-app.md)
 - [Getting started](docs/getting-started.md)
 - [Configuration](docs/configuration.md)
 - [Architecture](docs/architecture.md)

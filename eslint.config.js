@@ -14,6 +14,11 @@ export default [
       "dist/**",
       "node_modules/**",
       "coverage/**",
+      // The desktop shell's own trees: Rust build output, and the site copied
+      // in from `dist/` (both gitignored — see tauri/README.md).
+      "tauri/target/**",
+      "tauri/webroot/**",
+      "tauri/node_modules/**",
       "native/node_modules/**",
       "native/ios/**",
       "native/android/**",
@@ -25,7 +30,11 @@ export default [
     // Node tooling scripts (icon generation, SEO checks) and agent-skill
     // helpers. These run under Node, so expose its globals rather than the
     // browser's.
-    files: ["scripts/**/*.mjs", ".agent/skills/**/*.mjs"],
+    files: [
+      "scripts/**/*.mjs",
+      "tauri/scripts/**/*.mjs",
+      ".agent/skills/**/*.mjs",
+    ],
     languageOptions: {
       sourceType: "module",
       ecmaVersion: 2022,
