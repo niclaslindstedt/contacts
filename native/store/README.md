@@ -53,15 +53,15 @@ make store-metadata          # copy.mts + listing.mts → store.config.json, fas
 make store-shots             # the real game → screenshots/ (captioned PNGs)
 ```
 
-| Path                                 | What it is                                                   | Committed? |
-| ------------------------------------ | ------------------------------------------------------------ | ---------- |
-| `copy.mts`                           | **Every word both stores show** — the file you write         | **no**     |
-| `copy.example.mts`                   | A skeleton naming what goes where, with placeholder strings  | yes        |
-| `listing.mts`                        | The RULES: storefronts, limits, categories, age rating      | yes        |
-| `store.config.json`                  | The compiled listing, for `eas metadata:push`                | no (built) |
-| `../fastlane/metadata/**`            | The same listing in the layout `fastlane deliver` reads      | no (built) |
-| `screenshots/<device>/`              | Upload-ready captioned PNGs at Apple's exact rasters         | no (built) |
-| `../../tauri/store/screenshots/`     | The same set at Valve's raster, full-bleed                   | no (built) |
+| Path                             | What it is                                                  | Committed? |
+| -------------------------------- | ----------------------------------------------------------- | ---------- |
+| `copy.mts`                       | **Every word both stores show** — the file you write        | **no**     |
+| `copy.example.mts`               | A skeleton naming what goes where, with placeholder strings | yes        |
+| `listing.mts`                    | The RULES: storefronts, limits, categories, age rating      | yes        |
+| `store.config.json`              | The compiled listing, for `eas metadata:push`               | no (built) |
+| `../fastlane/metadata/**`        | The same listing in the layout `fastlane deliver` reads     | no (built) |
+| `screenshots/<device>/`          | Upload-ready captioned PNGs at Apple's exact rasters        | no (built) |
+| `../../tauri/store/screenshots/` | The same set at Valve's raster, full-bleed                  | no (built) |
 
 The generated ones are gitignored for the reason `pwa/dist` is: they are
 reproducible outputs, and reviewing a 2868×1320 PNG diff in a pull request helps
@@ -109,15 +109,15 @@ the expensive path. It also says which copy module it compiled, and warns
 loudly when that is the skeleton — a submission built from placeholders passes
 every check and ships a subtitle reading `SUBTITLE — the hook, 30`.
 
-| Field                    | Limit                                       |
-| ------------------------ | ------------------------------------------- |
-| `title`                  | 2–30 chars (composed from `identity.ts`)    |
-| `subtitle`               | ≤ 30                                        |
-| `keywords`               | ≤ 100 chars **for the comma-joined string** |
-| `promoText`              | ≤ 170                                       |
-| `description`            | 10–4000                                     |
-| `releaseNotes`           | ≤ 4000                                      |
-| `review.notes`           | 2–4000                                      |
+| Field          | Limit                                       |
+| -------------- | ------------------------------------------- |
+| `title`        | 2–30 chars (composed from `identity.ts`)    |
+| `subtitle`     | ≤ 30                                        |
+| `keywords`     | ≤ 100 chars **for the comma-joined string** |
+| `promoText`    | ≤ 170                                       |
+| `description`  | 10–4000                                     |
+| `releaseNotes` | ≤ 4000                                      |
+| `review.notes` | 2–4000                                      |
 
 It also **cross-checks the listing against the app it describes**, because the
 review notes are not decoration — they are the argument that this app is not a

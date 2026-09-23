@@ -78,8 +78,7 @@ import { docKey, type ContactStore } from "./useContactStore.ts";
 
 const syncLog = logStore.createLogger("sync");
 
-export type SyncBackendId =
-  "local" | "folder" | "dropbox" | "icloud";
+export type SyncBackendId = "local" | "folder" | "dropbox" | "icloud";
 
 /** True in browsers that expose the File System Access API directory picker
  *  (Chromium-based). The local-folder backend is hidden where this is false. */
@@ -142,9 +141,7 @@ export type PendingCloudSetup = {
 
 function readBackend(): SyncBackendId {
   const raw = localStorage.getItem(BACKEND_KEY);
-  return raw === "dropbox" ||
-    raw === "folder" ||
-    raw === "icloud"
+  return raw === "dropbox" || raw === "folder" || raw === "icloud"
     ? raw
     : "local";
 }
