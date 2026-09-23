@@ -49,11 +49,11 @@ For submission, fill in the placeholders in `eas.json` →
 
 ### 4. iCloud capabilities
 
-The app declares one iCloud container, `iCloud.se.niclaslindstedt.contacts`.
+The app declares one iCloud container, `iCloud.se.agilator.contacts`.
 Before the first store build, in the Apple Developer portal:
 
 1. **Identifiers → iCloud Containers** — create that container id.
-2. **Identifiers → App IDs → `se.niclaslindstedt.contacts`** — enable
+2. **Identifiers → App IDs → `se.agilator.contacts`** — enable
    **iCloud** with **iCloud Documents**, and tick that container.
 
 An entitlement the App ID does not carry fails code signing, and a container

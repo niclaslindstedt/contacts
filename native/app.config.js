@@ -7,15 +7,10 @@
 
 const { version } = require("../package.json");
 
-// Reverse-DNS app id, derived from the author domain and identical on both
-// stores so the app is one product across platforms.
-const BUNDLE_ID = "se.niclaslindstedt.contacts";
+// The listing's name and identifier, and the container the document syncs
+// through. Build variables rather than literals — see ./identifiers.js.
+const { DISPLAY_NAME, BUNDLE_ID, ICLOUD_CONTAINER } = require("./identifiers.js");
 
-// The iCloud container the address book syncs through. Pinned in three places
-// that must agree — here, `plugins/with-icloud.js`, and
-// `modules/icloud-store/ios/ICloudStoreModule.swift`. Changing it after
-// release strands every synced copy in the old container.
-const ICLOUD_CONTAINER = `iCloud.${BUNDLE_ID}`;
 
 // The app's dark surface (src/app/look.ts's own default). Only paints the
 // splash and the chrome before the page reports its live theme.
@@ -34,7 +29,7 @@ const EAS_PROJECT_ID = process.env.EAS_PROJECT_ID ?? "";
 
 module.exports = () => ({
   expo: {
-    name: "Contacts",
+    name: DISPLAY_NAME,
     slug: "nird-contacts",
     version,
     // The app is a one-column address book — a list of cards and one card

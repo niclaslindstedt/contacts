@@ -29,7 +29,7 @@ import ExpoModulesCore
 /// The container the address book syncs through. Kept in step with
 /// `../index.ts`, `../../app.config.js` and `../../plugins/with-icloud.js` —
 /// changing it after release strands every synced copy in the old container.
-private let CONTAINER_ID = "iCloud.se.niclaslindstedt.contacts"
+private let CONTAINER_ID = "iCloud.se.agilator.contacts"
 
 /// Everything is filed under the container's document scope, so it shows up in
 /// the Files app.

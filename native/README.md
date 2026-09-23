@@ -92,7 +92,7 @@ window.__contactsICloud        — installed by src/icloudBridge.ts
 App.tsx → src/icloud.ts → modules/icloud-store
    │
    ▼
-iCloud.se.niclaslindstedt.contacts/Documents/
+iCloud.se.agilator.contacts/Documents/
    contacts-<namespace>.json, photos/…, attachments/…, backups/…
 ```
 

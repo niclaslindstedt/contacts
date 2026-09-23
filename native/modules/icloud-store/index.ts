@@ -24,7 +24,7 @@ import { requireOptionalNativeModule } from "expo";
  * places that must agree: here, `app.config.js` (the entitlements) and
  * `plugins/with-icloud.js` (the Files-app declaration).
  */
-export const ICLOUD_CONTAINER = "iCloud.se.niclaslindstedt.contacts";
+export const ICLOUD_CONTAINER = "iCloud.se.agilator.contacts";
 
 /** One file in the container, as the native side reports it. */
 export type ICloudNativeEntry = {

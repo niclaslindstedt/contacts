@@ -22,7 +22,7 @@ const { withInfoPlist } = require("expo/config-plugins");
 // Pinned in three places that must agree — here, ../app.config.js and
 // ../modules/icloud-store/{index.ts,ios/ICloudStoreModule.swift}. Changing it
 // after release strands every synced copy in the old container.
-const BUNDLE_ID = "se.niclaslindstedt.contacts";
+const { BUNDLE_ID } = require("../identifiers.js");
 const CONTAINER_ID = `iCloud.${BUNDLE_ID}`;
 
 // What the folder is called in the Files app. Not the bundle id: this is the
