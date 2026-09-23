@@ -20,13 +20,11 @@
 // *write* looked like a photo that no longer wanted its file.
 
 import {
-  AuthError,
   RateLimitError,
   bearerAuthHeader,
   createDropboxFileStore,
   dropboxApiArg,
   parseRetryAfterMs,
-  readErrorBody,
   refreshDropboxAccessToken,
   type DropboxAuth,
   type FileStore,
@@ -54,10 +52,6 @@ export type PhotoFileStore = {
 
 const DROPBOX_UPLOAD = "https://content.dropboxapi.com/2/files/upload";
 const DROPBOX_DOWNLOAD = "https://content.dropboxapi.com/2/files/download";
-const DRIVE_FILES = "https://www.googleapis.com/drive/v3/files";
-const DRIVE_UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
-const FOLDER_MIME = "application/vnd.google-apps.folder";
-const JPEG_MIME = "image/jpeg";
 
 /** How long to wait out a throttle that arrives without a usable `Retry-After`.
  *  Matches the framework's own document-adapter fallback. */
