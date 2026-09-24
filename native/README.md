@@ -13,7 +13,10 @@ Thin is the design, not an aspiration. The wrapper:
   system browser, and Android's back button drives the WebView's history;
 - answers the page when it asks to read or write a file in the app's iCloud
   container (`src/icloudBridge.ts` → `src/icloud.ts` →
-  `modules/icloud-store`).
+  `modules/icloud-store`);
+- opens a cloud provider's sign-in in an **authentication session** when the
+  page asks for one (`src/authSessionBridge.ts` → `src/authSession.ts` →
+  `expo-web-browser`) — see [Signing in to Dropbox](#signing-in-to-dropbox).
 
 That is the entire list, and it is deliberately not empty: **App Store
 guideline 4.2 rejects a build that is only a viewer for a website**, so the
@@ -33,17 +36,20 @@ exactly as they are for a picked local folder.
 
 ## Layout
 
-| Path                     | What it is                                                                                             |
-| ------------------------ | ------------------------------------------------------------------------------------------------------ |
-| `App.tsx`                | The whole app: a WebView, a spinner, and a failure screen.                                             |
-| `src/local-server.ts`    | Unpacks `assets/webroot.zip` and serves it on a **fixed** loopback port.                               |
-| `src/injected.ts`        | One of the two injected scripts: reports the page's theme, kills the service worker.                   |
-| `src/icloudBridge.ts`    | **Pure.** The injected iCloud provider, and the request/response plumbing. Tested from the root suite. |
-| `src/icloudWire.ts`      | **Import-free.** The shapes that cross the bridge — see the note in the file.                          |
-| `src/icloud.ts`          | Runs one request against the native module. Degrades to "unavailable" when it is absent.               |
-| `modules/icloud-store/`  | A local Expo module: list / read / write / remove inside the app's iCloud container. **Apple only.**   |
-| `plugins/with-icloud.js` | Declares the container as a document scope, so it shows up in the Files app.                           |
-| `scripts/bundle-web.mjs` | Builds the web app and packs `dist/` into `assets/webroot.zip`.                                        |
+| Path                       | What it is                                                                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `App.tsx`                  | The whole app: a WebView, a spinner, and a failure screen.                                                                         |
+| `src/local-server.ts`      | Unpacks `assets/webroot.zip` and serves it on a **fixed** loopback port.                                                           |
+| `src/injected.ts`          | One of the two injected scripts: reports the page's theme, kills the service worker.                                               |
+| `src/icloudBridge.ts`      | **Pure.** The injected iCloud provider, and the request/response plumbing. Tested from the root suite.                             |
+| `src/icloudWire.ts`        | **Import-free.** The shapes that cross the bridge — see the note in the file.                                                      |
+| `src/authSessionBridge.ts` | **Pure.** The injected sign-in provider (`window.__ossAuthSession`) and its request/response plumbing. Tested from the root suite. |
+| `src/authSession.ts`       | Opens one sign-in in an authentication session (`expo-web-browser`) and hands back where it ended.                                 |
+| `src/scriptText.ts`        | **Import-free.** Splicing text safely into an injected script; shared by both bridges.                                             |
+| `src/icloud.ts`            | Runs one request against the native module. Degrades to "unavailable" when it is absent.                                           |
+| `modules/icloud-store/`    | A local Expo module: list / read / write / remove inside the app's iCloud container. **Apple only.**                               |
+| `plugins/with-icloud.js`   | Declares the container as a document scope, so it shows up in the Files app.                                                       |
+| `scripts/bundle-web.mjs`   | Builds the web app and packs `dist/` into `assets/webroot.zip`.                                                                    |
 
 `ios/` and `android/` are **prebuild output**: regenerated from `app.config.js`
 and `plugins/` by `expo prebuild --clean`, gitignored, and the source of truth
@@ -123,6 +129,59 @@ There is no iCloud on Android, and the module says so rather than pretending:
 unavailable — which means the web app never lists it. The Android build is the
 same offline-capable address book with the same Dropbox and
 on-device backends the website has.
+
+## Signing in to Dropbox
+
+The page's own Dropbox sign-in is a redirect: consent at dropbox.com, then
+back to the page's origin with a code, which the page trades for tokens using
+the PKCE verifier it kept in `sessionStorage`. That cannot finish in here. The
+providers refuse consent inside an embedded WebView, so `App.tsx` sends an
+off-origin page to Safari — and Dropbox then redirects **Safari** to
+`http://localhost:8241…`, an origin it has not registered, in a browser that
+does not hold the verifier.
+
+So the wrapper offers the page an **authentication session**
+(`ASWebAuthenticationSession` on iOS, a Custom Tab on Android): a browser sheet
+over the app that closes as soon as the provider redirects to the app's own
+scheme, and hands that URL back.
+
+```
+Settings → Storage → Dropbox → Connect
+   │  src/app/useSyncEngine.ts — getAuthSessionHost() is present, so
+   │  connectDropboxAuthSession(appKey, host)   (oss-framework)
+   ▼
+window.__ossAuthSession.open(authorizeUrl)   — installed by src/authSessionBridge.ts
+   │  postMessage (request)  /  injectJavaScript (answer)
+   ▼
+App.tsx → src/authSession.ts → WebBrowser.openAuthSessionAsync(url, "se.agilator.contacts://oauth")
+   │  the reader consents in the sheet; Dropbox redirects to
+   │  se.agilator.contacts://oauth?code=…&state=dropbox and the sheet closes
+   ▼
+the page checks the state, trades the code (same verifier, same redirect URI)
+```
+
+As with iCloud, the page asks for a **capability**, not for this wrapper: the
+host lives at `window.__ossAuthSession`, a name the framework owns
+(`AUTH_SESSION_HOST_PROPERTY`), so the website — which has no host — keeps its
+redirect flow and the desktop app keeps its loopback one. The wrapper never
+sees a token: it opens an `https:` URL (nothing else is accepted) and returns
+the callback URL, unread; a closed sheet comes back as `null`, which the page
+reports as "cancelled" rather than as an error.
+
+**The redirect URI is `<scheme>://oauth`**, and the scheme is the **bundle
+id** (`app.config.js`'s `scheme`, from `APP_BUNDLE_ID` via `identifiers.js`):
+reverse-DNS, as RFC 8252 §7.1 asks, so no other app can claim it. In the
+store build that is `se.agilator.contacts://oauth`; a plain checkout builds as
+`dev.local.contacts://oauth`. Dropbox requires the exact URI to be registered,
+so the Dropbox app behind `VITE_DROPBOX_APP_KEY` must list
+`se.agilator.contacts://oauth` (and `dev.local.contacts://oauth`, to sign in from a
+development build) under **Settings → OAuth 2 → Redirect URIs** in the
+[App Console](https://www.dropbox.com/developers/apps), next to the website's
+and the desktop app's. Without it Dropbox shows "Invalid redirect_uri" in the
+sheet. The scheme needs no Info.plist entry of its own for the sheet to catch
+it; Expo registers it anyway from `scheme`.
+
+Other off-origin links are unchanged: they still leave for the system browser.
 
 ## Things that will bite you
 

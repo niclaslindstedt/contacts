@@ -150,19 +150,23 @@ Two rules keep it thin, and both are load-bearing:
 
 1. **Nothing in `src/` may learn that the wrapper exists.** The web app asks
    whether a _capability_ is present (`src/app/icloudHost.ts` looks for an
-   iCloud provider on `window`), never whether it is running natively, on which
-   platform, or in which build. A browser has no provider and the feature is
-   simply absent; a second host offering the same methods would light it up
-   with no change in `src/`.
+   iCloud provider on `window`; the framework's `getAuthSessionHost` looks for
+   a sign-in provider at `window.__ossAuthSession`), never whether it is
+   running natively, on which platform, or in which build. A browser has no
+   provider: the iCloud backend is simply absent, and Dropbox keeps its
+   redirect sign-in; a second host offering the same methods would light it
+   up with no change in `src/`.
 2. **The wrapper owns no domain.** It moves opaque files between the page and a
    folder in iCloud Drive. What the document is called, how photos are filed
    beside it, what a conflict means and when a save is due stay in
    `src/app/useSyncEngine.ts`, against the framework's storage adapters.
 
-A root test (`tests/native_icloud_test.ts`) imports one module from that tree
-to pin the two sides of the seam against each other — which is why
+Two root tests (`tests/native_icloud_test.ts`,
+`tests/native_auth_session_test.ts`) import modules from that tree to pin the
+two sides of each seam against each other — which is why
 `native/src/icloudBridge.ts` takes its types from the import-free
-`native/src/icloudWire.ts`, and why `native/tsconfig.json` does not extend
+`native/src/icloudWire.ts`, why neither bridge imports anything from `expo`,
+and why `native/tsconfig.json` does not extend
 Expo's base: a root `npm ci` installs none of `native/`'s dependencies, and
 anything reachable from that test which imports `expo` turns a fully-installed
 machine green and CI red. See [`native/README.md`](native/README.md).
@@ -374,6 +378,13 @@ edit needs no fragment of its own.
   `native/src/icloudBridge.ts` and `src/app/icloudHost.ts`. A rename on either
   side is not an error — it is a storage backend that never appears.
   `tests/native_icloud_test.ts` is what makes it one.
+- The auth-session bridge's property and event names are the framework's
+  (`AUTH_SESSION_HOST_PROPERTY`, `AUTH_SESSION_HOST_EVENT`), spelled again in
+  `native/src/authSessionBridge.ts`; `tests/native_auth_session_test.ts` pins
+  them. Its redirect URI is `<scheme>://oauth`, and the scheme is the bundle
+  id (`native/app.config.js` takes it from `native/identifiers.js`), so the
+  Dropbox app must list `se.agilator.contacts://oauth` — a different
+  `APP_BUNDLE_ID` breaks phone sign-in until the App Console follows.
 
 ## Maintenance skills
 

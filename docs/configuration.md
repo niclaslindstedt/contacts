@@ -32,6 +32,13 @@ For the GitHub Actions deploy, set `VITE_DROPBOX_APP_KEY` /
 setting in this repository is a secret, even a public identifier like these)
 and the deploy workflows pass them through under the same names.
 
+The Dropbox app behind `VITE_DROPBOX_APP_KEY` must list, under **Settings →
+OAuth 2 → Redirect URIs** in the App Console, every redirect URI the app signs
+in with: the deployed URL for the website, `http://127.0.0.1:53682/`,
+`:53683/` and `:53684/` for the desktop app, and
+`se.agilator.contacts://oauth` (the bundle id as the scheme) for the phone app
+— see [native/README.md](../native/README.md#signing-in-to-dropbox).
+
 ## Fake data / seeded dev server
 
 `npm run dev` starts **seeded by default** (it runs `VITE_SEED=large vite`): the

@@ -73,6 +73,19 @@ An entitlement the App ID does not carry fails code signing, and a container
 the App ID does not carry fails at runtime with the app reporting "not signed
 in to iCloud" on a device that plainly is. Both are configuration, not code.
 
+### 5. Dropbox
+
+The phone app signs in to Dropbox through an in-app authentication session
+that returns on **`<bundle id>://oauth`** — `se.agilator.contacts://oauth` for the
+store build, whose `APP_BUNDLE_ID` is `se.agilator.contacts` (see
+[README → Signing in to Dropbox](README.md#signing-in-to-dropbox)). In the
+[Dropbox App Console](https://www.dropbox.com/developers/apps), open the app
+whose key is the `VITE_DROPBOX_APP_KEY` secret and add
+`se.agilator.contacts://oauth` under **Settings → OAuth 2 → Redirect URIs**,
+exactly as written. The same secret
+is what the build job passes to the web bundle; without it the app offers no
+Dropbox at all.
+
 ## Cutting a build
 
 Dispatch **Actions → native → Run workflow** and pick:
@@ -117,5 +130,8 @@ build without it launches to a blank screen.
       Drive**, connecting files `contacts-default.json` into the **Contacts**
       folder in the Files app, and a contact added on one device shows up on
       another.
+- [ ] Settings → Storage → Dropbox → Connect opens Dropbox in a sheet over
+      the app (not in Safari), and approving closes the sheet and connects.
+      Closing the sheet instead says "cancelled" and leaves nothing connected.
 - [ ] On a device signed OUT of iCloud: the backend explains itself rather than
       failing on the first save.

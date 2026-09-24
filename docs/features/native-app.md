@@ -20,6 +20,10 @@ with no account to create and nobody else holding the file. See
 [Cloud sync](feature:cloud-sync) for how that works and how it compares to the
 other backends.
 
+Dropbox works in the app too: connecting opens Dropbox's sign-in in a sheet over
+the app, and approving closes it and connects. Close the sheet instead and
+nothing is connected.
+
 Your contacts stay yours. The app asks for no permissions at all — it reads
 nothing from your device, and the only thing it ever writes outside itself is
 the address book you asked it to sync, into a folder in your own iCloud Drive.

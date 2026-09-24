@@ -43,7 +43,14 @@ module.exports = () => ({
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     icon: "./assets/icon.png",
-    scheme: "contacts",
+    // The URL scheme is the bundle id (reverse-DNS, RFC 8252 §7.1): a scheme
+    // only this app can claim, so a sign-in's redirect cannot land in another
+    // app that registered the same short word. It follows APP_BUNDLE_ID —
+    // se.agilator.contacts in production, dev.local.contacts in a plain
+    // checkout — so nothing about the deployment is committed. The phone's
+    // Dropbox sign-in returns on `<scheme>://oauth` (src/authSession.ts), which
+    // is the redirect URI the Dropbox app must list (RELEASING.md).
+    scheme: BUNDLE_ID,
     backgroundColor: BRAND_BG,
     assetBundlePatterns: ["**/*"],
 
