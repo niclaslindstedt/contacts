@@ -955,7 +955,7 @@ function PhotoDropHint() {
   const t = useT();
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 bottom-4 z-40 flex justify-center px-4"
+      className="pointer-events-none absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center px-4"
       role="status"
       aria-live="polite"
     >
