@@ -60,16 +60,20 @@ search, sort, export, and formatters always have realistic input.
 
 ### Demo data
 
-Alongside the edge-case fake data there is a **demo** dataset — a polished,
-presentation-grade address book of about a hundred realistic (but entirely
-fictional) contacts: family with birthdays and name days, friends at home and
-abroad, colleagues and clients, the kids' school circle, and a folder of
-household services, complete with favorites, emergency contacts, notes, nested
-folders, archived cards, a couple of PDF attachments, and portrait photos on
-most cards (AI-generated faces owned by the project — no real people). It's
-made for demos and screenshots rather than stress-testing. Load it with the
-**Settings → Developer → Demo data** toggle (mutually exclusive with Fake
-data), or boot straight into it with `VITE_SEED=demo npm run dev`.
+Alongside the edge-case fake data there is a **demo** dataset — one person's
+address book, kept well: about forty fictional people (family, friends, a
+hackerspace, a team at work and two clients, the house and the people who fix
+it), nearly every card with a note, plus favorites, emergency contacts, tags,
+nested folders, an archived old job, real attachments, two cards that archive
+themselves, and portrait photos (AI-generated faces owned by the project — no
+real people). It is the live demo and what the App Store screenshots are taken
+of, so every date in it is computed from the moment it opens and never ages.
+Load it with the **Settings → Developer → Demo data** toggle (mutually
+exclusive with Fake data), or boot straight into it with `make demo`
+(`VITE_SEED=demo npm run dev`). A build with `VITE_SEED` set mounts only once
+the seed is in, so it never renders — or syncs — the real address book, and
+connecting or disconnecting a storage backend is refused while either seed
+shows.
 
 Both seeds are storage backends that **take over storage, entirely in memory**
 — nothing is ever written to disk, and no seeded data is pushed to a connected

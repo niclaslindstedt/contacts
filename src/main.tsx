@@ -53,7 +53,13 @@ function loadPage() {
   if (isPrivacy) {
     return import("./app/PrivacyPage.tsx").then((m) => m.PrivacyPage);
   }
-  return import("./App.tsx").then((m) => m.App);
+  // A seeded build (`VITE_SEED`, e.g. the demo the store screenshots are taken
+  // of) mounts only once its in-memory book is in, so the first render never
+  // reads — or syncs — the real one. Without a seed this settles at once.
+  return Promise.all([
+    import("./App.tsx"),
+    import("./app/dev/useDevSeed.ts").then((m) => m.devSeedBooted()),
+  ]).then(([m]) => m.App);
 }
 
 void loadPage().then((Page) => {

@@ -289,9 +289,11 @@ export function useSyncEngine(
   store: ContactStore,
   slug: string,
   passwordRef: MutablePasswordRef,
-  // Suspend all writes to the backend. Set while the developer "Fake data"
-  // backend has taken over storage, so a throwaway sample is never pushed up to
-  // a connected cloud copy — fake data stays entirely in memory.
+  // Suspend all writes to the backend. Set while the developer "Fake data" or
+  // "Demo data" backend has taken over storage, so a throwaway sample is never
+  // pushed up to a connected cloud copy — seeded data stays entirely in memory
+  // — and connecting or disconnecting a backend is refused (see
+  // `refusedWhilePaused`).
   paused = false,
 ): SyncEngine {
   const [backend, setBackendState] = useState<SyncBackendId>(readBackend);
@@ -923,7 +925,18 @@ export function useSyncEngine(
     [store.version],
   );
 
+  // A backend choice is the reader's own, stored on the device for their real
+  // address book, and connecting one adopts what the app holds as its
+  // baseline — so while a seeded book is in play (the demo, fake data) it
+  // is neither changed nor connected to.
+  const refusedWhilePaused = useCallback(() => {
+    if (!paused) return false;
+    syncLog.warn("storage: not while demo or fake data is showing");
+    return true;
+  }, [paused]);
+
   const connectDropbox = useCallback(async () => {
+    if (refusedWhilePaused()) return;
     if (!DROPBOX_APP_KEY) return;
     // Two hosts cannot take the redirect back, and both finish the sign-in in
     // one promise, in place, no reload:
@@ -959,13 +972,14 @@ export function useSyncEngine(
     }
     syncLog.info("dropbox: starting OAuth…");
     await startDropboxAuth(DROPBOX_APP_KEY); // redirects away
-  }, [adoptDropbox]);
+  }, [adoptDropbox, refusedWhilePaused]);
 
   // Pick a local folder and switch to it. The framework persists the handle to
   // IndexedDB so the grant survives reloads; marking this a fresh connect lets
   // the baseline read raise the replace-or-adopt prompt when the folder already
   // holds contacts. No-op where the picker is unavailable or dismissed.
   const connectFolder = useCallback(async () => {
+    if (refusedWhilePaused()) return;
     if (!FOLDER_BACKEND_AVAILABLE || !window.showDirectoryPicker) return;
     syncLog.info("folder: opening the directory picker…");
     let handle: FileSystemDirectoryHandle;
@@ -993,7 +1007,7 @@ export function useSyncEngine(
     setFolderHandle(handle);
     setBackend("folder");
     syncLog.info("folder: connected");
-  }, [setBackend]);
+  }, [setBackend, refusedWhilePaused]);
 
   // Switch to iCloud Drive. There is nothing to authorise — the container
   // belongs to the app and the device is already signed in (or it is not, and
@@ -1001,13 +1015,14 @@ export function useSyncEngine(
   // adoption fresh so the baseline read can raise the replace-or-adopt prompt
   // when the container already holds an address book, and switch.
   const connectICloud = useCallback(async () => {
+    if (refusedWhilePaused()) return;
     if (!icloud.host) return;
     const status = await icloud.refresh();
     if (status === "unavailable") return;
     justConnected.current = true;
     setBackend("icloud");
     syncLog.info(`icloud: connected (${status})`);
-  }, [icloud, setBackend]);
+  }, [icloud, setBackend, refusedWhilePaused]);
 
   // Re-confirm a revoked OS grant on the already-stored handle.
   // `requestPermission` needs a user gesture, which is why this lives behind a
@@ -1031,6 +1046,7 @@ export function useSyncEngine(
   }, [connectFolder]);
 
   const disconnect = useCallback(() => {
+    if (refusedWhilePaused()) return;
     writeDropboxTokens(null);
     sessionStorage.removeItem(RETIRED_GDRIVE_TOKEN_KEY);
     setDropboxTokens(null);
@@ -1044,7 +1060,7 @@ export function useSyncEngine(
     // to it, it does not empty it.
     setBackend("local");
     syncLog.info("backend: back to this device only");
-  }, [setBackend]);
+  }, [setBackend, refusedWhilePaused]);
 
   const setEncrypted = useCallback((v: boolean) => {
     localStorage.setItem(ENCRYPTED_KEY, v ? "1" : "0");

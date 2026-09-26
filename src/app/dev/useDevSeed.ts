@@ -51,13 +51,10 @@ export function seedBackends(): SeedBackends | null {
 // starts "off" and `size` is the harmless default.
 const initial = parseSeedEnv(import.meta.env.VITE_SEED as string | undefined);
 
-// Demo mode starts "off" even when `VITE_SEED=demo` asked for it: the portrait
-// chunk has to arrive first (see `setDevDataMode`), and the kick-off at the
-// bottom of this module flips the mode on as soon as it has.
 // Always starts "off", whatever `VITE_SEED` asked for: the builders live in
-// their own chunk now, so *every* mode has to wait for it. The kick-off at the
-// bottom of this module requests the real initial mode, which lands a tick
-// later once the chunk is in.
+// their own chunk, so *every* mode has to wait for it (and demo mode for its
+// portraits too). The kick-off below `setDevDataMode` requests the real
+// initial mode, and `main.tsx` waits for it before mounting the app.
 let mode: DevDataMode = "off";
 // The fake-data size is fixed by the env for the whole session: the manual
 // toggle reuses whatever `VITE_SEED` asked for (or the curated sample when
@@ -83,23 +80,24 @@ let seq = 0;
 
 /** Switch the in-memory dataset mode. Nothing is persisted. Flipping into
  *  demo mode is asynchronous under the hood: the portrait photos live in
- *  their own lazy chunk (kept out of the main bundle — ~290 KB of JPEG that
+ *  their own lazy chunk (kept out of the main bundle — ~130 KB of JPEG that
  *  production users shouldn't parse on boot), so the mode flips once that
- *  chunk has loaded and the demo document can seed complete with faces. */
-export function setDevDataMode(next: DevDataMode): void {
+ *  chunk has loaded and the demo document can seed complete with faces. The
+ *  returned promise settles once the flip has landed (or been superseded). */
+export function setDevDataMode(next: DevDataMode): Promise<void> {
   const token = ++seq;
-  if (mode === next) return;
+  if (mode === next) return Promise.resolve();
   if (next === "off") {
     mode = "off";
     notify();
-    return;
+    return Promise.resolve();
   }
   // Turning a mode ON is asynchronous under the hood: the builders live in
-  // their own chunk, and demo mode additionally waits on the ~290 KB portrait
-  // chunk so its document seeds complete with faces. The mode flips only once
+  // their own chunk, and demo mode additionally waits on the portrait chunk
+  // so its document seeds complete with faces. The mode flips only once
   // everything it needs has landed, so `App` can build the backend
   // synchronously from that render on.
-  void import("./seedBackend.ts")
+  return import("./seedBackend.ts")
     .then(async (m) => {
       backends = m;
       if (next === "demo") await m.loadDemoPhotos();
@@ -112,10 +110,19 @@ export function setDevDataMode(next: DevDataMode): void {
     });
 }
 
-// The `VITE_SEED` boot path: request the deferred flip now, so the dev server
-// lands on the seeded document as soon as the dev chunk (and, for demo mode,
-// the portrait chunk) is in.
-if (initial.mode !== "off") setDevDataMode(initial.mode);
+// The `VITE_SEED` boot path: request the deferred flip now, so the app lands
+// on the seeded document as soon as the dev chunk (and, for demo mode, the
+// portrait chunk) is in.
+const booted: Promise<void> =
+  initial.mode !== "off" ? setDevDataMode(initial.mode) : Promise.resolve();
+
+/** Settles once the `VITE_SEED` mode this build boots into is on (at once
+ *  when there is none). `main.tsx` mounts the app after it, so a seeded build
+ *  — the demo, the store screenshots — never renders, reads or syncs the real
+ *  address book, not even for its first frame. */
+export function devSeedBooted(): Promise<void> {
+  return booted;
+}
 
 export function useDevSeed(): {
   mode: DevDataMode;
