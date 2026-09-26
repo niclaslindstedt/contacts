@@ -177,7 +177,7 @@ see [docs/configuration.md](docs/configuration.md):
 | ------------------------- | ----------------------------------------------------------------------- |
 | `VITE_DROPBOX_APP_KEY`    | Dropbox app key (PKCE flow, no secret)                                  |
 | `VITE_DROPBOX_APP_FOLDER` | Dropbox app-folder name for the "Open in" link (defaults to `Contacts`) |
-| `VITE_DONATE_URL`         | Donate link target (defaults to the project's GitHub Sponsors page)     |
+| `VITE_DONATE_URL`         | Donate link target, website only (defaults to GitHub Sponsors)          |
 | `VITE_BASE`               | Deploy base path — `/` (release), `/preview/` (main), `/branch/` (slot) |
 
 iCloud Drive needs none of these: it is not a service the web build talks to,

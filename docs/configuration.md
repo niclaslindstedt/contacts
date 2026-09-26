@@ -10,7 +10,7 @@ server and no runtime config file). Vite reads these from the environment:
 | `VITE_DROPBOX_APP_KEY`    | _(unset)_                                                      | Dropbox app key for the OAuth PKCE connect flow. Create a Dropbox app with the `files.content.write`/`files.content.read` scopes and an app folder; no secret is needed (PKCE). When unset, Dropbox is hidden from the storage backend picker.                                                                                                                                                                                                                 |
 | `VITE_DROPBOX_APP_FOLDER` | `Contacts`                                                     | The name of the Dropbox **app folder** (`Apps/<name>/`), fixed by your Dropbox app's configuration. Sets where the "Open in Dropbox" link and the "File location" line in the sync command centre point; it does not create the folder (Dropbox does). Set it to match your app's real folder name when it isn't `Contacts`.                                                                                                                                   |
 | `VITE_SEED`               | _(unset)_                                                      | Boot into a developer in-memory backend, seeded with sample contacts. `1`/`true`/`sample` loads the curated edge-case set; a number loads roughly that many contacts; `large` loads a big stress-test spread; `demo` loads the presentation-grade demo address book; `0` or unset starts on the real address book. In-memory only — nothing is persisted. `npm run dev` sets this to `large` by default. See [Fake data](#fake-data--seeded-dev-server) below. |
-| `VITE_DONATE_URL`         | [GitHub Sponsors](https://github.com/sponsors/niclaslindstedt) | The link target for the side menu's **Donate** row. Set it to point the button at a different sponsorship page; when unset it falls back to the project's GitHub Sponsors page.                                                                                                                                                                                                                                                                                |
+| `VITE_DONATE_URL`         | [GitHub Sponsors](https://github.com/sponsors/niclaslindstedt) | The link target for the side menu's **Donate** row — **on the website only**. The phone and desktop builds compile the row out whatever this says (App Store guideline 3.1.1; see [below](#no-donate-link-in-the-apps)). Set it to point the button at a different sponsorship page; when unset it falls back to the project's GitHub Sponsors page.                                                                                                           |
 
 None of these touch the **iCloud Drive** backend: it has no client id and no
 folder name to configure, because it is not a service the web build talks to. It
@@ -31,6 +31,18 @@ For the GitHub Actions deploy, set `VITE_DROPBOX_APP_KEY` /
 `VITE_DROPBOX_APP_FOLDER` / `VITE_DONATE_URL` as repository **secrets** (every
 setting in this repository is a secret, even a public identifier like these)
 and the deploy workflows pass them through under the same names.
+
+## No Donate link in the apps
+
+The Donate row is the website's alone. A payment link outside Apple's is an
+App Store rejection (guideline 3.1.1), and the store listings promise nothing
+is sold, so the phone app and the desktop app ship without it. Each is built
+with a flag — `VITE_NATIVE_BUILD=on` by `native/scripts/bundle-web.mjs`,
+`VITE_SHELL_BUILD=on` by `tauri/scripts/bundle-web.mjs` — that Vite turns into
+a compile-time constant, so the row and its URL, fallback included, are folded
+out of those bundles rather than hidden (`src/app/donate.ts`). Setting
+`VITE_DONATE_URL` for an app build changes nothing, and the phone bundle script
+refuses to zip a `dist/` that carries the link.
 
 The Dropbox app behind `VITE_DROPBOX_APP_KEY` must list, under **Settings →
 OAuth 2 → Redirect URIs** in the App Console, every redirect URI the app signs

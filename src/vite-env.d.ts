@@ -30,8 +30,9 @@ interface ImportMetaEnv {
   // Dropbox app key (PKCE public client). Unset hides the Dropbox storage
   // backend in Settings → Storage. See `src/app/useSyncEngine.ts`.
   readonly VITE_DROPBOX_APP_KEY?: string;
-  // Donate link target for the side-menu footer's Donate row. Unset falls back
-  // to the project's GitHub Sponsors page. See `src/app/SideMenuContent.tsx`.
+  // Donate link target for the side-menu footer's Donate row — the website's
+  // only; the phone and desktop builds compile the row out. Unset falls back
+  // to the project's GitHub Sponsors page. See `src/app/donate.ts`.
   readonly VITE_DONATE_URL?: string;
 }
 
@@ -39,3 +40,8 @@ interface ImportMetaEnv {
 // True only when `tauri/scripts/bundle-web.mjs` built it: no service worker was
 // emitted, so there is no update lifecycle for the app to drive.
 declare const __SHELL_BUILD__: boolean;
+
+// Whether this build is the one bundled inside the phone wrapper (native/).
+// True only when `native/scripts/bundle-web.mjs` built it; it leaves out the
+// Donate row, which only the website carries (`src/app/donate.ts`).
+declare const __NATIVE_BUILD__: boolean;

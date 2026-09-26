@@ -220,8 +220,19 @@ const version = process.env.GITHUB_SHA
 // as a new binary — so a worker here would precache a copy of files already on
 // local disk and then serve the page from ITS copy. `__SHELL_BUILD__` carries
 // the same fact into the app, where it switches off the update prompt that has
-// nothing left to prompt about.
+// nothing left to prompt about — and, with `__NATIVE_BUILD__` below, leaves out
+// the Donate row, which only the website carries.
 const shellBuild = process.env.VITE_SHELL_BUILD === "on";
+
+// A build for the PHONE WRAPPER (native/), set by `native/scripts/bundle-web.mjs`.
+//
+// It changes exactly one thing, and it is about the channel rather than the
+// medium: the side menu's Donate row is left out (`src/app/donate.ts`). With
+// `__SHELL_BUILD__` it marks every build that is not the website — a payment
+// link outside Apple's is an App Store rejection (guideline 3.1.1), and the
+// listings promise nothing is sold. Both are compile-time constants, so the
+// row and its URL are folded out of those bundles rather than hidden.
+const nativeBuild = process.env.VITE_NATIVE_BUILD === "on";
 
 export default defineConfig({
   base,
@@ -240,6 +251,7 @@ export default defineConfig({
   },
   define: {
     __SHELL_BUILD__: JSON.stringify(shellBuild),
+    __NATIVE_BUILD__: JSON.stringify(nativeBuild),
     __APP_VERSION__: JSON.stringify(appVersion),
     __BUILD_LABEL__: JSON.stringify(buildLabel),
     __BUILD_COMMIT__: JSON.stringify(commit),

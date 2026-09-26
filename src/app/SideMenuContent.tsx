@@ -36,6 +36,7 @@ import {
   reorderIds,
   subtreeFolderIds,
 } from "./contactList.ts";
+import { DONATE_URL } from "./donate.ts";
 import { FavoriteIcon, IceIcon } from "./icons.tsx";
 import { MoveToFolderMenu } from "./MoveToFolderMenu.tsx";
 import {
@@ -79,13 +80,6 @@ const ABOUT_PLACEMENT: FloatingPlacement = {
 // The project links surfaced in the footer (Donate) and the About dropdown
 // (Source code).
 const SOURCE_URL = "https://github.com/niclaslindstedt/contacts";
-// The donate link is configurable at build time (`VITE_DONATE_URL`, wired up
-// as a repository secret in the deploy workflows) so the sponsorship target
-// can change without a code edit; it falls back to the project's GitHub
-// Sponsors page when unset. See `docs/configuration.md`.
-const DONATE_URL =
-  (import.meta.env.VITE_DONATE_URL as string | undefined) ||
-  "https://github.com/sponsors/niclaslindstedt";
 // The subtitle under the Source row — the build identifier, composed at build
 // time (`__BUILD_LABEL__`, see `vite.config.ts`): the version, the CI run
 // number, the deploy slot (`-pre` for preview, `-br` for a branch build), and
@@ -833,7 +827,7 @@ export function SideMenuContent({
         onClick={() => setFooterCollapsed((v) => !v)}
       />
 
-      {/* Footer — fixed. Donate (an external link), the trophy, an About
+      {/* Footer — fixed. Donate (an external link, website only), the trophy, an About
           dropdown, and Settings pinned last under the thumb (checking for an
           app update lives in Settings → Developer). Foldable away via the rail
           above. Now the
@@ -843,13 +837,15 @@ export function SideMenuContent({
           comfortable reach for the thumb. */}
       {!footerHidden && (
         <div className="flex shrink-0 flex-col border-t border-line [padding-top:calc(1.25rem-var(--density-row-py))] [padding-bottom:calc(1.25rem-var(--density-row-py)+10px)]">
-          <FooterLink
-            icon={<FavoriteIcon filled className="h-5 w-5 text-danger" />}
-            href={DONATE_URL}
-            external
-          >
-            {t("menu.donate")}
-          </FooterLink>
+          {DONATE_URL && (
+            <FooterLink
+              icon={<FavoriteIcon filled className="h-5 w-5 text-danger" />}
+              href={DONATE_URL}
+              external
+            >
+              {t("menu.donate")}
+            </FooterLink>
+          )}
           {trophy}
           <button
             ref={aboutRef}
