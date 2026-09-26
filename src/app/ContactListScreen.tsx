@@ -45,7 +45,7 @@ import { SelectActions, SelectCountBar } from "./SelectToast.tsx";
 import { allTags } from "./tags.ts";
 import { customRelationsInUse } from "./relation.ts";
 import { useT } from "./i18n/index.ts";
-import { formatPhoneValue } from "./countries/index.ts";
+import { formatStoredPhone } from "./countries/index.ts";
 import { phoneOptions, type AppSettings } from "./useAppSettings.ts";
 import {
   favoriteContacts,
@@ -1792,8 +1792,10 @@ function PhonePill({
   const work = methodKind(phone.label) === "work";
   const Icon = work ? BuildingIcon : PersonIcon;
   const kindText = work ? t("contact.kindWork") : t("contact.kindPrivate");
-  const value = formatPhoneValue(
-    phone.value,
+  // The stored number keeps its own calling code: a London number reads
+  // `+44 …` in a US book rather than being formatted as a US one.
+  const value = formatStoredPhone(
+    phone,
     settings.country,
     phoneOptions(settings),
   );
