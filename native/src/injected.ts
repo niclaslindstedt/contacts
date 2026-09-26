@@ -72,9 +72,10 @@ export const BEFORE_LOAD_SCRIPT = `(function () {${SW_TEARDOWN}})(); true;`;
  * The script injected once the page has loaded.
  *
  * Reports immediately, then whenever the document element's attributes change
- * (which is how the theme engine repaints), and whenever the page becomes
- * visible again — the reader may have flipped the system appearance while the
- * app was in the background.
+ * (which is how the theme engine repaints), whenever the system appearance
+ * flips (the "system" preset follows it), and whenever the page becomes
+ * visible again. The shell styles the status bar from the reported
+ * background (`statusBar.ts`).
  */
 export const AFTER_LOAD_SCRIPT = `(function () {
   if (window.__contactsNativeReporter) return;
@@ -115,6 +116,15 @@ export const AFTER_LOAD_SCRIPT = `(function () {
     // without the page having to tell us.
     var observer = new MutationObserver(schedule);
     observer.observe(document.documentElement, { attributes: true });
+  } catch (e) {}
+
+  // The "system" preset follows prefers-color-scheme through a CSS media
+  // query, which changes --page-bg without touching any <html> attribute —
+  // the observer above never sees the phone flip between light and dark.
+  try {
+    var scheme = window.matchMedia("(prefers-color-scheme: dark)");
+    if (scheme.addEventListener) scheme.addEventListener("change", schedule);
+    else if (scheme.addListener) scheme.addListener(schedule);
   } catch (e) {}
 
   document.addEventListener("visibilitychange", function () {

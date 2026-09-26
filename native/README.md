@@ -10,8 +10,11 @@ Thin is the design, not an aspiration. The wrapper:
   launch and serves it from a **loopback HTTP server** (`src/local-server.ts`);
 - points a `WebView` at that origin, and gets out of the way — on iOS the
   WebView runs edge to edge and the page pads itself with
-  `env(safe-area-inset-*)`, as the installed PWA does; on Android the status
-  bar and safe-area bands follow the page's own theme; off-origin links go to
+  `env(safe-area-inset-*)`, as the installed PWA does; on Android the
+  safe-area bands follow the page's own theme; on both, the status bar's clock
+  and battery are light over a dark page background and dark over a light one,
+  decided from the colour the page reports (`src/statusBar.ts`), never from
+  the phone's light/dark setting; off-origin links go to
   the system browser, and Android's back button drives the WebView's history;
 - answers the page when it asks to read or write a file in the app's iCloud
   container (`src/icloudBridge.ts` → `src/icloud.ts` →
@@ -47,6 +50,7 @@ exactly as they are for a picked local folder.
 | `src/icloudWire.ts`        | **Import-free.** The shapes that cross the bridge — see the note in the file.                                                      |
 | `src/authSessionBridge.ts` | **Pure.** The injected sign-in provider (`window.__ossAuthSession`) and its request/response plumbing. Tested from the root suite. |
 | `src/authSession.ts`       | Opens one sign-in in an authentication session (`expo-web-browser`) and hands back where it ended.                                 |
+| `src/statusBar.ts`         | **Import-free.** Light or dark status-bar icons from the page's reported background. Tested from the root suite.                   |
 | `src/scriptText.ts`        | **Import-free.** Splicing text safely into an injected script; shared by both bridges.                                             |
 | `src/icloud.ts`            | Runs one request against the native module. Degrades to "unavailable" when it is absent.                                           |
 | `modules/icloud-store/`    | A local Expo module: list / read / write / remove inside the app's iCloud container. **Apple only.**                               |

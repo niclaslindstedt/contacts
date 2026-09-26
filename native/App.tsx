@@ -62,6 +62,7 @@ import {
   isAuthSessionRequest,
 } from "./src/authSessionBridge";
 import { answerAuthSession, authRedirectUri } from "./src/authSession";
+import { barStyleFor, type BarStyle } from "./src/statusBar";
 
 // Hold the native splash until the WebView actually paints. Called at module
 // scope so the auto-hide never wins the race; a rejection only means the
@@ -110,6 +111,9 @@ export default function App() {
       : { status: "starting" },
   );
   const [background, setBackground] = useState(FALLBACK_BACKGROUND);
+  // Decided from the page's reported background, never from the phone's
+  // light/dark setting (see `src/statusBar.ts`). "auto" until it reports.
+  const [barStyle, setBarStyle] = useState<BarStyle>("auto");
   const webViewRef = useRef<WebView>(null);
   const canGoBack = useRef(false);
   const serverRef = useRef<LocalServer | null>(null);
@@ -205,6 +209,7 @@ export default function App() {
       const reported = parsed.theme?.background;
       if (typeof reported === "string" && reported.trim() !== "") {
         setBackground(reported.trim());
+        setBarStyle(barStyleFor(reported));
       }
     },
     [answer, signIn],
@@ -249,7 +254,7 @@ export default function App() {
     return (
       <SafeAreaProvider>
         <SafeAreaView style={styles.center}>
-          <StatusBar style="auto" />
+          <StatusBar style={barStyleFor(FALLBACK_BACKGROUND)} />
           <Text style={styles.errorTitle}>Could not start Contacts</Text>
           <Text style={styles.errorBody}>{server.error.message}</Text>
           <Pressable
@@ -273,11 +278,12 @@ export default function App() {
         style={[styles.fill, { backgroundColor: background }]}
         edges={FRAME_EDGES}
       >
-        {/* `auto` picks the bar style from the background behind it, which is
-            exactly the page's own theme once it has reported one — and that
-            background is the SafeAreaView above, which the page's theme
-            paints. */}
-        <StatusBar style="auto" />
+        {/* Styled from the page's reported background, not the system
+            appearance: on iOS the page runs under the status bar, and "auto"
+            draws dark icons over a dark theme whenever the phone is in light
+            mode. On Android the bands behind the bar are the SafeAreaView
+            above, painted the same colour. */}
+        <StatusBar style={barStyle} />
         {origin ? (
           <WebView
             ref={webViewRef}
