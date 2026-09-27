@@ -330,7 +330,7 @@ export const en = {
     addressTitlePlaceholder: "Home",
     removeAddress: "Remove address",
     street: "Street",
-    zip: "Postal code",
+    zip: "ZIP code",
     city: "City",
     openMaps: "Open in Maps",
     birthday: "Birthday",
