@@ -239,9 +239,10 @@ branch's dependencies and the page splits silently stop working.
 
 ### The website is not meant to be found
 
-There is no SEO and no size budget, by owner decision: every page carries
-`noindex` (from `index.html`, copied into `home/` and `privacy/`), and
-`public/robots.txt` allows crawling so a crawler can see it.
+The website is unlisted (OSS_SPEC §11.3.12): every page carries `noindex`, from
+`index.html`, copied into `home/` and `privacy/`.
+
+oss-spec:unlisted-website: the web build is a testing surface; users install the app from its store listing
 
 ### Reach for the framework first
 
