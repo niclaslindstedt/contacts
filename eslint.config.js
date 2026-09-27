@@ -33,7 +33,7 @@ export default [
     files: [
       "scripts/**/*.mjs",
       "tauri/scripts/**/*.mjs",
-      ".agent/skills/**/*.mjs",
+      ".agents/skills/**/*.mjs",
     ],
     languageOptions: {
       sourceType: "module",

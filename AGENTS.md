@@ -409,7 +409,7 @@ edit needs no fragment of its own.
 
 Per §21 of `OSS_SPEC.md`, this repo ships agent skills for keeping drift-prone
 artifacts in sync with their sources of truth. Skills live under
-`.agent/skills/<name>/` and are also accessible via the `.claude/skills`
+`.agents/skills/<name>/` and are also accessible via the `.claude/skills`
 symlink.
 
 | Skill                 | When to run                                                                                                                                 |

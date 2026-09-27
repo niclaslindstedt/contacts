@@ -18,7 +18,7 @@
 // Run (leave the dev server running — it seeds fake data via VITE_SEED):
 //
 //   npm run dev &                              # http://localhost:5173/
-//   node .agent/skills/design/screenshot.mjs   # captures the recipe at every viewport
+//   node .agents/skills/design/screenshot.mjs   # captures the recipe at every viewport
 //
 // Then `Read` the PNGs written under /tmp/design-*.png, tweak code,
 // rerun. Vite HMR picks up edits without a rebuild so each loop is

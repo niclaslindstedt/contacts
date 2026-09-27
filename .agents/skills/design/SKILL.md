@@ -16,7 +16,7 @@ is what makes "tuning the spacing" fast — without it the loop is "edit,
 reload, switch to phone, scroll, sigh, swap back" and an hour disappears.
 
 This skill ships a small harness at
-`.agent/skills/design/screenshot.mjs` that:
+`.agents/skills/design/screenshot.mjs` that:
 
 - Connects to whatever app server is already running (`npm run dev` on
   port 5173 preferred; falls back to the vite preview server on 4173).
@@ -79,7 +79,7 @@ your code edit
    │
    ▼  vite HMR (already running via `npm run dev`)
    │
-   ▼  node .agent/skills/design/screenshot.mjs
+   ▼  node .agents/skills/design/screenshot.mjs
    │       ├─ resolves chromium (playwright / @playwright/test / playwright-core)
    │       ├─ resolves base URL (dev 5173 → preview 4173 fallback)
    │       ├─ for each --viewports entry:
@@ -133,7 +133,7 @@ Concretely:
    `npm run dev:clean` for an unseeded (empty) address book.
 
 2. **Edit the recipe** at the bottom of
-   `.agent/skills/design/screenshot.mjs`. The default recipe opens the
+   `.agents/skills/design/screenshot.mjs`. The default recipe opens the
    appearance popover on the seeded contact — replace it with the flow
    that lands on the state you want to see. Use the exported helpers
    (`openApp`, `enterEditMode`, `openAppearancePopover`,
@@ -146,7 +146,7 @@ Concretely:
 4. **Run the harness.**
 
    ```sh
-   node .agent/skills/design/screenshot.mjs --viewports desktop,mobile
+   node .agents/skills/design/screenshot.mjs --viewports desktop,mobile
    ```
 
    Vite HMR has already shipped the edit to the running tab; the fresh

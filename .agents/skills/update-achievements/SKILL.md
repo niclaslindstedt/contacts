@@ -37,12 +37,12 @@ The system lives in **four places that must stay in lockstep**:
 
 ## Tracking mechanism
 
-`.agent/skills/update-achievements/.last-updated` holds the git commit hash from
+`.agents/skills/update-achievements/.last-updated` holds the git commit hash from
 the last successful run (matching the repo's other `update-*` skills). Empty
 means "never run" — fall back to the initial commit.
 
 ```sh
-BASELINE=$(cat .agent/skills/update-achievements/.last-updated)
+BASELINE=$(cat .agents/skills/update-achievements/.last-updated)
 [ -z "$BASELINE" ] && BASELINE=$(git rev-list --max-parents=0 HEAD | tail -1)
 ```
 
@@ -177,7 +177,7 @@ grep -rhoE 'unlock\("[a-zA-Z0-9_]+"\)' src/ --include="*.ts" --include="*.tsx" |
 - [ ] `make fmt`, `make lint`, `make test`, `make build` all pass.
 - [ ] Write the new baseline:
 
-      git rev-parse HEAD > .agent/skills/update-achievements/.last-updated
+      git rev-parse HEAD > .agents/skills/update-achievements/.last-updated
 
 ## Verification
 
