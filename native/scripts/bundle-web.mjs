@@ -109,13 +109,18 @@ if (count === 0 || !files["index.html"]) {
  *  (App Store guideline 3.1.1) or the achievements. A `dist/` left by a
  *  website build — which `--skip-build` would re-zip — carries both. Looks for
  *  the GitHub Sponsors fallback, for whatever `VITE_DONATE_URL` this shell has
- *  set, and for the achievements ledger's storage key, which only the
- *  achievements wiring (`src/app/useAchievements.ts`) spells. */
+ *  set, for the achievements ledger's storage key, which only the
+ *  achievements wiring (`src/app/useAchievements.ts`) spells, and for lines
+ *  only the achievements feature page (`docs/features/achievements.md`) has. */
 function assertWebsiteOnlyAbsent(files) {
   const needles = [
     ["a Donate link", "github.com/sponsors"],
     ["a Donate link", process.env.VITE_DONATE_URL?.trim()],
     ["the achievements", "contacts:achievements"],
+    // The achievements feature page (docs/features/achievements.md), which the
+    // What's new dialog would otherwise open.
+    ["the achievements page", "also a **trophy** to unlock"],
+    ["the achievements page", "opens the achievements tour"],
   ].filter(([, needle]) => needle);
   const decoder = new TextDecoder();
   for (const [path, bytes] of Object.entries(files)) {

@@ -11,16 +11,29 @@ import {
 
 import changelogMd from "../../CHANGELOG.md?raw";
 
+import { ACHIEVEMENTS_BUILT } from "./achievementsBuilt.ts";
+
 // Parsed once at module load — the markdown is static, so the release list
 // never changes between renders.
 export const RELEASES = parseChangelog(changelogMd);
 
 // Every `docs/features/*.md` becomes a slug-keyed feature doc; a changelog
 // bullet's `[Learn more](feature:<slug>)` opens the matching one in place.
+//
+// Except the achievements page in a build without achievements (the phone and
+// desktop apps; `./achievementsBuilt.ts`): it describes a feature those builds
+// don't have. Its glob is the one in the dropped branch, so the page's text is
+// not in those bundles at all. The released bullets that link it stay — they
+// are the record of what shipped — and their Learn more simply goes inert.
 export const FEATURE_DOCS = buildFeatureDocs(
-  import.meta.glob("../../docs/features/*.md", {
-    query: "?raw",
-    import: "default",
-    eager: true,
-  }),
+  ACHIEVEMENTS_BUILT
+    ? import.meta.glob("../../docs/features/*.md", {
+        query: "?raw",
+        import: "default",
+        eager: true,
+      })
+    : import.meta.glob(
+        ["../../docs/features/*.md", "!../../docs/features/achievements.md"],
+        { query: "?raw", import: "default", eager: true },
+      ),
 );
