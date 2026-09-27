@@ -12,6 +12,7 @@ import {
 
 import {
   useApplyTheme,
+  useThemeColorMeta,
   type ThemeAppearance,
 } from "@niclaslindstedt/oss-framework/theme";
 import {
@@ -100,6 +101,7 @@ export function App() {
   const t = useT();
   const [appearance, setAppearance] = useState<ThemeAppearance>(APP_LOOK);
   useApplyTheme(appearance);
+  useThemeColorMeta(appearance);
 
   // Mirror the active density preset onto `<html>` as a discrete attribute. The
   // framework's theme engine publishes density only as the `--density-row-py` /
