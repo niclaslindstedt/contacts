@@ -61,7 +61,7 @@ jobs:
       run:
         working-directory: tauri
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
@@ -83,7 +83,7 @@ jobs:
       run:
         working-directory: tauri
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
@@ -134,7 +134,7 @@ jobs:
         if: inputs.platform != 'all' && inputs.platform != matrix.target
         run: echo "not selected"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: inputs.platform == 'all' || inputs.platform == matrix.target
       - uses: ./.github/actions/package-desktop
         if: inputs.platform == 'all' || inputs.platform == matrix.target
