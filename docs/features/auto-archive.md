@@ -1,7 +1,7 @@
 # Auto-archive
 
 A contact can **file itself away on a date you pick** — handy for someone you
-only need around for a while, like the pizzeria you add for a week's holiday and
+only need around for a while, like the pizzeria you add for a week's vacation and
 want gone when you're home.
 
 At the bottom of the edit view, the **Auto-archive** section carries a **Time

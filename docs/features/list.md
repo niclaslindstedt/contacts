@@ -60,19 +60,19 @@ just the contacts sharing it, with that facet already applied in the bar.
 ## Select mode
 
 The **Select** button turns the list into a multi-select — or **Ctrl / Cmd-click**
-any row to jump straight in with it ticked. A floating toolbar carries the count,
+any row to jump straight in with it checked. A floating toolbar carries the count,
 a **Select all** toggle, and the batch **Copy** (one vCard block to the
 clipboard), **Export** (to a vCard or CSV file), and **Delete** actions —
 deleting asks you to confirm before the selection goes, and one **Undo** brings
 it all back. With several selected, **dragging any one of them** moves the whole
-selection into a folder, and the **right-click menu** on any ticked row acts on
+selection into a folder, and the **right-click menu** on any checked row acts on
 all of them too: its labels turn into **Move 5 contacts to folder**, **Archive 5
 contacts**, and **Delete 5 contacts**, with the multi-card delete behind the
 same confirmation.
 
 With a selection made, the header's **Edit selected** button (the pencil) opens a
 bulk editor — a centered dialog on a wide screen, a full-screen sheet on a phone.
-Pick any mix of three changes and they apply to every ticked card at once, as a
+Pick any mix of three changes and they apply to every checked card at once, as a
 single **Undo**-able step: **add tags** (folded onto each card, skipping any it
 already has), **set a relationship** (or clear it), and **switch the card type**
 to person or company. Each control starts at **Leave unchanged**, so the edit
@@ -80,12 +80,12 @@ only touches the facets you actually set — the rest of every card is left exac
 as it was. Switching people to companies removes their person-only fields (name,
 birthday, and important dates), just like the switch on a single card.
 
-Picking a run of contacts is quick: tick one, then **Shift-click** another and
-every card between them is ticked as well. The range follows what's on screen,
+Picking a run of contacts is quick: check one, then **Shift-click** another and
+every card between them is checked as well. The range follows what's on screen,
 so it sweeps straight across folder headings — a Shift-click that starts in one
-folder and ends in the folder below ticks every visible row in between, and
+folder and ends in the folder below checks every visible row in between, and
 skips whatever is tucked inside a folder you've collapsed. Each folder heading
-also grows its own **checkbox** while selecting — one tap ticks everyone in that
+also grows its own **checkbox** while selecting — one tap checks everyone in that
 folder, another clears them.
 
 Opening a contact floats its card over the page — swipe it down (or press
