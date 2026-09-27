@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { execSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
+import { resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
@@ -9,6 +10,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, type Plugin } from "vite";
 
 import { appPwa } from "./pwa-plugin.ts";
+import { withoutSourceLinks } from "./src/app/withoutSourceLinks.ts";
 
 // The production origin — the alias pages point their Open Graph URLs here
 // regardless of which deploy slot built them.
@@ -97,11 +99,14 @@ function spliceRouteHead(html: string, route: RouteHead): string {
     `$1${desc}$2`,
     "og:description",
   );
-  sub(
-    /(<meta property="og:url" content=")[^"]*("\s*\/>)/,
-    `$1${pageUrl}$2`,
-    "og:url",
-  );
+  // The phone and desktop builds carry no og:url (`withoutWebsiteHead`).
+  if (!appBuild) {
+    sub(
+      /(<meta property="og:url" content=")[^"]*("\s*\/>)/,
+      `$1${pageUrl}$2`,
+      "og:url",
+    );
+  }
   sub(
     /(<meta\s+name="twitter:title"\s+content=")[\s\S]*?("\s*\/>)/,
     `$1${title}$2`,
@@ -230,6 +235,45 @@ const shellBuild = process.env.VITE_SHELL_BUILD === "on";
 // than hidden.
 const nativeBuild = process.env.VITE_NATIVE_BUILD === "on";
 
+// Every build that is not the website: the phone app and the desktop app.
+// Neither carries a link back to the source or the website's domain (the
+// owner's decision D17, `src/app/sourceLinks.ts`) — not in the app, and not in
+// what this config writes around it either.
+const appBuild = nativeBuild || shellBuild;
+
+// The website's own `<head>` and files, left out of an app build: the social
+// card tags that point at the website's domain (og:url, og:image,
+// twitter:image — an app has no page to share), the `/home/` alias (the page
+// behind it is the website's alone, see `src/main.tsx`), and `public/CNAME`,
+// which names the domain for GitHub Pages. The markdown What's new renders —
+// the CHANGELOG and the feature docs, each a `.md?raw` module — is loaded
+// without its source links (`src/app/withoutSourceLinks.ts`).
+// `scripts/website-only.mjs` refuses an app webroot that still carries the
+// domain.
+function withoutWebsiteHead(): Plugin {
+  let outDir = "dist";
+  return {
+    name: "without-website-head",
+    apply: "build",
+    enforce: "pre",
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir);
+    },
+    load(id) {
+      const [file, query] = id.split("?");
+      if (query !== "raw" || !file!.endsWith(".md")) return null;
+      const md = withoutSourceLinks(readFileSync(file!, "utf8"));
+      return `export default ${JSON.stringify(md)};`;
+    },
+    transformIndexHtml(html) {
+      return html.replace(/\s*<meta\b[^>]*niclaslindstedt[^>]*>/g, "");
+    },
+    closeBundle() {
+      rmSync(resolve(outDir, "CNAME"), { force: true });
+    },
+  };
+}
+
 export default defineConfig({
   base,
   build: {
@@ -269,7 +313,9 @@ export default defineConfig({
     preact(),
     tailwindcss(),
     appPwa({ base, version, ignorePaths, serviceWorker: !shellBuild }),
-    emitRouteAlias(SHOWCASE_ROUTE, "home"),
+    ...(appBuild
+      ? [withoutWebsiteHead()]
+      : [emitRouteAlias(SHOWCASE_ROUTE, "home")]),
     emitRouteAlias(PRIVACY_ROUTE, "privacy"),
   ],
 });

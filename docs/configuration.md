@@ -41,8 +41,8 @@ with a flag — `VITE_NATIVE_BUILD=on` by `native/scripts/bundle-web.mjs`,
 `VITE_SHELL_BUILD=on` by `tauri/scripts/bundle-web.mjs` — that Vite turns into
 a compile-time constant, so the row and its URL, fallback included, are folded
 out of those bundles rather than hidden (`src/app/donate.ts`). Setting
-`VITE_DONATE_URL` for an app build changes nothing, and the phone bundle script
-refuses to zip a `dist/` that carries the link.
+`VITE_DONATE_URL` for an app build changes nothing, and both bundle scripts
+refuse a webroot that carries the link (`scripts/website-only.mjs`).
 
 ## No achievements in the apps
 
@@ -52,10 +52,24 @@ ship without the trophies, the tour, the unlock celebration and the
 through `src/app/achievementsBuilt.ts`: in those builds the achievements wiring
 (`src/app/useAchievementsLayer.tsx`), the catalog and its English and Swedish
 copy are folded out of the bundle, and every `unlock(…)` in the app (all of them
-come from `src/app/achievementsGate.ts`) does nothing. The phone bundle script
-refuses to zip a `dist/` that still carries them. A preference saved on the
+come from `src/app/achievementsGate.ts`) does nothing. Both bundle scripts refuse
+a webroot that still carries them. A preference saved on the
 website (`disableAchievements`) keeps loading everywhere; the apps simply never
 read it.
+
+## No link to the source in the apps
+
+The links back to the source are the website's alone as well — the owner's
+decision for every phone and desktop build. The apps carry no Source code row
+(the About dropdown holds What's new alone), no GitHub contact on the privacy
+page (it names the app rather than the website's origin and gives
+`support@agilator.se` instead), no `/home/` page, no desktop-app feature page
+(it is about the releases page), no releases or repository link in What's new,
+and none of the website's own `<head>` tags or `CNAME`. The same two flags
+decide it, through `src/app/sourceLinks.ts`, and `vite.config.ts` loads the
+CHANGELOG and the feature docs without their source links
+(`src/app/withoutSourceLinks.ts`). Both bundle scripts refuse a webroot that
+spells `niclaslindstedt` anywhere, in any file (`scripts/website-only.mjs`).
 
 The Dropbox app behind `VITE_DROPBOX_APP_KEY` must list, under **Settings →
 OAuth 2 → Redirect URIs** in the App Console, every redirect URI the app signs

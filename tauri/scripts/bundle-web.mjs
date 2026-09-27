@@ -35,6 +35,11 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  assertWebsiteOnlyAbsent,
+  readTree,
+} from "../../scripts/website-only.mjs";
+
 const APP_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REPO_DIR = resolve(APP_DIR, "..");
 const DIST_DIR = join(REPO_DIR, "dist");
@@ -96,6 +101,20 @@ if (worker.length) {
     `✗ ${worker.join(", ")} is in the webroot — this build ran without ` +
       `VITE_SHELL_BUILD=on. Rebuild through this script rather than copying dist/.`,
   );
+  process.exit(1);
+}
+
+// Nor may it carry what only the website does — a Donate link, the
+// achievements, or a link back to the source (anything spelling the owner's
+// name) — which the same flag compiles out (`../../scripts/website-only.mjs`).
+try {
+  assertWebsiteOnlyAbsent(
+    readTree(OUT_DIR),
+    "The desktop app must not. Rebuild through this script rather than " +
+      "copying dist/, so VITE_SHELL_BUILD=on compiles it out.",
+  );
+} catch (err) {
+  console.error(`✗ webroot/${err.message}`);
   process.exit(1);
 }
 

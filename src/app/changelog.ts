@@ -13,6 +13,7 @@ import changelogMd from "../../CHANGELOG.md?raw";
 
 import { ACHIEVEMENTS_BUILT } from "./achievementsBuilt.ts";
 import { withoutMissingFeatureLinks } from "./featureLinks.ts";
+import { SOURCE_LINKS_BUILT } from "./sourceLinks.ts";
 
 // Every `docs/features/*.md` becomes a slug-keyed feature doc; a changelog
 // bullet's `[Learn more](feature:<slug>)` opens the matching one in place.
@@ -22,15 +23,25 @@ import { withoutMissingFeatureLinks } from "./featureLinks.ts";
 // don't have. Its glob is the one in the dropped branch, so the page's text is
 // not in those bundles at all. The released bullets that link it stay — they
 // are the record of what shipped — and lose their Learn more.
+//
+// Those builds carry no link back to the source either (`./sourceLinks.ts`),
+// so they leave out the desktop-app page too: it is about downloading the app
+// from the repository's releases page. Whatever else in the markdown links the
+// source is taken out as it is loaded (`withoutSourceLinks`, applied by
+// `vite.config.ts`).
 export const FEATURE_DOCS = buildFeatureDocs(
-  ACHIEVEMENTS_BUILT
+  ACHIEVEMENTS_BUILT && SOURCE_LINKS_BUILT
     ? import.meta.glob("../../docs/features/*.md", {
         query: "?raw",
         import: "default",
         eager: true,
       })
     : import.meta.glob(
-        ["../../docs/features/*.md", "!../../docs/features/achievements.md"],
+        [
+          "../../docs/features/*.md",
+          "!../../docs/features/achievements.md",
+          "!../../docs/features/desktop-app.md",
+        ],
         { query: "?raw", import: "default", eager: true },
       ),
 );

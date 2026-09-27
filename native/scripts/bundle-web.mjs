@@ -9,15 +9,16 @@
 // exactly what a localhost origin wants — with one flag, `VITE_NATIVE_BUILD=on`.
 // It is about the channel rather than the medium: it compiles out what only
 // the website carries — the side menu's Donate row (App Store guideline 3.1.1;
-// see `src/app/donate.ts`) and the achievements (`src/app/achievementsGate.ts`).
+// see `src/app/donate.ts`), the achievements (`src/app/achievementsGate.ts`),
+// and every link back to the source (`src/app/sourceLinks.ts`).
 // Nothing else in `src/` changes for the app. If the wrapper ever needs the
 // web app to behave differently in some other way, that is a sign it has
 // stopped being thin.
 //
 // The flag is build-time, so `--skip-build` re-zips whatever the last build
-// left in `dist/` — and a website build there carries the Donate link and the
-// achievements. The zip is refused when either is found in it
-// (`assertWebsiteOnlyAbsent`).
+// left in `dist/` — and a website build there carries the Donate link, the
+// achievements and the source links. The zip is refused when any is found in
+// it (`assertWebsiteOnlyAbsent`).
 //
 // Usage:
 //   node scripts/bundle-web.mjs                 # build the site, then zip it
@@ -45,6 +46,8 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { zipSync } from "fflate";
+
+import { assertWebsiteOnlyAbsent } from "../../scripts/website-only.mjs";
 
 const APP_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REPO_DIR = resolve(APP_DIR, "..");
@@ -105,39 +108,21 @@ if (count === 0 || !files["index.html"]) {
   );
 }
 
-/** Refuse a webroot that carries what only the website may: a Donate link
- *  (App Store guideline 3.1.1) or the achievements. A `dist/` left by a
- *  website build — which `--skip-build` would re-zip — carries both. Looks for
- *  the GitHub Sponsors fallback, for whatever `VITE_DONATE_URL` this shell has
- *  set, for the achievements ledger's storage key, which only the
- *  achievements wiring (`src/app/useAchievements.ts`) spells, and for lines
- *  only the achievements feature page (`docs/features/achievements.md`) has. */
-function assertWebsiteOnlyAbsent(files) {
-  const needles = [
-    ["a Donate link", "github.com/sponsors"],
-    ["a Donate link", process.env.VITE_DONATE_URL?.trim()],
-    ["the achievements", "contacts:achievements"],
-    // The achievements feature page (docs/features/achievements.md), which the
-    // What's new dialog would otherwise open.
-    ["the achievements page", "also a **trophy** to unlock"],
-    ["the achievements page", "opens the achievements tour"],
-  ].filter(([, needle]) => needle);
-  const decoder = new TextDecoder();
-  for (const [path, bytes] of Object.entries(files)) {
-    if (!/\.(html|js|mjs|css|json|webmanifest|txt|xml)$/.test(path)) continue;
-    const text = decoder.decode(bytes);
-    const hit = needles.find(([, needle]) => text.includes(needle));
-    if (hit) {
-      throw new Error(
-        `dist/${path} carries ${hit[0]} (${hit[1]}) — the phone app must ` +
-          `not. Rebuild through this script (drop --skip-build) so ` +
-          `VITE_NATIVE_BUILD=on compiles it out.`,
-      );
-    }
-  }
+// Refuse a webroot that carries what only the website may: a Donate link
+// (App Store guideline 3.1.1), the achievements, or a link back to the source
+// — anything spelling the owner's name (`../../scripts/website-only.mjs`). A
+// `dist/` left by a website build — which `--skip-build` would re-zip —
+// carries all three.
+try {
+  assertWebsiteOnlyAbsent(
+    files,
+    "The phone app must not. Rebuild through this script (drop " +
+      "--skip-build) so VITE_NATIVE_BUILD=on compiles it out.",
+  );
+} catch (error) {
+  console.error(`\n✗ dist/${error.message}\n`);
+  process.exit(1);
 }
-
-assertWebsiteOnlyAbsent(files);
 
 // Deterministic zip: every entry pinned to the ZIP epoch (1980-01-01), so the
 // artifact is reproducible instead of drifting with the clock.

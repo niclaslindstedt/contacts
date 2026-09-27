@@ -6,11 +6,17 @@
 // that send contact data off the browser only when the user explicitly connects
 // one, so this policy covers both cases. It is English-only by design (a legal
 // page, not chrome).
+//
+// The phone and desktop apps carry the same policy without the website's
+// domain or a link back to the source (`SOURCE_LINKS_BUILT`): they name the
+// app rather than an origin, and send questions to the company's support
+// address instead of the repository's issues.
 import { type ReactNode } from "react";
 
 import { ArrowLeftIcon } from "@niclaslindstedt/oss-framework/components";
 
 import { ACHIEVEMENTS_BUILT } from "./achievementsBuilt.ts";
+import { SOURCE_LINKS_BUILT, SUPPORT_EMAIL } from "./sourceLinks.ts";
 
 // Last meaningful change to the policy text below. Bump this whenever the
 // wording is edited — it renders verbatim at the top of the page and is the
@@ -36,25 +42,42 @@ export function PrivacyPage() {
         <Section title="Summary">
           <p>
             <span className="text-meta">Contacts</span> is a local-first address
-            book app served as a static site at{" "}
-            <span className="text-path">contacts.niclaslindstedt.se</span>. It
-            runs entirely in your browser. There is no backend of our own, no
-            account, no cookies, and no analytics or tracking. By default your
-            contacts are stored only on your device and never leave it. You may
-            optionally connect a cloud backend (Dropbox, or iCloud Drive in the
-            App Store app) to sync your address book across your own devices —
-            in that case, and only then, your contacts are sent to that one
-            provider at your explicit request. The project authors never receive
-            your contacts in any configuration.
+            book app
+            {SOURCE_LINKS_BUILT ? (
+              <>
+                {" "}
+                served as a static site at{" "}
+                <span className="text-path">contacts.niclaslindstedt.se</span>.
+                It runs entirely in your browser.
+              </>
+            ) : (
+              ". It runs entirely on your device."
+            )}{" "}
+            There is no backend of our own, no account, no cookies, and no
+            analytics or tracking. By default your contacts are stored only on
+            your device and never leave it. You may optionally connect a cloud
+            backend (Dropbox, or iCloud Drive in the App Store app) to sync your
+            address book across your own devices — in that case, and only then,
+            your contacts are sent to that one provider at your explicit
+            request. The project authors never receive your contacts in any
+            configuration.
           </p>
         </Section>
 
         <Section title="What the app stores">
           <p>
             On your device, inside your browser&apos;s{" "}
-            <code className="text-meta">localStorage</code> for the origin{" "}
-            <span className="text-path">contacts.niclaslindstedt.se</span>, the
-            app keeps:
+            <code className="text-meta">localStorage</code>
+            {SOURCE_LINKS_BUILT ? (
+              <>
+                {" "}
+                for the origin{" "}
+                <span className="text-path">contacts.niclaslindstedt.se</span>
+              </>
+            ) : (
+              " for the app"
+            )}
+            , the app keeps:
           </p>
           <ul className="ml-5 list-disc space-y-1">
             <li>
@@ -198,11 +221,12 @@ export function PrivacyPage() {
 
         <Section title="Changes to this policy">
           <p>
-            Material changes are tracked in the public commit history of the
-            source repository. The <em>Last updated</em> date at the top of this
-            page reflects the most recent edit. Should a future version add
-            another optional feature that sends data anywhere, this policy will
-            be updated to describe it before that feature ships enabled.
+            {SOURCE_LINKS_BUILT &&
+              "Material changes are tracked in the public commit history of the source repository. "}
+            The <em>Last updated</em> date at the top of this page reflects the
+            most recent edit. Should a future version add another optional
+            feature that sends data anywhere, this policy will be updated to
+            describe it before that feature ships enabled.
           </p>
           <p>
             The store listings link to{" "}
@@ -217,26 +241,47 @@ export function PrivacyPage() {
         </Section>
 
         <Section title="Contact">
-          <p>
-            For security reports, see{" "}
-            <a
-              href="https://github.com/niclaslindstedt/contacts/security/advisories/new"
-              className="text-link hover:underline"
-            >
-              GitHub Security Advisories
-            </a>
-            . For everything else, open an issue at{" "}
-            <a
-              href="https://github.com/niclaslindstedt/contacts/issues"
-              className="text-link hover:underline"
-            >
-              github.com/niclaslindstedt/contacts
-            </a>
-            .
-          </p>
+          {SOURCE_LINKS_BUILT ? (
+            <WebsiteContact />
+          ) : (
+            <p>
+              For questions and security reports, write to{" "}
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                className="text-link hover:underline"
+              >
+                {SUPPORT_EMAIL}
+              </a>
+              .
+            </p>
+          )}
         </Section>
       </article>
     </div>
+  );
+}
+
+// The website's contact: the repository's advisories and issues. Only the
+// website renders it, so the phone and desktop bundles fold it out.
+function WebsiteContact() {
+  return (
+    <p>
+      For security reports, see{" "}
+      <a
+        href="https://github.com/niclaslindstedt/contacts/security/advisories/new"
+        className="text-link hover:underline"
+      >
+        GitHub Security Advisories
+      </a>
+      . For everything else, open an issue at{" "}
+      <a
+        href="https://github.com/niclaslindstedt/contacts/issues"
+        className="text-link hover:underline"
+      >
+        github.com/niclaslindstedt/contacts
+      </a>
+      .
+    </p>
   );
 }
 

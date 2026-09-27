@@ -46,8 +46,14 @@ const isHome = path.endsWith("/home");
 // root object to create. `StrictMode` is gone with it: Preact has no
 // double-invoking dev mode, so `preact/compat` only aliases it to a plain
 // `Fragment` and wrapping the tree in it would imply a check that never runs.
+//
+// `/home/` — what the app does and why it asks for storage access, with its
+// links back to the source — is the website's alone: the phone and desktop
+// apps carry no such link (`src/app/sourceLinks.ts`), so in those builds the
+// raw flags fold the branch and the page out of the bundle, and `/home` opens
+// the app.
 function loadPage() {
-  if (isHome) {
+  if (!(__NATIVE_BUILD__ || __SHELL_BUILD__) && isHome) {
     return import("./app/ShowcasePage.tsx").then((m) => m.ShowcasePage);
   }
   if (isPrivacy) {

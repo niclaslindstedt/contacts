@@ -37,6 +37,7 @@ import {
   subtreeFolderIds,
 } from "./contactList.ts";
 import { DONATE_URL } from "./donate.ts";
+import { SOURCE_URL } from "./sourceLinks.ts";
 import { FavoriteIcon, IceIcon } from "./icons.tsx";
 import { MoveToFolderMenu } from "./MoveToFolderMenu.tsx";
 import {
@@ -77,9 +78,9 @@ const ABOUT_PLACEMENT: FloatingPlacement = {
   coordinateSpace: "viewport",
 };
 
-// The project links surfaced in the footer (Donate) and the About dropdown
-// (Source code).
-const SOURCE_URL = "https://github.com/niclaslindstedt/contacts";
+// The About dropdown's Source code row links the repository — on the website
+// only (`SOURCE_URL` in `./sourceLinks.ts`); the phone and desktop apps carry
+// no link back to the source, so their dropdown holds What's new alone.
 // The subtitle under the Source row — the build identifier, composed at build
 // time (`__BUILD_LABEL__`, see `vite.config.ts`): the version, the CI run
 // number, the deploy slot (`-pre` for preview, `-br` for a branch build), and
@@ -871,7 +872,8 @@ export function SideMenuContent({
 
       {/* The About dropdown — portalled and positioned by the framework
           `FloatingPanel`. "What's new" opens the changelog dialog; "Source
-          code" is an external link with the build label as its subtitle. */}
+          code" is an external link with the build label as its subtitle, on
+          the website only (`SOURCE_URL`). */}
       <FloatingPanel
         open={aboutOpen}
         onClose={() => setAboutOpen(false)}
@@ -888,15 +890,17 @@ export function SideMenuContent({
         >
           {t("menu.whatsNew")}
         </FooterRow>
-        <FooterLink
-          icon={<ExternalLinkIcon className="h-5 w-5" />}
-          href={SOURCE_URL}
-          sublabel={BUILD_LABEL}
-          external
-          onClick={() => setAboutOpen(false)}
-        >
-          {t("menu.source")}
-        </FooterLink>
+        {SOURCE_URL && (
+          <FooterLink
+            icon={<ExternalLinkIcon className="h-5 w-5" />}
+            href={SOURCE_URL}
+            sublabel={BUILD_LABEL}
+            external
+            onClick={() => setAboutOpen(false)}
+          >
+            {t("menu.source")}
+          </FooterLink>
+        )}
       </FloatingPanel>
 
       {/* The cursor-following label of whatever's mid-drag — portalled to the
