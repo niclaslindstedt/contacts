@@ -19,6 +19,8 @@ import {
   SparklesIcon,
 } from "@niclaslindstedt/oss-framework/components";
 
+import { ACHIEVEMENTS_BUILT } from "./achievementsBuilt.ts";
+
 // BASE_URL carries the slot prefix (`/`, `/preview/`, `/branch/`) with a
 // trailing slash, so these resolve correctly under every deploy slot.
 const APP_URL = import.meta.env.BASE_URL;
@@ -133,8 +135,8 @@ export function ShowcasePage() {
             <li>
               <strong className="text-fg-bright">Make it yours</strong> — pick a
               theme, a font, a text size, and your language (English or
-              Swedish); undo and redo your changes, and earn achievements as you
-              go.
+              Swedish); undo and redo your changes
+              {ACHIEVEMENTS_BUILT && ", and earn achievements as you go"}.
             </li>
           </ul>
         </Section>

@@ -221,17 +221,19 @@ const version = process.env.GITHUB_SHA
 // local disk and then serve the page from ITS copy. `__SHELL_BUILD__` carries
 // the same fact into the app, where it switches off the update prompt that has
 // nothing left to prompt about — and, with `__NATIVE_BUILD__` below, leaves out
-// the Donate row, which only the website carries.
+// the Donate row and the achievements, which only the website carries.
 const shellBuild = process.env.VITE_SHELL_BUILD === "on";
 
 // A build for the PHONE WRAPPER (native/), set by `native/scripts/bundle-web.mjs`.
 //
-// It changes exactly one thing, and it is about the channel rather than the
-// medium: the side menu's Donate row is left out (`src/app/donate.ts`). With
-// `__SHELL_BUILD__` it marks every build that is not the website — a payment
-// link outside Apple's is an App Store rejection (guideline 3.1.1), and the
-// listings promise nothing is sold. Both are compile-time constants, so the
-// row and its URL are folded out of those bundles rather than hidden.
+// It is about the channel rather than the medium: what only the website
+// carries is left out — the side menu's Donate row (`src/app/donate.ts`) and
+// the achievements (`src/app/achievementsBuilt.ts`). With `__SHELL_BUILD__` it
+// marks every build that is not the website — a payment link outside Apple's
+// is an App Store rejection (guideline 3.1.1), the listings promise nothing is
+// sold, and no Nird app ships achievements outside the website. Both are
+// compile-time constants, so those parts are folded out of the bundles rather
+// than hidden.
 const nativeBuild = process.env.VITE_NATIVE_BUILD === "on";
 
 export default defineConfig({

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { describe, expect, it } from "vitest";
 
-import { en } from "../src/app/i18n/en.ts";
-import { sv } from "../src/app/i18n/sv.ts";
+import { enAchievements } from "../src/app/i18n/enAchievements.ts";
+import { svAchievements } from "../src/app/i18n/svAchievements.ts";
 import { SPECS } from "../src/app/achievements.ts";
 
 // The achievement copy is fully translated: English is the source of the
-// `Catalog` type and Swedish must mirror it key-for-key. `en.ts`/`sv.ts` are
-// checked in the same file so a missing or empty Swedish leaf fails here rather
+// `AchievementsCopy` type and Swedish must mirror it key-for-key. The two
+// files — apart from the main catalogs, because only the website carries them
+// — are checked together so a missing or empty Swedish leaf fails here rather
 // than shipping an untranslated trophy.
 
 type Tree = Record<string, unknown>;
@@ -21,8 +22,8 @@ function leafPaths(obj: Tree, prefix = ""): string[] {
   });
 }
 
-const enAch = en.achievements as unknown as Tree;
-const svAch = sv.achievements as unknown as Tree;
+const enAch = enAchievements as unknown as Tree;
+const svAch = svAchievements as unknown as Tree;
 
 describe("achievements i18n parity", () => {
   it("Swedish mirrors English key-for-key under achievements", () => {
@@ -43,7 +44,7 @@ describe("achievements i18n parity", () => {
 
   it("carries a name and condition for every catalog id, in both locales", () => {
     for (const { id } of SPECS) {
-      for (const cat of [en.achievements.catalog, sv.achievements.catalog]) {
+      for (const cat of [enAchievements.catalog, svAchievements.catalog]) {
         const entry = (
           cat as Record<string, { name: string; condition: string }>
         )[id];
@@ -56,7 +57,7 @@ describe("achievements i18n parity", () => {
 
   it("carries a learnMore exactly where the spec declares one", () => {
     for (const spec of SPECS) {
-      for (const cat of [en.achievements.catalog, sv.achievements.catalog]) {
+      for (const cat of [enAchievements.catalog, svAchievements.catalog]) {
         const entry = (cat as Record<string, { learnMore?: string }>)[spec.id];
         if (spec.hasLearnMore) {
           expect(
@@ -75,7 +76,7 @@ describe("achievements i18n parity", () => {
 
   it("has no catalog copy for an id that no longer exists", () => {
     const ids = new Set(SPECS.map((s) => s.id));
-    for (const key of Object.keys(en.achievements.catalog)) {
+    for (const key of Object.keys(enAchievements.catalog)) {
       expect(ids.has(key), `orphan catalog copy: ${key}`).toBe(true);
     }
   });

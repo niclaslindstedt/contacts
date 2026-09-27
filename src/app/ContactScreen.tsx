@@ -9,7 +9,7 @@ import {
 } from "@niclaslindstedt/oss-framework/components";
 import { downloadText, MIME_VCARD } from "@niclaslindstedt/oss-framework/files";
 import { SyncStatus } from "@niclaslindstedt/oss-framework/sync";
-import { unlock } from "@niclaslindstedt/oss-framework/achievements";
+import { unlock } from "./achievementsGate.ts";
 
 import { ContactEditView } from "./ContactEditView.tsx";
 import { ContactIdentity } from "./ContactIdentity.tsx";

@@ -13,7 +13,7 @@ import {
   type Namespace,
   type NamespaceAppearance,
 } from "@niclaslindstedt/oss-framework/namespaces";
-import { unlock } from "@niclaslindstedt/oss-framework/achievements";
+import { unlock } from "./achievementsGate.ts";
 import { useLocalStorageState } from "@niclaslindstedt/oss-framework/hooks";
 
 import { docKey } from "./useContactStore.ts";

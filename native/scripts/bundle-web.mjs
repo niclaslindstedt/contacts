@@ -7,15 +7,17 @@
 //
 // The web build is `npm run build` at the repo root — base `/`, which is
 // exactly what a localhost origin wants — with one flag, `VITE_NATIVE_BUILD=on`.
-// It is about the channel rather than the medium: it compiles out the side
-// menu's Donate row, which only the website may carry (App Store guideline
-// 3.1.1; see `src/app/donate.ts`). Nothing else in `src/` changes for the app.
-// If the wrapper ever needs the web app to behave differently in some other
-// way, that is a sign it has stopped being thin.
+// It is about the channel rather than the medium: it compiles out what only
+// the website carries — the side menu's Donate row (App Store guideline 3.1.1;
+// see `src/app/donate.ts`) and the achievements (`src/app/achievementsGate.ts`).
+// Nothing else in `src/` changes for the app. If the wrapper ever needs the
+// web app to behave differently in some other way, that is a sign it has
+// stopped being thin.
 //
 // The flag is build-time, so `--skip-build` re-zips whatever the last build
-// left in `dist/` — and a website build there carries the Donate link. The
-// zip is refused when that link is found in it (`assertNoDonateLink`).
+// left in `dist/` — and a website build there carries the Donate link and the
+// achievements. The zip is refused when either is found in it
+// (`assertWebsiteOnlyAbsent`).
 //
 // Usage:
 //   node scripts/bundle-web.mjs                 # build the site, then zip it
@@ -103,23 +105,26 @@ if (count === 0 || !files["index.html"]) {
   );
 }
 
-/** Refuse a webroot that carries a Donate link: the phone app must not have
- *  one (App Store guideline 3.1.1), and a `dist/` left by a website build —
- *  which `--skip-build` would re-zip — does. Looks for the GitHub Sponsors
- *  fallback and for whatever `VITE_DONATE_URL` this shell has set. */
-function assertNoDonateLink(files) {
+/** Refuse a webroot that carries what only the website may: a Donate link
+ *  (App Store guideline 3.1.1) or the achievements. A `dist/` left by a
+ *  website build — which `--skip-build` would re-zip — carries both. Looks for
+ *  the GitHub Sponsors fallback, for whatever `VITE_DONATE_URL` this shell has
+ *  set, and for the achievements ledger's storage key, which only the
+ *  achievements wiring (`src/app/useAchievements.ts`) spells. */
+function assertWebsiteOnlyAbsent(files) {
   const needles = [
-    "github.com/sponsors",
-    process.env.VITE_DONATE_URL?.trim(),
-  ].filter(Boolean);
+    ["a Donate link", "github.com/sponsors"],
+    ["a Donate link", process.env.VITE_DONATE_URL?.trim()],
+    ["the achievements", "contacts:achievements"],
+  ].filter(([, needle]) => needle);
   const decoder = new TextDecoder();
   for (const [path, bytes] of Object.entries(files)) {
     if (!/\.(html|js|mjs|css|json|webmanifest|txt|xml)$/.test(path)) continue;
     const text = decoder.decode(bytes);
-    const hit = needles.find((needle) => text.includes(needle));
+    const hit = needles.find(([, needle]) => text.includes(needle));
     if (hit) {
       throw new Error(
-        `dist/${path} carries a Donate link (${hit}) — the phone app must ` +
+        `dist/${path} carries ${hit[0]} (${hit[1]}) — the phone app must ` +
           `not. Rebuild through this script (drop --skip-build) so ` +
           `VITE_NATIVE_BUILD=on compiles it out.`,
       );
@@ -127,7 +132,7 @@ function assertNoDonateLink(files) {
   }
 }
 
-assertNoDonateLink(files);
+assertWebsiteOnlyAbsent(files);
 
 // Deterministic zip: every entry pinned to the ZIP epoch (1980-01-01), so the
 // artifact is reproducible instead of drifting with the clock.

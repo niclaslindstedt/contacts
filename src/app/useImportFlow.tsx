@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { useCallback, useState } from "react";
 
-import { unlock } from "@niclaslindstedt/oss-framework/achievements";
+import { unlock } from "./achievementsGate.ts";
 import {
   Button,
   CloseIcon,

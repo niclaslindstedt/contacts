@@ -10,6 +10,8 @@ import { type ReactNode } from "react";
 
 import { ArrowLeftIcon } from "@niclaslindstedt/oss-framework/components";
 
+import { ACHIEVEMENTS_BUILT } from "./achievementsBuilt.ts";
+
 // Last meaningful change to the policy text below. Bump this whenever the
 // wording is edited — it renders verbatim at the top of the page and is the
 // only line readers have to look at to see how fresh the policy is.
@@ -63,8 +65,11 @@ export function PrivacyPage() {
               backend is selected).
             </li>
             <li>
-              Per-device preferences — your chosen theme, font, text size, other
-              appearance settings, and your achievements progress.
+              Per-device preferences — your chosen theme, font, text size,{" "}
+              {ACHIEVEMENTS_BUILT
+                ? "other appearance settings, and your achievements progress"
+                : "and other appearance settings"}
+              .
             </li>
             <li>
               Which storage backend you&apos;ve chosen, and — if you&apos;ve

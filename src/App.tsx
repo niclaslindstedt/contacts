@@ -38,11 +38,6 @@ import {
   applyFaviconHref,
   namespaceFaviconHref,
 } from "@niclaslindstedt/oss-framework/namespaces";
-import {
-  TrophyButton,
-  unlock,
-  useAchievementWatcher,
-} from "@niclaslindstedt/oss-framework/achievements";
 
 import { ArchiveScreen } from "./app/ArchiveScreen.tsx";
 import { ContactListScreen } from "./app/ContactListScreen.tsx";
@@ -52,10 +47,6 @@ import { SearchOverlay } from "./app/SearchOverlay.tsx";
 import { SyncDetailsModal } from "@niclaslindstedt/oss-framework/sync";
 import { LogViewer } from "@niclaslindstedt/oss-framework/logging";
 import { NamespacesModal } from "@niclaslindstedt/oss-framework/namespaces";
-import {
-  AchievementUnlockModal,
-  AchievementsModal,
-} from "@niclaslindstedt/oss-framework/achievements";
 
 const CloudSetupModal = lazy(() =>
   import("./app/CloudSetupModal.tsx").then((m) => ({
@@ -71,12 +62,11 @@ const SettingsModal = lazy(() =>
   import("./app/SettingsModal.tsx").then((m) => ({ default: m.SettingsModal })),
 );
 import { SideMenuContent } from "./app/SideMenuContent.tsx";
-import { buildCatalog } from "./app/achievements.ts";
+import { unlock, useAchievementsLayer } from "./app/achievementsGate.ts";
 import { useT } from "./app/i18n/index.ts";
 import { APP_LOOK } from "./app/look.ts";
 import { descendingLogStore, logStore } from "./app/log.ts";
 import { status } from "./output.ts";
-import { useAchievements } from "./app/useAchievements.ts";
 import { applyBackdropVars, useAppSettings } from "./app/useAppSettings.ts";
 import { seedBackends, useDevSeed } from "./app/dev/useDevSeed.ts";
 import { localDocBackend, useContactStore } from "./app/useContactStore.ts";
@@ -256,76 +246,20 @@ export function App() {
     [closeContactModal, setView, pinned],
   );
 
-  // Achievements (Settings → General toggles the feature off). The store is
-  // the app's — the framework owns the engine, the bus, and the trophy UI.
-  const achievementsEnabled = !settings.disableAchievements;
-  const ach = useAchievements();
-  const [tourOpen, setTourOpen] = useState(false);
-  const [unlockOpen, setUnlockOpen] = useState(false);
-
-  // The catalog and modal chrome carry translated copy, so both are composed
-  // against `t` and memoised on it — a language switch rebuilds them.
-  const catalog = useMemo(() => buildCatalog(t), [t]);
-  const achievementLabels = useMemo(
-    () => ({
-      title: t("achievements.modal.title"),
-      intro: t("achievements.modal.intro"),
-      locked: t("achievements.modal.locked"),
-      learnMore: t("achievements.modal.learnMore"),
-      close: t("achievements.modal.close"),
-      counter: (s: {
-        unlocked: number;
-        total: number;
-        earned: number;
-        max: number;
-      }) =>
-        t("achievements.modal.counter", {
-          unlocked: String(s.unlocked),
-          total: String(s.total),
-        }),
-      tierPoints: (s: { earned: number; max: number }) =>
-        t("achievements.modal.tierPoints", {
-          earned: String(s.earned),
-          max: String(s.max),
-        }),
-      tier: {
-        beginner: {
-          title: t("achievements.modal.tier.beginner.title"),
-          subtitle: t("achievements.modal.tier.beginner.subtitle"),
-        },
-        intermediate: {
-          title: t("achievements.modal.tier.intermediate.title"),
-          subtitle: t("achievements.modal.tier.intermediate.subtitle"),
-        },
-        pro: {
-          title: t("achievements.modal.tier.pro.title"),
-          subtitle: t("achievements.modal.tier.pro.subtitle"),
-        },
-        expert: {
-          title: t("achievements.modal.tier.expert.title"),
-          subtitle: t("achievements.modal.tier.expert.subtitle"),
-        },
-      },
-    }),
-    [t],
-  );
-  const unlockLabels = useMemo(
-    () => ({
-      titleOne: t("achievements.unlock.titleOne"),
-      titleOther: (n: number) =>
-        t("achievements.unlock.titleOther", { n: String(n) }),
-      dismiss: t("achievements.unlock.dismiss"),
-      close: t("achievements.unlock.close"),
-    }),
-    [t],
-  );
-  const trophyLabels = useMemo(
-    () => ({
-      open: t("achievements.trophy.open"),
-      unseen: (n: number) => t("achievements.trophy.unseen", { n: String(n) }),
-    }),
-    [t],
-  );
+  // Achievements — the website's alone (`./app/achievementsGate.ts`): in the
+  // phone and desktop builds this is an empty layer and none of it is bundled.
+  // On the website, Settings → General can still switch them off.
+  const achievements = useAchievementsLayer({
+    t,
+    data: store.data,
+    enabled: !settings.disableAchievements,
+    sync: {
+      backend: sync.backend,
+      connected: sync.connected,
+      encrypted: sync.encrypted,
+    },
+    onOpen: () => setDrawerOpen(false),
+  });
 
   // Undo lives outside the document state, so its trophy fires through the
   // manual bus rather than a derived predicate.
@@ -409,35 +343,6 @@ export function App() {
     [store, showUndoToast, t],
   );
 
-  // Run the framework watcher: derive unlocks from each document transition
-  // and drain the manual bus. The app loads synchronously, so it's `loaded`
-  // from the first render (the watcher baselines that render, so pre-existing
-  // data never backfills).
-  useAchievementWatcher({
-    catalog,
-    state: store.data,
-    unlocked: ach.unlocked,
-    loaded: true,
-    enabled: achievementsEnabled,
-    record: ach.record,
-  });
-
-  // The sync backend and encryption flag live outside the watched document, so
-  // their trophies fire through the manual bus on the state transition. The ref
-  // starts false, so a fresh connection (or a restored one on boot — a capability
-  // the user genuinely has) unlocks once; `record` dedupes any repeat.
-  const syncedRef = useRef(false);
-  useEffect(() => {
-    const synced = sync.backend !== "local" && sync.connected;
-    if (synced && !syncedRef.current) unlock("synced");
-    syncedRef.current = synced;
-  }, [sync.backend, sync.connected]);
-  const encryptedRef = useRef(false);
-  useEffect(() => {
-    if (sync.encrypted && !encryptedRef.current) unlock("encryption");
-    encryptedRef.current = sync.encrypted;
-  }, [sync.encrypted]);
-
   // The real PWA update lifecycle, driven by the app's own service worker
   // (built by `pwa-plugin.ts`). In a deployed install this raises the prompt
   // when a freshly-deployed build reaches the `waiting` state; in dev
@@ -476,8 +381,7 @@ export function App() {
     !changelogOpen &&
     !namespacesOpen &&
     !syncDetailsOpen &&
-    !tourOpen &&
-    !unlockOpen &&
+    !achievements.open &&
     !sync.pendingSetup;
   useCardEdgeSwipeOpen({
     side: position.side,
@@ -597,21 +501,6 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ns.activeSlug, backend]);
 
-  // The achievements trophy, seated as a row at the foot of the sidebar (or
-  // nothing when achievements are switched off).
-  const trophyRow = achievementsEnabled ? (
-    <TrophyButton
-      unseenCount={ach.unseen.length}
-      showLabel
-      labels={trophyLabels}
-      onClick={() => {
-        setDrawerOpen(false);
-        if (ach.unseen.length > 0) setUnlockOpen(true);
-        else setTourOpen(true);
-      }}
-    />
-  ) : null;
-
   // Re-badge the browser tab. The active *namespace*'s glyph wins when it has
   // one, so a glance at the tab tells you which workspace you're in; a contact
   // with a *custom* glyph re-badges the tab with theirs. By default — the blank
@@ -706,7 +595,7 @@ export function App() {
             setView("favorites");
             if (!pinned) setDrawerOpen(false);
           }}
-          trophy={trophyRow}
+          trophy={achievements.trophyRow}
           folderSort={settings.folderSort}
         />
       </Sidebar>
@@ -953,27 +842,7 @@ export function App() {
         </Suspense>
       )}
 
-      {/* The achievements tour — the full catalog, every feature a trophy. */}
-      <AchievementsModal
-        open={tourOpen}
-        onClose={() => setTourOpen(false)}
-        achievements={catalog}
-        unlocked={ach.unlocked}
-        labels={achievementLabels}
-      />
-
-      {/* The unlock celebration — just the freshly-earned trophies. Closing
-          it clears the unseen queue. */}
-      <AchievementUnlockModal
-        open={unlockOpen}
-        onClose={() => {
-          setUnlockOpen(false);
-          ach.clearUnseen();
-        }}
-        achievements={catalog}
-        unseenIds={ach.unseen}
-        labels={unlockLabels}
-      />
+      {achievements.modals}
     </div>
   );
 }

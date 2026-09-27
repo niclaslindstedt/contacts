@@ -8,15 +8,29 @@
 
 import { createI18n } from "@niclaslindstedt/oss-framework/i18n";
 
-import { en, type Catalog } from "./en.ts";
+import { ACHIEVEMENTS_BUILT } from "../achievementsBuilt.ts";
+import { en, type Catalog as BaseCatalog } from "./en.ts";
+import { enAchievements, type AchievementsCopy } from "./enAchievements.ts";
 
 export type Lang = "en" | "sv";
-export type { Catalog };
+
+/** Every string the app can ask for: the base catalog, plus the achievements
+ *  copy under `achievements.*`. That copy is joined on only in a build that
+ *  carries achievements (`../achievementsBuilt.ts`) — the phone and desktop
+ *  builds never ask for it, so their bundles leave it out. */
+export type Catalog = BaseCatalog & { achievements: AchievementsCopy };
 
 export const i18n = createI18n<Lang, Catalog>({
   fallbackLang: "en",
-  fallbackCatalog: en,
-  loaders: { sv: () => import("./sv.ts").then((m) => m.sv) },
+  fallbackCatalog: (ACHIEVEMENTS_BUILT
+    ? { ...en, achievements: enAchievements }
+    : en) as Catalog,
+  loaders: {
+    // The Swedish chunk joins its achievements copy on itself
+    // (`./svCatalog.ts`), so a build without achievements leaves it out of
+    // that chunk too.
+    sv: () => import("./svCatalog.ts").then((m) => m.svCatalog),
+  },
   // Two-letter codes → concrete BCP-47 tags for `<html lang>` / Intl.
   toBcp47: (lang) => (lang === "sv" ? "sv-SE" : "en-GB"),
   storageKey: "contacts:language",

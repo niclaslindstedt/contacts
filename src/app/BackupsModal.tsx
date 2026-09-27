@@ -12,7 +12,7 @@ import {
   SpinnerIcon,
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
-import { unlock as unlockTrophy } from "@niclaslindstedt/oss-framework/achievements";
+import { unlock as unlockTrophy } from "./achievementsGate.ts";
 import { downloadBlob, MIME_ZIP } from "@niclaslindstedt/oss-framework/files";
 
 import {

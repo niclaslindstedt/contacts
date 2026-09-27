@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { unlock } from "@niclaslindstedt/oss-framework/achievements";
+import { unlock } from "./achievementsGate.ts";
 
 import { parseRoute, type AppRoute, type AppView } from "./route.ts";
 import { useAppRoute } from "./useAppRoute.ts";

@@ -23,7 +23,10 @@ import {
   type PwaUpdate,
   type PwaUpdateCheckResult,
 } from "@niclaslindstedt/oss-framework/pwa";
-import { unlock as unlockTrophy } from "@niclaslindstedt/oss-framework/achievements";
+import {
+  ACHIEVEMENTS_BUILT,
+  unlock as unlockTrophy,
+} from "../achievementsGate.ts";
 import {
   downloadBlob,
   downloadText,
@@ -228,14 +231,18 @@ export function GeneralTab({
         </div>
       </Section>
 
-      <Section title={t("settings.general.achievementsTitle")}>
-        <ToggleRow
-          label={t("settings.general.disableAchievements")}
-          hint={t("settings.general.disableAchievementsHint")}
-          checked={settings.disableAchievements}
-          onChange={(next) => update("disableAchievements", next)}
-        />
-      </Section>
+      {/* Website only: the phone and desktop builds carry no achievements to
+          switch off (`../achievementsGate.ts`). */}
+      {ACHIEVEMENTS_BUILT && (
+        <Section title={t("achievements.settings.title")}>
+          <ToggleRow
+            label={t("achievements.settings.disable")}
+            hint={t("achievements.settings.disableHint")}
+            checked={settings.disableAchievements}
+            onChange={(next) => update("disableAchievements", next)}
+          />
+        </Section>
+      )}
 
       <Section title={t("settings.general.sidebarTitle")}>
         <div className="flex flex-col gap-1">

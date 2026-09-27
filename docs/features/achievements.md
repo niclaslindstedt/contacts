@@ -19,5 +19,8 @@ them, so the tour doubles as a tour of the app. Prefer a quieter app? **Settings
 → General → Disable achievements** stops the tracking and hides the trophy
 button — anything you've already earned is kept.
 
+Achievements are part of the website. The App Store and desktop apps leave them
+out.
+
 The whole tour follows your language, English or Swedish, along with the rest of
 the interface.

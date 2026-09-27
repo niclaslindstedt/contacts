@@ -35,10 +35,12 @@ picker. The app never asks what it is running inside.
 
 One thing is decided at build time instead, and it is about the channel, not
 the wrapper: `scripts/bundle-web.mjs` builds the site with
-`VITE_NATIVE_BUILD=on`, which compiles out the side menu's Donate row — a
-payment link outside Apple's is an App Store rejection (guideline 3.1.1). The
-URL is not in the bundle at all, and the script refuses to zip a `dist/` that
-carries it (a website build re-zipped with `--skip-build`).
+`VITE_NATIVE_BUILD=on`, which compiles out what only the website carries: the
+side menu's Donate row — a payment link outside Apple's is an App Store
+rejection (guideline 3.1.1) — and the achievements (the trophies, the tour, the
+unlock celebration and their setting; `src/app/achievementsGate.ts`). Neither
+is in the bundle at all, and the script refuses to zip a `dist/` that carries
+them (a website build re-zipped with `--skip-build`).
 
 The wrapper also decides nothing about the address book. It moves opaque files
 between the page and a folder. What the document is called, how photos are

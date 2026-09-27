@@ -44,6 +44,19 @@ out of those bundles rather than hidden (`src/app/donate.ts`). Setting
 `VITE_DONATE_URL` for an app build changes nothing, and the phone bundle script
 refuses to zip a `dist/` that carries the link.
 
+## No achievements in the apps
+
+Achievements are the website's alone too: the phone app and the desktop app
+ship without the trophies, the tour, the unlock celebration and the
+**Settings → General → Achievements** switch. The same two flags decide it,
+through `src/app/achievementsBuilt.ts`: in those builds the achievements wiring
+(`src/app/useAchievementsLayer.tsx`), the catalog and its English and Swedish
+copy are folded out of the bundle, and every `unlock(…)` in the app (all of them
+come from `src/app/achievementsGate.ts`) does nothing. The phone bundle script
+refuses to zip a `dist/` that still carries them. A preference saved on the
+website (`disableAchievements`) keeps loading everywhere; the apps simply never
+read it.
+
 The Dropbox app behind `VITE_DROPBOX_APP_KEY` must list, under **Settings →
 OAuth 2 → Redirect URIs** in the App Console, every redirect URI the app signs
 in with: the deployed URL for the website, `http://127.0.0.1:53682/`,

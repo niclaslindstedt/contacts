@@ -60,11 +60,17 @@ listener that lets Dropbox sign in (`tauri/shell/src/oauth.rs`,
 needs no GUI toolkit; `tauri/src-tauri/` holds every effect. One seam reaches
 back into this tree, `VITE_SHELL_BUILD`, set by the shell's site build, which
 switches off the service-worker half of `appPwa` and — through
-`__SHELL_BUILD__` — the in-app update prompt and the Donate row. A desktop
+`__SHELL_BUILD__` — the in-app update prompt, the Donate row and the
+achievements. A desktop
 build updates by being replaced. The phone wrapper's site build sets
 `VITE_NATIVE_BUILD=on` (`__NATIVE_BUILD__`), which leaves out the Donate row
-and nothing else: no build but the website may carry a payment link outside
-Apple's (App Store guideline 3.1.1; `src/app/donate.ts`). The package's name and identifier come from `APP_DISPLAY_NAME` and
+and the achievements and nothing else: no build but the website may carry a
+payment link outside Apple's (App Store guideline 3.1.1; `src/app/donate.ts`),
+and no Nird app ships achievements in its phone or desktop build
+(`src/app/achievementsBuilt.ts`). Every `unlock(…)` comes from
+`src/app/achievementsGate.ts`, never from the framework directly, and the
+achievements copy lives in `src/app/i18n/enAchievements.ts` /
+`svAchievements.ts`, joined onto the catalog only when the build carries it. The package's name and identifier come from `APP_DISPLAY_NAME` and
 `APP_BUNDLE_ID` at packaging time (`tauri/scripts/package.mjs`), like the phone
 app's. See [`tauri/README.md`](tauri/README.md).
 

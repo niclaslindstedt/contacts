@@ -9,7 +9,7 @@ import {
   ChevronRightIcon,
   PersonIcon,
 } from "@niclaslindstedt/oss-framework/components";
-import { unlock } from "@niclaslindstedt/oss-framework/achievements";
+import { unlock } from "./achievementsGate.ts";
 
 import { runSearch, type ContactResult, type FieldHit } from "./search.ts";
 import { relationLabel } from "./relation.ts";

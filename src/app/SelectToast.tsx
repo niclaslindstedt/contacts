@@ -10,7 +10,7 @@ import {
   TrashIcon,
   type FloatingPlacement,
 } from "@niclaslindstedt/oss-framework/components";
-import { unlock } from "@niclaslindstedt/oss-framework/achievements";
+import { unlock } from "./achievementsGate.ts";
 import {
   downloadText,
   MIME_CSV,
