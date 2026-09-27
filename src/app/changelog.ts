@@ -12,10 +12,7 @@ import {
 import changelogMd from "../../CHANGELOG.md?raw";
 
 import { ACHIEVEMENTS_BUILT } from "./achievementsBuilt.ts";
-
-// Parsed once at module load — the markdown is static, so the release list
-// never changes between renders.
-export const RELEASES = parseChangelog(changelogMd);
+import { withoutMissingFeatureLinks } from "./featureLinks.ts";
 
 // Every `docs/features/*.md` becomes a slug-keyed feature doc; a changelog
 // bullet's `[Learn more](feature:<slug>)` opens the matching one in place.
@@ -24,7 +21,7 @@ export const RELEASES = parseChangelog(changelogMd);
 // desktop apps; `./achievementsBuilt.ts`): it describes a feature those builds
 // don't have. Its glob is the one in the dropped branch, so the page's text is
 // not in those bundles at all. The released bullets that link it stay — they
-// are the record of what shipped — and their Learn more simply goes inert.
+// are the record of what shipped — and lose their Learn more.
 export const FEATURE_DOCS = buildFeatureDocs(
   ACHIEVEMENTS_BUILT
     ? import.meta.glob("../../docs/features/*.md", {
@@ -36,4 +33,11 @@ export const FEATURE_DOCS = buildFeatureDocs(
         ["../../docs/features/*.md", "!../../docs/features/achievements.md"],
         { query: "?raw", import: "default", eager: true },
       ),
+);
+
+// Parsed once at module load — the markdown is static, so the release list
+// never changes between renders. A bullet's Learn more is dropped when its doc
+// is not in this build (`./featureLinks.ts`), so none opens nothing.
+export const RELEASES = parseChangelog(
+  withoutMissingFeatureLinks(changelogMd, FEATURE_DOCS),
 );
