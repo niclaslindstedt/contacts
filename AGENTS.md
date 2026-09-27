@@ -234,6 +234,12 @@ splits), and leave `build.modulePreload.resolveDependencies` in
 `vite.config.ts` alone — without it Vite preloads the union of every route
 branch's dependencies and the page splits silently stop working.
 
+### The website is not meant to be found
+
+There is no SEO and no size budget, by owner decision: every page carries
+`noindex` (from `index.html`, copied into `home/` and `privacy/`), and
+`public/robots.txt` allows crawling so a crawler can see it.
+
 ### Reach for the framework first
 
 Before building any UI primitive, gesture, or generic mechanic, **check whether

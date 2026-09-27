@@ -17,7 +17,12 @@
       name="description"
       content="Contacts is a local-first address book PWA. Your contacts live on your device, sync to Dropbox if you want, can be encrypted at rest, and export as vCard or CSV for Outlook, iOS, and Android."
     />
-    <link rel="canonical" href="https://contacts.niclaslindstedt.se/" />
+    <!-- The website is not meant to be found — people should reach the App
+         Store page and apps.agilator.se — so every page and every deploy
+         slot asks search engines not to index it (owner decision: no SEO).
+         The home/ and privacy/ aliases are copies of this shell, so they
+         carry it too. -->
+    <meta name="robots" content="noindex" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -46,21 +51,6 @@
       name="twitter:image"
       content="https://contacts.niclaslindstedt.se/og.png"
     />
-
-    <!-- JSON-LD -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "Contacts",
-        "applicationCategory": "UtilitiesApplication",
-        "operatingSystem": "Any",
-        "description": "A local-first address book PWA with optional Dropbox sync, encryption at rest, and vCard/CSV export.",
-        "url": "https://contacts.niclaslindstedt.se/",
-        "image": "https://contacts.niclaslindstedt.se/og.png",
-        "offers": { "@type": "Offer", "price": "0" }
-      }
-    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,4 +1,4 @@
-.PHONY: demo build test lint fmt fmt-check actionlint release clean docs website website-dev install icons check-seo changelog bump native-install native-bundle native-typecheck native-prebuild store-preflight store-metadata store-upload tauri tauri-bundle tauri-clean tauri-fast tauri-fmt tauri-fmt-check tauri-install tauri-lint tauri-package tauri-package-debug tauri-test
+.PHONY: demo build test lint fmt fmt-check actionlint release clean docs website website-dev install icons changelog bump native-install native-bundle native-typecheck native-prebuild store-preflight store-metadata store-upload tauri tauri-bundle tauri-clean tauri-fast tauri-fmt tauri-fmt-check tauri-install tauri-lint tauri-package tauri-package-debug tauri-test
 
 build:
 	npm run build
@@ -46,9 +46,6 @@ website-dev:
 # nothing read from or written to this browser's storage (src/app/dev/).
 demo:
 	VITE_SEED=demo npm run dev
-
-check-seo:
-	npm run build && npm run check:seo
 
 # Local preview of what the Release workflow will write to CHANGELOG.md.
 # Pass the planned version: `make changelog VERSION=0.2.0`. Consumes the

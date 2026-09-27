@@ -10,25 +10,24 @@ import { defineConfig, type Plugin } from "vite";
 
 import { appPwa } from "./pwa-plugin.ts";
 
-// The canonical production origin — the alias pages point their canonical /
-// Open Graph URLs here regardless of which deploy slot built them, since the
-// `/` release is the one search engines should index.
+// The production origin — the alias pages point their Open Graph URLs here
+// regardless of which deploy slot built them.
 const SITE_URL = "https://contacts.niclaslindstedt.se";
 
 // Per-route <head> overrides for the two standalone pages (`/privacy`,
 // `/home`) the SPA mounts by pathname (see `src/main.tsx`). The homepage's
-// SEO lives statically in `index.html`; these two carry their own title,
-// description, canonical, and social-card copy, spliced into a copy of the
+// head lives statically in `index.html`; these two carry their own title,
+// description, and social-card copy, spliced into a copy of the
 // built shell by the alias plugins below. `path` is the trailing-slash clean
 // URL GitHub Pages serves the alias from.
-type RouteSeo = {
+type RouteHead = {
   path: string;
   title: string;
   description: string;
   ogType: "website" | "article";
 };
 
-const PRIVACY_ROUTE: RouteSeo = {
+const PRIVACY_ROUTE: RouteHead = {
   path: "/privacy/",
   title: "Privacy — Contacts",
   description:
@@ -38,7 +37,7 @@ const PRIVACY_ROUTE: RouteSeo = {
   ogType: "article",
 };
 
-const SHOWCASE_ROUTE: RouteSeo = {
+const SHOWCASE_ROUTE: RouteHead = {
   path: "/home/",
   title: "Contacts — what it does & why it asks for access",
   description:
@@ -57,20 +56,20 @@ const escapeHtml = (s: string): string =>
 
 // Rewrite the per-route <head> signals in a copy of the built `index.html`.
 // The homepage shell is the single source of the tag *shape* (asset links,
-// icons, JSON-LD); this only swaps the title / description / canonical / OG /
-// Twitter copy so each alias reads as its own page. Throws loudly if any
+// icons, the noindex robots meta); this only swaps the title / description /
+// OG / Twitter copy so each alias reads as its own page. Throws loudly if any
 // expected tag is missing rather than silently shipping a page that inherits
 // the homepage's title — a signal that `index.html`'s head was restructured
 // and this splice needs to follow.
-function spliceRouteSeo(html: string, route: RouteSeo): string {
-  const canonical = `${SITE_URL}${route.path}`;
+function spliceRouteHead(html: string, route: RouteHead): string {
+  const pageUrl = `${SITE_URL}${route.path}`;
   const title = escapeHtml(route.title);
   const desc = escapeHtml(route.description);
 
   const sub = (re: RegExp, replacement: string, label: string): void => {
     if (!re.test(html)) {
       throw new Error(
-        `seo-alias: could not splice ${label} for ${route.path} — did ` +
+        `route-alias: could not splice ${label} for ${route.path} — did ` +
           `index.html's <head> change shape?`,
       );
     }
@@ -82,11 +81,6 @@ function spliceRouteSeo(html: string, route: RouteSeo): string {
     /(<meta\s+name="description"\s+content=")[\s\S]*?("\s*\/>)/,
     `$1${desc}$2`,
     "description",
-  );
-  sub(
-    /(<link rel="canonical" href=")[^"]*("\s*\/>)/,
-    `$1${canonical}$2`,
-    "canonical",
   );
   sub(
     /(<meta property="og:type" content=")[^"]*("\s*\/>)/,
@@ -105,7 +99,7 @@ function spliceRouteSeo(html: string, route: RouteSeo): string {
   );
   sub(
     /(<meta property="og:url" content=")[^"]*("\s*\/>)/,
-    `$1${canonical}$2`,
+    `$1${pageUrl}$2`,
     "og:url",
   );
   sub(
@@ -129,7 +123,7 @@ function spliceRouteSeo(html: string, route: RouteSeo): string {
 // (`enforce: "post"`) so the PWA plugin's manifest / icon tags are already
 // baked into the shell we copy, and after `appPwa` so the alias pages stay out
 // of its precache (the service worker's shell fallback already covers them).
-function emitRouteAlias(route: RouteSeo, dir: string): Plugin {
+function emitRouteAlias(route: RouteHead, dir: string): Plugin {
   return {
     name: `emit-${dir}-alias`,
     apply: "build",
@@ -140,7 +134,7 @@ function emitRouteAlias(route: RouteSeo, dir: string): Plugin {
         this.emitFile({
           type: "asset",
           fileName: `${dir}/index.html`,
-          source: spliceRouteSeo(String(index.source), route),
+          source: spliceRouteHead(String(index.source), route),
         });
       }
     },
@@ -239,6 +233,8 @@ const nativeBuild = process.env.VITE_NATIVE_BUILD === "on";
 export default defineConfig({
   base,
   build: {
+    // No size budgets, by owner decision — high enough that Vite never warns.
+    chunkSizeWarningLimit: 100_000,
     modulePreload: {
       // Vite wraps every `import()` in a preload helper carrying that call's
       // dependency list, and the minifier folds the three route branches in
