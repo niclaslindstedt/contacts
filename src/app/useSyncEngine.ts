@@ -961,7 +961,7 @@ export function useSyncEngine(
         );
       } catch (err) {
         if (isAuthCancelled(err)) {
-          syncLog.info("dropbox: sign-in cancelled");
+          syncLog.info("dropbox: sign-in canceled");
           return;
         }
         syncLog.error(

@@ -37,7 +37,7 @@ field commits when you leave it, and each committed edit is one undo step.
   **day-and-month only**.
 - **Website & company.** Add a **Website** and it shows as a tap-to-open link
   (exported as the vCard `URL`). A **Company contact** switch turns the card into
-  an organisation: it's named by a single company name, wears a building icon,
+  an organization: it's named by a single company name, wears a building icon,
   clears the person-only fields (the name split, birthday, important dates),
   and exports as a company.
 - **Relationship & tags.** Record how you know someone with a single

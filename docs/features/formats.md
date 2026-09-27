@@ -10,7 +10,7 @@ toggles here never touch it.)
 
 ## Pick a country
 
-The tab is organised around a **country**, and it defaults to **Sweden**. Tap
+The tab is organized around a **country**, and it defaults to **Sweden**. Tap
 the country row to open the country picker — a searchable list of the world's
 thirty most developed countries, each with its flag and name. Start typing and
 the list narrows as you go: type `Fin` and **Finland** jumps to the top with the

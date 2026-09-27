@@ -4,7 +4,7 @@ Where [import / export](feature:export) moves individual cards between address
 books, a **backup** captures the _whole_ document — every contact, folder, photo,
 and attachment — as a single dated snapshot. A backup is a compressed `.zip`
 holding one `contacts.json` with photos and attachments inline, so it's
-self-contained regardless of which backend externalises those files day to day.
+self-contained regardless of which backend externalizes those files day to day.
 
 From **Settings → Storage → Backups** you can **Download backup (.zip)** straight
 to disk, or **Restore from file…** to replace the current document with a

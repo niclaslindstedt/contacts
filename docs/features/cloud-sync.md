@@ -48,7 +48,7 @@ which copy wins. The first save after opening waits for the app's initial read
 of the backend to finish before pushing, so editing the moment the app opens on
 a slow connection can't trip a spurious conflict — your edit waits safely on this
 device and syncs as soon as that read lands. The **Open in {provider}** button on
-the sync command centre jumps to the drive's own web UI, straight onto the synced
+the sync command center jumps to the drive's own web UI, straight onto the synced
 files.
 
 ## Encryption at rest

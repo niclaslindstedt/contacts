@@ -10,7 +10,7 @@ sitting beside the name on a wide screen, stacked under it on a phone.
 **Settings → List** picks what shows, the card size (**Compact** or
 **Spacious**), and which number to prefer.
 
-## Organise from the List
+## Organize from the List
 
 The List page files contacts, too:
 
@@ -71,7 +71,7 @@ contacts**, and **Delete 5 contacts**, with the multi-card delete behind the
 same confirmation.
 
 With a selection made, the header's **Edit selected** button (the pencil) opens a
-bulk editor — a centred dialog on a wide screen, a full-screen sheet on a phone.
+bulk editor — a centered dialog on a wide screen, a full-screen sheet on a phone.
 Pick any mix of three changes and they apply to every ticked card at once, as a
 single **Undo**-able step: **add tags** (folded onto each card, skipping any it
 already has), **set a relationship** (or clear it), and **switch the card type**

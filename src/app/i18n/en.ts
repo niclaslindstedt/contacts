@@ -200,13 +200,13 @@ export const en = {
     open: "Manage namespaces",
     heading: "Namespaces",
     blurb:
-      "Each namespace is its own address book with its own contacts. Switch between them, or give one an icon and colour.",
+      "Each namespace is its own address book with its own contacts. Switch between them, or give one an icon and color.",
     newAction: "New namespace",
     namePlaceholder: "Namespace name",
     nameLabel: "Namespace name",
     create: "Create",
     nameRequired: "A name is required",
-    colorLabel: "Colour",
+    colorLabel: "Color",
     glyphLabel: "Icon",
     glyphNone: "No icon",
     save: "Save",
@@ -265,7 +265,7 @@ export const en = {
       "Drag to move, and pinch or scroll to zoom. The circle is what shows.",
     zoom: "Zoom",
     savePhoto: "Save",
-    colour: "Colour",
+    colour: "Color",
     icon: "Icon",
     defaultIcon: "Default icon",
     phones: "Phone numbers",
@@ -314,7 +314,7 @@ export const en = {
     },
     relationCustomAdd: "Add custom…",
     relationCustomLabel: "New relationship",
-    relationCustomPlaceholder: "e.g. Neighbour",
+    relationCustomPlaceholder: "e.g. Neighbor",
     // Free-form tags — many per card, typeahead over the ones already in use.
     tags: "Tags",
     tagAdd: "Add a tag",
@@ -401,7 +401,7 @@ export const en = {
     reauthRequired: "Reconnect needed — tap to fix",
     syncConflict: "Sync conflict — tap to resolve",
     offline: "Offline — editing a local copy",
-    // The command centre (`SyncDetailsModal`).
+    // The command center (`SyncDetailsModal`).
     cloudSync: "Sync",
     status: "Status",
     backend: "Backend",
@@ -616,7 +616,7 @@ export const en = {
       folderConnected: "Connected — syncing to a local folder.",
       folderReconnect: "Reconnect folder",
       folderReconnectNeeded:
-        "This folder is no longer accessible — its permission was reset (a common browser behaviour between sessions). Reconnect to resume syncing.",
+        "This folder is no longer accessible — its permission was reset (a common browser behavior between sessions). Reconnect to resume syncing.",
       missingKeyDropbox:
         "Dropbox sync needs a Dropbox app key baked into the build (VITE_DROPBOX_APP_KEY).",
       encryptionTitle: "Encryption at rest",

@@ -61,7 +61,7 @@ export function PrivacyPage() {
               Your contacts and everything on their cards — names, phone
               numbers, emails, company, addresses, birthdays, notes, photos, and
               file attachments — together with your folders and each card&apos;s
-              favourite / archived state (when the default <em>This device</em>{" "}
+              favorite / archived state (when the default <em>This device</em>{" "}
               backend is selected).
             </li>
             <li>
@@ -165,7 +165,7 @@ export function PrivacyPage() {
 
         <Section title="Web analytics">
           <p>
-            None. The app does not load any analytics or behavioural-tracking
+            None. The app does not load any analytics or behavioral-tracking
             SDK, and the project authors collect no usage statistics from it.
           </p>
         </Section>

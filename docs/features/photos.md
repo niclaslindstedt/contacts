@@ -23,7 +23,7 @@ happens — nothing was aimed at.
 In edit mode, the avatar's appearance popover has a **Photos** section: a
 thumbnail for each picture (the current face ringed with a check), a **＋** tile
 to add another, and **Adjust** / **Remove** for the current one. Tap any
-thumbnail to make it the face. No photo? Pick an icon and accent colour instead.
+thumbnail to make it the face. No photo? Pick an icon and accent color instead.
 
 ## Viewing
 

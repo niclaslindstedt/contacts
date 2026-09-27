@@ -8,7 +8,7 @@ mode. Three formats:
   imports directly into iOS, Android/Google, and Outlook. A phone or email's
   Private / Work type maps onto the standard `TEL` / `EMAIL` TYPE, each address
   becomes its own `ADR`, a website exports as `URL`, a company card exports its
-  name as the organisation (`ORG`, with `X-ABShowAs:COMPANY`), the birthday as
+  name as the organization (`ORG`, with `X-ABShowAs:COMPANY`), the birthday as
   `BDAY`, and other full-date important dates as Apple-style grouped `X-ABDATE`
   items.
 - **CSV** — Outlook's classic import columns (which Google Contacts also maps);

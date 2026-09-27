@@ -134,7 +134,7 @@ export const enAchievements = {
     },
     madeItYours: {
       name: "Made It Yours",
-      condition: "Give a contact an icon or colour.",
+      condition: "Give a contact an icon or color.",
     },
     attachment: {
       name: "Paper Trail",

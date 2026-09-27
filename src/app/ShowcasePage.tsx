@@ -88,13 +88,13 @@ export function ShowcasePage() {
               edited inline.
             </li>
             <li>
-              <strong className="text-fg-bright">Organise with folders</strong>{" "}
+              <strong className="text-fg-bright">Organize with folders</strong>{" "}
               — group people into named, collapsible folders and drag cards
               between them to refile (press and hold on a touchscreen).
             </li>
             <li>
               <strong className="text-fg-bright">
-                Favourites &amp; emergency contacts
+                Favorites &amp; emergency contacts
               </strong>{" "}
               — star the people you reach for most, and flag
               in-case-of-emergency (ICE) contacts that pin to the top of the
@@ -109,7 +109,7 @@ export function ShowcasePage() {
             </li>
             <li>
               <strong className="text-fg-bright">
-                Organise with namespaces
+                Organize with namespaces
               </strong>{" "}
               — keep separate address books (for example personal and work)
               apart and switch between them from the side menu.
@@ -129,7 +129,7 @@ export function ShowcasePage() {
             </li>
             <li>
               <strong className="text-fg-bright">Give each card a face</strong>{" "}
-              — crop a photo, or pick an icon and an accent colour, shown beside
+              — crop a photo, or pick an icon and an accent color, shown beside
               a contact&apos;s name so you can tell people apart at a glance.
             </li>
             <li>
