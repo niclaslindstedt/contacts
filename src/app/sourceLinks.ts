@@ -5,7 +5,7 @@
 //
 // The phone app (`__NATIVE_BUILD__`) and the desktop app (`__SHELL_BUILD__`)
 // carry no link back to the source and no mention of the website's domain
-// (the owner's decision D17 for every native build of a Nird app): no Source
+// (the owner's decision D17 for every native build): no Source
 // code row in the About dropdown, no GitHub contact on the privacy page, no
 // releases link in What's new. Both flags are compile-time constants Vite
 // substitutes, so in those builds the URLs below are literal `null`s and the

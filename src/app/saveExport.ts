@@ -5,7 +5,7 @@
 // the share sheet in a shell that offers the `save-file` capability (the
 // phone app does, see `native/src/saveFileBridge.ts`). A `blob:` download in
 // the phone app's WebView goes nowhere, which is why nothing in `src/` may
-// call `downloadText` / `downloadBlob` / `saveDataUrl` directly.
+// call the framework's download helpers directly.
 //
 // The page never asks where it runs: `saveFile` reads the capability.
 

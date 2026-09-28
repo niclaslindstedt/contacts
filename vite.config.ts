@@ -233,7 +233,7 @@ const shellBuild = process.env.VITE_SHELL_BUILD === "on";
 // the achievements (`src/app/achievementsBuilt.ts`). With `__SHELL_BUILD__` it
 // marks every build that is not the website — a payment link outside Apple's
 // is an App Store rejection (guideline 3.1.1), the listings promise nothing is
-// sold, and no Nird app ships achievements outside the website. Both are
+// sold, and no app build ships achievements, only the website. Both are
 // compile-time constants, so those parts are folded out of the bundles rather
 // than hidden.
 const nativeBuild = process.env.VITE_NATIVE_BUILD === "on";

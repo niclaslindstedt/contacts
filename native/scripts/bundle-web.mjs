@@ -124,8 +124,8 @@ if (count === 0 || !files["index.html"]) {
   );
 }
 
-// Refuse a webroot that carries what only the website may: a service worker,
-// a Donate link (App Store guideline 3.1.1), the achievements, or a link back
+// Refuse a webroot that carries what only the website may: a service worker
+// (`sw.js`), a Donate link (App Store guideline 3.1.1), the achievements, or a link back
 // to the source — anything spelling the owner's name
 // (`../../scripts/website-only.mjs`). A `dist/` left by a website build —
 // which `--skip-build` would re-zip — carries all four.
