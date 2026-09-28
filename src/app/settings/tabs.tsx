@@ -202,6 +202,7 @@ export function GeneralTab({
   update: Update;
 }) {
   const t = useT();
+  const standalone = useStandaloneMobile();
   const modeOptions = [
     { value: "swipe" as const, label: t("settings.general.optionSwipe") },
     { value: "button" as const, label: t("settings.general.optionButton") },
@@ -245,22 +246,27 @@ export function GeneralTab({
         </Section>
       )}
 
-      <Section title={t("settings.general.sidebarTitle")}>
-        <div className="flex flex-col gap-1">
-          <span className="text-sm text-fg-bright">
-            {t("settings.general.openSidebarWith")}
-          </span>
-          <SegmentedControl
-            value={settings.menuMode}
-            options={modeOptions}
-            onChange={(next) => update("menuMode", next)}
-            ariaLabel={t("settings.general.openSidebarWith")}
-          />
-          <p className="text-xs text-muted">
-            {t("settings.general.sidebarHint")}
-          </p>
-        </div>
-      </Section>
+      {/* Only where the screen edge is free for the swipe — an installed app
+          on a phone or tablet, the phone app's shell included (see
+          `../menuMode.ts`). */}
+      {standalone && (
+        <Section title={t("settings.general.sidebarTitle")}>
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-fg-bright">
+              {t("settings.general.openSidebarWith")}
+            </span>
+            <SegmentedControl
+              value={settings.menuMode}
+              options={modeOptions}
+              onChange={(next) => update("menuMode", next)}
+              ariaLabel={t("settings.general.openSidebarWith")}
+            />
+            <p className="text-xs text-muted">
+              {t("settings.general.sidebarHint")}
+            </p>
+          </div>
+        </Section>
+      )}
 
       <Section title={t("settings.general.foldersTitle")}>
         <div className="flex flex-col gap-1">

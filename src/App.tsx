@@ -28,7 +28,11 @@ import {
   SpinnerIcon,
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
-import { UpdateToast, usePwaUpdate } from "@niclaslindstedt/oss-framework/pwa";
+import {
+  UpdateToast,
+  usePwaUpdate,
+  useStandaloneMobile,
+} from "@niclaslindstedt/oss-framework/pwa";
 import {
   useMediaQuery,
   useSearchShortcuts,
@@ -78,6 +82,7 @@ import {
   CONTACT_MODAL_LABEL_ID,
   useCardEdgeSwipeOpen,
 } from "./app/useCardEdgeSwipeOpen.ts";
+import { swipeOpensMenu } from "./app/menuMode.ts";
 import { AppToastViewport } from "./app/AppToastViewport.tsx";
 import { toastStore, UNDO_TOAST_MS } from "./app/toast.ts";
 import { useNamespaces } from "./app/useNamespaces.ts";
@@ -355,9 +360,11 @@ export function App() {
     enabled: !import.meta.env.DEV && !__SHELL_BUILD__,
   });
 
-  // "Open sidebar with" (Settings → General): on phones, the user picks
-  // between the floating button and an inward edge swipe.
-  const swipeToOpen = !pinned && settings.menuMode === "swipe";
+  // "Open sidebar with" (Settings → General): in the installed app on a phone
+  // or tablet, the user picks between the floating button and an inward edge
+  // swipe (see `swipeOpensMenu`).
+  const standalone = useStandaloneMobile();
+  const swipeToOpen = swipeOpensMenu(settings.menuMode, { pinned, standalone });
   useEdgeSwipeOpen({
     side: position.side,
     enabled: swipeToOpen && !drawerOpen,

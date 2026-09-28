@@ -32,7 +32,10 @@ On first launch you land in the **Personal** namespace with one blank card.
    export several contacts at once. Settings → **List** toggles whether phone
    numbers and emails show.
 6. **Install it** — the deployed site is an installable PWA and works fully
-   offline; updates arrive through an in-app prompt.
+   offline; updates arrive through an in-app prompt. Installed on a phone or
+   tablet (or in the iPhone and Android apps), Settings → **General** →
+   _Sidebar_ lets a swipe in from the screen edge open the sidebar in place of
+   the floating button.
 
 ## Choose your formats (optional)
 
