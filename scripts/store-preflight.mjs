@@ -322,7 +322,9 @@ if (bundleId) {
 
 const displayName = env.value("APP_DISPLAY_NAME");
 if (displayName) {
-  ok(`listing name "${displayName}" (APP_DISPLAY_NAME), under the icon too`);
+  ok(
+    `listing name "${displayName}" (APP_DISPLAY_NAME), under the icon and inside the app`,
+  );
 } else {
   fail(
     "APP_DISPLAY_NAME is not set — the listing and the app would carry the project name",

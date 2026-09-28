@@ -19,6 +19,10 @@
 //     only stand a staler cache in front of files on local disk) and no update
 //     prompt nobody can act on.
 //
+// And it passes `APP_DISPLAY_NAME` through, the listing name the wrapper's
+// `identifiers.js` puts under the icon: the phone build calls itself by it
+// inside too (`src/app/appName.ts`). Unset, the app says "Contacts".
+//
 // Nothing else in `src/` changes for the app. If the wrapper ever needs the
 // web app to behave differently in some other way, that is a sign it has
 // stopped being thin.
@@ -72,7 +76,11 @@ const profile =
   "preview";
 
 if (!skipBuild) {
-  console.log(`• building the web app (npm run build) — profile ${profile}…`);
+  const name = process.env.APP_DISPLAY_NAME?.trim();
+  console.log(
+    `• building the web app (npm run build) — profile ${profile}, named ` +
+      `${name ? `"${name}"` : "Contacts (APP_DISPLAY_NAME unset)"}…`,
+  );
   execFileSync(NPM, ["run", "build"], {
     cwd: REPO_DIR,
     stdio: "inherit",

@@ -35,6 +35,10 @@ app:
 Unset, a checkout builds as the project's own name under a development id; the
 `production` profile refuses to build without them (`identifiers.js`).
 
+`APP_DISPLAY_NAME` is also the name the app calls itself inside (the privacy
+page; `src/app/appName.ts`), so it has to be set when the web app is bundled
+(`npm run bundle`) as well as for `eas build` — the workflow sets it for both.
+
 ### 2. The CI token
 
 Create a **robot** access token at

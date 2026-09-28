@@ -88,6 +88,9 @@ jobs:
         working-directory: native
         run: npm run bundle -- --profile "${{ inputs.profile }}"
         env:
+          # The listing name, which the app calls itself inside as well as
+          # under its icon (src/app/appName.ts).
+          APP_DISPLAY_NAME: ${{ secrets.APP_DISPLAY_NAME }}
           # The same Dropbox app as the website's. Unset, the app offers no
           # Dropbox; set, that app must list <APP_BUNDLE_ID>://oauth
           # (se.agilator.contacts://oauth) as a redirect URI

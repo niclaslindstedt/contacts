@@ -10,6 +10,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, type Plugin } from "vite";
 
 import { appPwa } from "./pwa-plugin.ts";
+import { resolveAppName } from "./src/app/appName.ts";
 import { withoutSourceLinks } from "./src/app/withoutSourceLinks.ts";
 
 // The production origin — the alias pages point their Open Graph URLs here
@@ -237,6 +238,10 @@ const shellBuild = process.env.VITE_SHELL_BUILD === "on";
 // than hidden.
 const nativeBuild = process.env.VITE_NATIVE_BUILD === "on";
 
+// The name the app calls itself inside: the listing name (`APP_DISPLAY_NAME`)
+// in the phone build, the project's own everywhere else (`src/app/appName.ts`).
+const appName = resolveAppName(nativeBuild, process.env.APP_DISPLAY_NAME);
+
 // Every build that is not the website: the phone app and the desktop app.
 // Neither carries a link back to the source or the website's domain (the
 // owner's decision D17, `src/app/sourceLinks.ts`) — not in the app, and not in
@@ -296,6 +301,7 @@ export default defineConfig({
   define: {
     __SHELL_BUILD__: JSON.stringify(shellBuild),
     __NATIVE_BUILD__: JSON.stringify(nativeBuild),
+    __APP_NAME__: JSON.stringify(appName),
     __APP_VERSION__: JSON.stringify(appVersion),
     __BUILD_LABEL__: JSON.stringify(buildLabel),
     __BUILD_COMMIT__: JSON.stringify(commit),

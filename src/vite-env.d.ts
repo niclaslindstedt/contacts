@@ -7,6 +7,10 @@
 // The app version, inlined by Vite's `define` (see `vite.config.ts`).
 declare const __APP_VERSION__: string;
 
+// The name the app calls itself inside: the store listing's name in the phone
+// build, "Contacts" everywhere else (`src/app/appName.ts`).
+declare const __APP_NAME__: string;
+
 // The build identifier shown as the "Source code" row's subtitle, composed at
 // build time (see `vite.config.ts`): `<version>[.<run>][-<slot>][+<commit>]`.
 declare const __BUILD_LABEL__: string;

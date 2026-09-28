@@ -18,6 +18,10 @@ import { ArrowLeftIcon } from "@niclaslindstedt/oss-framework/components";
 import { ACHIEVEMENTS_BUILT } from "./achievementsBuilt.ts";
 import { SOURCE_LINKS_BUILT, SUPPORT_EMAIL } from "./sourceLinks.ts";
 
+// The name the app calls itself: the store listing's in the phone build
+// (`src/app/appName.ts`).
+const APP_NAME = __APP_NAME__;
+
 // Last meaningful change to the policy text below. Bump this whenever the
 // wording is edited — it renders verbatim at the top of the page and is the
 // only line readers have to look at to see how fresh the policy is.
@@ -33,7 +37,7 @@ export function PrivacyPage() {
             className="inline-flex items-center gap-1.5 self-start text-xs text-link hover:underline"
           >
             <ArrowLeftIcon className="h-3.5 w-3.5" />
-            Back to Contacts
+            Back to {APP_NAME}
           </a>
           <h1 className="text-lg font-bold text-fg-bright">Privacy policy</h1>
           <p className="text-xs text-muted">Last updated: {LAST_UPDATED}</p>
@@ -41,8 +45,8 @@ export function PrivacyPage() {
 
         <Section title="Summary">
           <p>
-            <span className="text-meta">Contacts</span> is a local-first address
-            book app
+            <span className="text-meta">{APP_NAME}</span> is a local-first
+            address book app
             {SOURCE_LINKS_BUILT ? (
               <>
                 {" "}
