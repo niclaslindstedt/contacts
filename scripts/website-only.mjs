@@ -8,7 +8,7 @@
 //   - the achievements (`src/app/achievementsBuilt.ts`);
 //   - a link back to the source, or any other mention of the owner's name —
 //     the repository, its issues, releases or sponsor page, the website's
-//     domain (the owner's decision D17; `src/app/sourceLinks.ts`).
+//     domain (the owner's decision; `src/app/sourceLinks.ts`).
 //
 // The worker is left out by `VITE_SHELL_BUILD=on`, which both app builds set;
 // the rest is compiled out of the phone build (`VITE_NATIVE_BUILD=on`) and the

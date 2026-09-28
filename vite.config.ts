@@ -244,7 +244,7 @@ const appName = resolveAppName(nativeBuild, process.env.APP_DISPLAY_NAME);
 
 // Every build that is not the website: the phone app and the desktop app.
 // Neither carries a link back to the source or the website's domain (the
-// owner's decision D17, `src/app/sourceLinks.ts`) — not in the app, and not in
+// owner's decision, `src/app/sourceLinks.ts`) — not in the app, and not in
 // what this config writes around it either.
 const appBuild = nativeBuild || shellBuild;
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 // The markdown What's new renders — the CHANGELOG and the feature docs — as
 // the phone and desktop apps load it: without a link back to the source or a
-// mention of the website's domain (the owner's decision D17;
+// mention of the website's domain (the owner's decision;
 // `./sourceLinks.ts`). `vite.config.ts` applies it at build time, as each
 // `.md?raw` module is loaded, so the text never reaches those bundles.
 //
