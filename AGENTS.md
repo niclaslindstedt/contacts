@@ -4,6 +4,8 @@ This file is the canonical source of truth for AI coding agents working in this
 repo. `CLAUDE.md`, `.cursorrules`, `.windsurfrules`, `GEMINI.md`, and
 `.github/copilot-instructions.md` are symlinks to this file.
 
+Fleet guidelines: APP_GUIDELINES 1.0.1
+
 ## Build and test commands
 
 ```sh
