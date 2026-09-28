@@ -39,6 +39,13 @@ describe("dateFormatFromLocales", () => {
     expect(dateFormatFromLocales(["fi"])).toBe("eu");
   });
 
+  it('does not read a bare "en" as American', () => {
+    expect(dateFormatFromLocales(["en"])).toBe("iso");
+    // It names no region, so the next tag decides.
+    expect(dateFormatFromLocales(["en", "en-US"])).toBe("us");
+    expect(dateFormatFromLocales(["en", "en-GB"])).toBe("eu");
+  });
+
   it("falls back to ISO for a region it has no rule for, or no tag at all", () => {
     expect(dateFormatFromLocales(["zh-CN"])).toBe("iso");
     expect(dateFormatFromLocales(["not a tag"])).toBe("iso");

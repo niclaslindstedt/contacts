@@ -38,6 +38,25 @@ describe("defaultSettings", () => {
       dateFormat: "us",
     });
   });
+
+  it("does not start a bare-English device in the United States", () => {
+    const bareEn = defaultSettings(["en"]);
+    expect(bareEn.country).toBe(DEFAULT_SETTINGS.country);
+    expect(bareEn.country).not.toBe("US");
+    expect(bareEn.dateFormat).toBe(DEFAULT_SETTINGS.dateFormat);
+    expect(bareEn.dateFormat).not.toBe("us");
+  });
+
+  it("keeps a saved US choice on a bare-English device", () => {
+    const saved = JSON.stringify({
+      ...DEFAULT_SETTINGS,
+      country: "US",
+      dateFormat: "us",
+    });
+    const parsed = parseSettings(saved, defaultSettings(["en"]));
+    expect(parsed.country).toBe("US");
+    expect(parsed.dateFormat).toBe("us");
+  });
 });
 
 describe("parseSettings", () => {

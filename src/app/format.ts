@@ -17,6 +17,8 @@
 // ISO string and only *displayed* in the chosen shape, so changing a setting
 // reformats every card without touching the document.
 
+import { localeRegion } from "./localeRegion.ts";
+
 // --- Date --------------------------------------------------------------------
 
 /** How a stored ISO date (`YYYY-MM-DD`) is shown. */
@@ -42,17 +44,13 @@ const DAY_FIRST_REGIONS: ReadonlySet<string> = new Set([
 /** The date style a device's locale tags imply, most preferred tag first —
  *  read the way the home country is (`countryFromLocales`): the first tag
  *  with a region decides, a tag without one reads as its language's likeliest
- *  region. US → "us", a day-first region → "eu", anything else → "iso". It
- *  seeds a new install's date format; a saved setting always wins over it. */
+ *  region, and a bare "en" names none (`localeRegion`), so it is passed over
+ *  rather than read as American. US → "us", a day-first region → "eu",
+ *  anything else → "iso". It seeds a new install's date format; a saved
+ *  setting always wins over it. */
 export function dateFormatFromLocales(tags: readonly string[]): DateFormat {
   for (const tag of tags) {
-    let region: string | undefined;
-    try {
-      const locale = new Intl.Locale(tag);
-      region = locale.region ?? locale.maximize().region;
-    } catch {
-      continue;
-    }
+    const region = localeRegion(tag);
     if (!region) continue;
     if (region === "US") return "us";
     return DAY_FIRST_REGIONS.has(region) ? "eu" : "iso";

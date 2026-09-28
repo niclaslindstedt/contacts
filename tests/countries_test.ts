@@ -352,7 +352,15 @@ describe("countryFromLocales", () => {
 
   it("reads a bare language as its likeliest region", () => {
     expect(countryFromLocales(["sv"])).toBe("SE");
-    expect(countryFromLocales(["en"])).toBe("US");
+    expect(countryFromLocales(["de"])).toBe("DE");
+  });
+
+  it('does not read a bare "en" as American', () => {
+    expect(countryFromLocales(["en"])).toBe(DEFAULT_COUNTRY);
+    expect(DEFAULT_COUNTRY).not.toBe("US");
+    // It names no region, so the next tag decides.
+    expect(countryFromLocales(["en", "en-US"])).toBe("US");
+    expect(countryFromLocales(["en", "sv-SE"])).toBe("SE");
   });
 
   it("takes the first preferred tag it has a country for", () => {
