@@ -42,7 +42,7 @@
 // they describe one app.
 //
 // A TypeScript module rather than a YAML catalog, for the reason the rest of
-// this repo's small fixed catalogs are (docs/spec-conformance.md, §24): the
+// this repo's small fixed catalogs are: the
 // tests and the generator read the same typed rows with no schema layer and no
 // parser dependency.
 //

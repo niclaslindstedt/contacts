@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
-// oss-spec:allow-large-file: machine-generated data — one base64 portrait per
+// guidelines:allow-large-file: machine-generated data — one base64 portrait per
 // demo contact; splitting would only scatter the dataset.
 //
 // Portrait photos for the demo address book, keyed by demo-contact slug

@@ -5,9 +5,6 @@ description: "Use when the achievements catalog (src/app/achievements.ts) is sta
 
 # Updating the achievements catalog
 
-**Governing spec sections:** §21.5 (a drift-prone artifact with a mandated sync
-skill), §11.1 (docs sync for any feature doc touched).
-
 Every user-visible feature in contacts should also be a **trophy**. When a
 feature ships and the catalog isn't updated, the achievements tour silently
 lies about what the app can do. This skill brings the catalog — and its i18n

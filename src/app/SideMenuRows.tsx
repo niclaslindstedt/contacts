@@ -20,8 +20,8 @@ import { SectionsToggleIcon } from "./icons.tsx";
 // stateful `SideMenuContent` composes: section headings, folder / contact
 // rows, the inline name editors, the action-grid buttons, and the footer
 // rows. Kept out of `SideMenuContent.tsx` so that file stays about the
-// navigation's state and gestures, not its pixels (and under the §20.5 size
-// cap). Everything here is a pure function of its props.
+// navigation's state and gestures, not its pixels (and under the
+// 1000-line cap). Everything here is a pure function of its props.
 
 // Folder nesting indent. Rows sit at a base left pad (the `pl-5` baseline) plus
 // one step per level, so a subfolder — and the cards inside it — step further

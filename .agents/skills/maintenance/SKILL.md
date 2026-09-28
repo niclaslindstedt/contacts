@@ -5,7 +5,7 @@ description: "Use when you want to bring every drift-prone artifact in the repo 
 
 # Maintenance
 
-This is the umbrella skill for contacts, mandated by §21.6 of `OSS_SPEC.md`. It does no rewriting itself — it decides which sync skills are stale, runs each one, and reports a combined summary. Use it when you do not know which specific artifact is out of date, or when several have likely drifted at once (for example, after a large merge).
+This is the umbrella skill for contacts. It does no rewriting itself — it decides which sync skills are stale, runs each one, and reports a combined summary. Use it when you do not know which specific artifact is out of date, or when several have likely drifted at once (for example, after a large merge).
 
 ## When to run
 
@@ -19,18 +19,13 @@ Do **not** use this skill for a targeted fix — if you know exactly which artif
 
 The registry is the single source of truth for which sync skills exist in this repo. Every `update-*` directory under `.agents/skills/` must appear here exactly once. New projects start with the entries below; add rows whenever you create a new sync skill.
 
-| Skill                 | Fixes                                                                                 | Spec sections | Run order                                                        |
-| --------------------- | ------------------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------- |
-| `update-docs`         | `docs/*.md` vs. source of truth                                                       | §11.1         | 1                                                                |
-| `update-readme`       | `README.md` vs. current public surface                                                | §3            | 2                                                                |
-| `update-prompts`      | `prompts/**` vs. code and embedded sources                                            | §13.5         | 3                                                                |
-| `update-achievements` | `src/app/achievements.ts` + the `achievements.*` i18n catalog vs. the feature surface | §21.5         | 4                                                                |
-| `sync-oss-spec`       | Repo-wide §19 conformance vs. `OSS_SPEC.md`                                           | §19, §21      | 5 — run last; catches what the per-artifact skills did not touch |
+| Skill                 | Fixes                                                                                 | Run order |
+| --------------------- | ------------------------------------------------------------------------------------- | --------- |
+| `update-docs`         | `docs/*.md` vs. source of truth                                                       | 1         |
+| `update-readme`       | `README.md` vs. current public surface                                                | 2         |
+| `update-achievements` | `src/app/achievements.ts` + the `achievements.*` i18n catalog vs. the feature surface | 3         |
 
-Run order matters:
-
-- The per-artifact skills (`update-docs`, `update-readme`, `update-prompts`, and any `update-website` / `update-manpages` / other skills this project adds) run in dependency order: a skill that reads files another skill rewrites must run _after_ that other skill.
-- `sync-oss-spec` runs **last**, over the whole repo: it catches what the per-artifact skills did not touch.
+Run order matters: a skill that reads files another skill rewrites runs _after_ that other skill. `update-readme` summarizes what `update-docs` has just brought up to date, and `update-achievements` reads the feature docs both of them touch.
 
 ## Discovery process
 

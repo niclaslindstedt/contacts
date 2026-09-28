@@ -229,7 +229,7 @@ under it (its scope `/` is a prefix of `/preview/` and `/branch/`). See
 
 ## Output
 
-`src/output.ts` is the central output module (OSS_SPEC §19.4): semantic
+`src/output.ts` is the central output module: semantic
 helpers (`status`/`info`/`warn`/`error`/`header`) over the in-app log store,
 which the Logs settings tab and the sync command centre's log panel render.
 

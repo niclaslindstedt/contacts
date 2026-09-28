@@ -61,7 +61,7 @@ make fmt-check
 
 ## Tests
 
-Tests live in `tests/` with a `_test` suffix (OSS_SPEC §20.2) and cover the
+Tests live in `tests/` with a `_test` suffix and cover the
 pure domain modules — export renderers, search corpus, migrations, name
 helpers. Run one file with `npx vitest run tests/export_test.ts`. UI changes
 should keep the boot smoke path working: `npm run build && npm run preview`

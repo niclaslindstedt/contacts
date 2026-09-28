@@ -4,20 +4,6 @@ This file is the canonical source of truth for AI coding agents working in this
 repo. `CLAUDE.md`, `.cursorrules`, `.windsurfrules`, `GEMINI.md`, and
 `.github/copilot-instructions.md` are symlinks to this file.
 
-## OSS Spec conformance
-
-This repository adheres to [`OSS_SPEC.md`](OSS_SPEC.md), a prescriptive
-specification for open source project layout, documentation, automation, and
-governance. A copy of the spec lives at the repository root so contributors and
-AI agents can consult it without leaving the repo; its version is recorded in
-the YAML front matter at the top of the file.
-
-Run `oss-spec validate .` (or the standalone
-[`validate.sh`](https://github.com/niclaslindstedt/oss-spec/blob/main/scripts/validate.sh))
-to verify conformance. When in doubt about a layout, naming, or workflow
-decision, consult the relevant section of `OSS_SPEC.md` — it is the source of
-truth for the conventions this repo follows.
-
 ## Build and test commands
 
 ```sh
@@ -69,8 +55,8 @@ prompt, since a phone app updates through the App Store — and also sets
 `VITE_NATIVE_BUILD=on` (`__NATIVE_BUILD__`), which leaves out the Donate row,
 the achievements and the links back to the source and nothing else: no build
 but the website may carry a payment link outside Apple's (App Store guideline
-3.1.1; `src/app/donate.ts`), no Nird app ships achievements in its phone or
-desktop build (`src/app/achievementsBuilt.ts`), and no phone or desktop build
+3.1.1; `src/app/donate.ts`), no phone or
+desktop build ships achievements (`src/app/achievementsBuilt.ts`), and no phone or desktop build
 may link back to the source or carry the string `niclaslindstedt` anywhere —
 strictly forbidden (`src/app/sourceLinks.ts`; `scripts/website-only.mjs`
 refuses such a webroot in both bundle scripts). Every `unlock(…)` comes from
@@ -219,7 +205,7 @@ The app owns the domain and the stores ("store stays in the app"):
   App state stays the source of truth; the hook only reflects it.
 - `src/app/ContactScreen.tsx`, `SideMenuContent.tsx`, `ArchiveScreen.tsx`,
   `SearchOverlay.tsx`, `SettingsModal.tsx` + `settings/` — the screens.
-- `src/output.ts` — the §19.4 central output module (semantic log helpers over
+- `src/output.ts` — the central output module (semantic log helpers over
   the in-app log store).
 - `pwa-plugin.ts` — emits the service worker + version/precache manifests the
   framework's `usePwaUpdate` consumes.
@@ -242,10 +228,10 @@ branch's dependencies and the page splits silently stop working.
 
 ### The website is not meant to be found
 
-The website is unlisted (OSS_SPEC §11.3.12): every page carries `noindex`, from
-`index.html`, copied into `home/` and `privacy/`.
-
-oss-spec:unlisted-website: the web build is a testing surface; users install the app from its store listing
+The website is a testing surface, not a way to get the app: people install
+contacts from its store listing. So it is unlisted — every page carries
+`noindex`, from `index.html`, copied into `home/` and `privacy/` — and it has no
+sitemap, no structured data and no size budgets.
 
 ### Reach for the framework first
 
@@ -276,30 +262,31 @@ stale copy.
 
 ## Where new code goes
 
-| Change type    | Goes in                                                               |
-| -------------- | --------------------------------------------------------------------- |
-| New feature    | `src/app/...`                                                         |
-| Native wrapper | `native/...` (a separate npm project — see above)                     |
-| Tests          | `tests/...`                                                           |
-| Docs update    | `docs/...`                                                            |
-| Examples       | `examples/...`                                                        |
-| LLM prompt     | `prompts/<name>/<major>_<minor>_<patch>.md` (see `prompts/README.md`) |
+| Change type    | Goes in                                           |
+| -------------- | ------------------------------------------------- |
+| New feature    | `src/app/...`                                     |
+| Native wrapper | `native/...` (a separate npm project — see above) |
+| Tests          | `tests/...`                                       |
+| Docs update    | `docs/...`                                        |
+| Examples       | `examples/...`                                    |
 
 ## Test conventions
 
 - **All tests live in separate files** in `tests/` — never inline in source
   files.
-- Test files are named with a `_test` suffix (e.g. `export_test.ts`), per §20
-  of `OSS_SPEC.md`; vitest picks up `tests/**/*_test.ts`.
+- Test files are named with a `_test` suffix (e.g. `export_test.ts`); vitest
+  picks up `tests/**/*_test.ts`. Run them all with `make test`, one with
+  `npx vitest run tests/export_test.ts`, on the Node in `.nvmrc`.
 - Tests cover the pure domain modules (export, search, migrations, types) and
   run in a node environment — no DOM.
 
 ## Source file size
 
-- Non-test source files must stay under **1000 physical lines** (§20.5 of
-  `OSS_SPEC.md`). Prefer splitting by concern over relaxing the cap.
-- A file may opt out with `oss-spec:allow-large-file: <reason>` in its first
-  20 lines; the reason must be real.
+- Non-test source files must stay under **1000 physical lines**. Prefer
+  splitting by concern over relaxing the cap.
+- A file may opt out with `guidelines:allow-large-file: <reason>` in its first
+  20 lines; the reason must be real. A file marked "split when next touched"
+  is split by the next change that edits it.
 
 ## Documentation sync points
 
@@ -418,8 +405,8 @@ edit needs no fragment of its own.
 
 ## Maintenance skills
 
-Per §21 of `OSS_SPEC.md`, this repo ships agent skills for keeping drift-prone
-artifacts in sync with their sources of truth. Skills live under
+This repo ships agent skills for keeping drift-prone artifacts in sync with
+their sources of truth, plus two manual playbooks. Skills live under
 `.agents/skills/<name>/` and are also accessible via the `.claude/skills`
 symlink.
 
@@ -429,7 +416,8 @@ symlink.
 | `update-docs`         | After any change to user-visible behavior, configuration keys, or the export formats.                                                       |
 | `update-readme`       | After any change that alters user-visible behavior, commands, or install instructions.                                                      |
 | `update-achievements` | After shipping a user-visible feature that deserves a trophy, or when the achievements catalog / i18n has drifted from the feature surface. |
-| `sync-oss-spec`       | When `validate.sh` reports violations, or the spec copy at the root was bumped — last in a `maintenance` sweep.                             |
+| `design`              | By hand, while iterating on the look or layout of the UI — not part of the `maintenance` sweep.                                             |
+| `clone-mirror-repo`   | By hand, to clone another of the mirrored repositories for reference — not part of the `maintenance` sweep.                                 |
 
 Each skill has a `SKILL.md` (the playbook) and a `.last-updated` file (the
 baseline commit hash). The `maintenance` skill owns a **Registry** table
