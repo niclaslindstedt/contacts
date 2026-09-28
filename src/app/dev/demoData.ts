@@ -12,7 +12,7 @@
 // carries a note — the thing the stock address book has no field for. The
 // store frames lean on specific cards: Priya's card fits a phone, four notes
 // and one file name answer the search frame's regex, Luis carries the
-// attachments, Gus archives himself. `tests/demoData_test.ts` holds the data to each.
+// attachments, Gus archives himself. `tests/demo_test.ts` holds the data to each.
 //
 // A pure, deterministic builder for a given moment: no randomness, and every
 // date that could age — the added/edited stamps, a birthday that is always

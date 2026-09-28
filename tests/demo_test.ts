@@ -267,6 +267,80 @@ describe("the frames the demo is staged for", () => {
   });
 });
 
+// The demo is never dated: it is built from the moment it opens, so it must
+// hold its premises on any day of the year and at any hour of that day — a
+// leap day, both clock changes and the turn of the year included.
+describe("the demo on every day of a year", () => {
+  const HOURS = [0, 7, 12, 18, 23];
+  const START = new Date(2027, 9, 1); // walks through 29 February 2028
+  const moments: Date[] = [];
+  for (let day = 0; day < 366; day++) {
+    for (const hour of HOURS) {
+      moments.push(
+        new Date(
+          START.getFullYear(),
+          START.getMonth(),
+          START.getDate() + day,
+          hour,
+          30,
+        ),
+      );
+    }
+  }
+  const realDay = (iso: string): boolean => {
+    const [y, m, d] = iso.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+    return (
+      date.getFullYear() === y &&
+      date.getMonth() === m - 1 &&
+      date.getDate() === d
+    );
+  };
+
+  it("keeps every frame's premise, whenever it opens", () => {
+    for (const at of moments) {
+      const now = at.getTime();
+      const book = buildDemoData(now);
+      const today = isoDate(at);
+      const find = (slug: string) =>
+        book.contacts.find((c) => c.id === `demo-c-${slug}`)!;
+      const where = at.toString();
+
+      // Priya's birthday is nine days off.
+      expect(daysUntilDate(find("priya").birthday!, at), where).toBe(9);
+
+      // The cabin trip is ahead, and the card tidies itself away after it.
+      const gus = find("gus");
+      expect(gus.autoArchiveDate! > today, where).toBe(true);
+      for (const d of gus.importantDates) {
+        expect(d.date > today, where).toBe(true);
+        expect(d.date < gus.autoArchiveDate!, where).toBe(true);
+      }
+      const due = dueContacts(book.contacts, today);
+      expect(due.toArchive, where).toHaveLength(0);
+      expect(due.toDelete, where).toHaveLength(0);
+
+      for (const c of book.contacts) {
+        // Nothing is written after the moment the demo opens.
+        const created = Date.parse(c.createdAt!);
+        expect(created, where).toBeLessThan(now);
+        if (c.updatedAt) {
+          const updated = Date.parse(c.updatedAt);
+          expect(updated, where).toBeGreaterThan(created);
+          expect(updated, where).toBeLessThan(now);
+        }
+        // Every day the demo computes is one the calendar has.
+        const days = [
+          c.birthday,
+          c.autoArchiveDate,
+          ...c.importantDates.map((d) => d.date),
+        ].filter((d): d is string => !!d && /^\d{4}-\d{2}-\d{2}$/.test(d));
+        for (const d of days) expect(realDay(d), `${where} ${d}`).toBe(true);
+      }
+    }
+  });
+});
+
 describe("createDemoBackend", () => {
   it("seeds each namespace in memory and round-trips edits", () => {
     const backend = createDemoBackend();
