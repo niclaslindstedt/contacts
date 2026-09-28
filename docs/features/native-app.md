@@ -12,7 +12,9 @@ only when a new version ships to the store.
 Everything you know from the browser is here unchanged — your folders, photos,
 attachments, themes, search, import and export. The app adds no second way of
 doing anything; it is the same screens, with the status bar and the safe-area
-edges painted to match whichever theme you picked.
+edges painted to match whichever theme you picked. An export — a vCard, a CSV,
+a backup, a calendar reminder or an attachment — opens the share sheet, so you
+can save it to Files, mail it or hand it to another app.
 
 What it adds is one thing the browser genuinely cannot do: syncing through your
 own **iCloud Drive**, so your contacts follow you between your Apple devices
@@ -25,5 +27,6 @@ the app, and approving closes it and connects. Close the sheet instead and
 nothing is connected.
 
 Your contacts stay yours. The app asks for no permissions at all — it reads
-nothing from your device, and the only thing it ever writes outside itself is
-the address book you asked it to sync, into a folder in your own iCloud Drive.
+nothing from your device, and the only things that ever leave it are the address
+book you asked it to sync, into a folder in your own iCloud Drive, and a file
+you export, wherever you send it from the share sheet.

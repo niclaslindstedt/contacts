@@ -3,7 +3,10 @@
 Contacts are stored as JSON and export from Settings → Storage (all contacts),
 per-card from the header's download button, or a chosen few from the **List**
 page's Select mode — tick contacts and copy them as a vCard block or export the
-selection to a vCard / CSV file:
+selection to a vCard / CSV file. In a browser the file downloads; in the iPhone
+and Android apps it opens the share sheet — save it to Files, mail it, or hand
+it to another app (every export goes through `src/app/saveExport.ts`, the
+framework's `saveFile`):
 
 - **vCard 3.0 (`.vcf`)** — one file with every card, including embedded photos.
   Imports directly into iOS Contacts, Android/Google Contacts, and Outlook. A

@@ -29,8 +29,6 @@ import {
   unlock as unlockTrophy,
 } from "../achievementsGate.ts";
 import {
-  downloadBlob,
-  downloadText,
   MIME_CSV,
   MIME_JSON,
   MIME_VCARD,
@@ -38,6 +36,7 @@ import {
 } from "@niclaslindstedt/oss-framework/files";
 
 import { log, logStore } from "../log.ts";
+import { saveExport } from "../saveExport.ts";
 import { useDevSeed } from "../dev/useDevSeed.ts";
 import { useT } from "../i18n/index.ts";
 import { contactsToCsv, contactsToVCards } from "../export.ts";
@@ -650,14 +649,26 @@ export function StorageTab({
   );
   const runExport = (kind: "vcf" | "csv" | "json") => {
     if (kind === "vcf") {
-      downloadText("contacts.vcf", contactsToVCards(exportable), MIME_VCARD);
+      void saveExport({
+        text: contactsToVCards(exportable),
+        filename: "contacts.vcf",
+        mimeType: MIME_VCARD,
+      });
     } else if (kind === "csv") {
-      downloadText("contacts.csv", contactsToCsv(exportable), MIME_CSV);
+      void saveExport({
+        text: contactsToCsv(exportable),
+        filename: "contacts.csv",
+        mimeType: MIME_CSV,
+      });
     } else {
-      downloadText("contacts.json", serializeDoc(store.data), MIME_JSON);
+      void saveExport({
+        text: serializeDoc(store.data),
+        filename: "contacts.json",
+        mimeType: MIME_JSON,
+      });
     }
     unlockTrophy("exporter");
-    log.info(`export: downloaded contacts.${kind}`);
+    log.info(`export: saved contacts.${kind}`);
   };
 
   // The file-picker path into the shared import flow (the same triage +
@@ -680,16 +691,18 @@ export function StorageTab({
     void importFiles(Array.from(files));
   };
 
-  // Export the whole document as a dated `.zip` straight to disk — a backup
-  // without touching any backend (the "download without persisting" path).
+  // Export the whole document as a dated `.zip` straight to the reader — a
+  // backup without touching any backend (the "download without persisting"
+  // path; the share sheet in the phone app).
   const exportBackup = async () => {
     const zip = await createBackupZip(store.data);
-    downloadBlob(
-      backupFileName(),
-      new Blob([zip as BlobPart], { type: MIME_ZIP }),
-    );
+    const saved = await saveExport({
+      blob: new Blob([zip as BlobPart], { type: MIME_ZIP }),
+      filename: backupFileName(),
+    });
+    if (!saved) return;
     unlockTrophy("backup");
-    log.info("backup: exported a snapshot to disk");
+    log.info("backup: exported a snapshot");
   };
 
   // Read a picked backup `.zip` and, once confirmed, replace the whole document

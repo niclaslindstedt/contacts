@@ -7,7 +7,7 @@ import {
   DownloadIcon,
   PencilIcon,
 } from "@niclaslindstedt/oss-framework/components";
-import { downloadText, MIME_VCARD } from "@niclaslindstedt/oss-framework/files";
+import { MIME_VCARD } from "@niclaslindstedt/oss-framework/files";
 import { SyncStatus } from "@niclaslindstedt/oss-framework/sync";
 import { unlock } from "./achievementsGate.ts";
 
@@ -19,6 +19,7 @@ import { FavoriteIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { contactToMarkdown } from "./contactMarkdown.ts";
 import { contactToVCard, exportFileStem } from "./export.ts";
+import { saveExport } from "./saveExport.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { SyncEngine } from "./useSyncEngine.ts";
 import { hasAddress } from "@niclaslindstedt/oss-framework/format";
@@ -155,11 +156,11 @@ function ContactCard({
   const t = useT();
 
   const exportVCard = () => {
-    downloadText(
-      `${exportFileStem(contact)}.vcf`,
-      `${contactToVCard(contact)}\r\n`,
-      MIME_VCARD,
-    );
+    void saveExport({
+      text: `${contactToVCard(contact)}\r\n`,
+      filename: `${exportFileStem(contact)}.vcf`,
+      mimeType: MIME_VCARD,
+    });
     unlock("exporter");
   };
 

@@ -10,8 +10,9 @@
 //   - JSON — the app's own on-disk document, for backup / re-import.
 //
 // Pure functions over the domain types — no DOM here — so the whole surface
-// is unit-testable in node (see `tests/export_test.ts`). The download glue
-// (Blob + anchor click) is the framework's (`files` — `downloadText`).
+// is unit-testable in node (see `tests/export_test.ts`). Saving the text is
+// `saveExport.ts`'s — the framework's `saveFile`, a download on the web and the
+// share sheet in the phone app.
 
 import {
   formatAddress,

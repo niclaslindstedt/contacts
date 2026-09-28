@@ -21,7 +21,10 @@ Thin is the design, not an aspiration. The wrapper:
   `modules/icloud-store`);
 - opens a cloud provider's sign-in in an **authentication session** when the
   page asks for one (`src/authSessionBridge.ts` → `src/authSession.ts` →
-  `expo-web-browser`) — see [Signing in to Dropbox](#signing-in-to-dropbox).
+  `expo-web-browser`) — see [Signing in to Dropbox](#signing-in-to-dropbox);
+- hands an export to the **share sheet** when the page saves a file
+  (`src/saveFileBridge.ts` → `src/saveFile.ts` → `expo-sharing`) — see
+  [Exports](#exports).
 
 That is the entire list, and it is deliberately not empty: **App Store
 guideline 4.2 rejects a build that is only a viewer for a website**, so the
@@ -62,6 +65,8 @@ exactly as they are for a picked local folder.
 | `src/icloudWire.ts`        | **Import-free.** The shapes that cross the bridge — see the note in the file.                                                      |
 | `src/authSessionBridge.ts` | **Pure.** The injected sign-in provider (`window.__ossAuthSession`) and its request/response plumbing. Tested from the root suite. |
 | `src/authSession.ts`       | Opens one sign-in in an authentication session (`expo-web-browser`) and hands back where it ended.                                 |
+| `src/saveFileBridge.ts`    | **Import-free.** The `save-file` descriptor, the request guard and the answer script. Tested from the root suite.                  |
+| `src/saveFile.ts`          | Writes one export to the cache and opens the share sheet (`expo-file-system`, `expo-sharing`).                                     |
 | `src/statusBar.ts`         | **Import-free.** Light or dark status-bar icons from the page's reported background. Tested from the root suite.                   |
 | `src/scriptText.ts`        | **Import-free.** Splicing text safely into an injected script; shared by both bridges.                                             |
 | `src/icloud.ts`            | Runs one request against the native module. Degrades to "unavailable" when it is absent.                                           |
@@ -201,6 +206,36 @@ sheet. The scheme needs no Info.plist entry of its own for the sheet to catch
 it; Expo registers it anyway from `scheme`.
 
 Other off-origin links are unchanged: they still leave for the system browser.
+
+## Exports
+
+A browser export is a download: an anchor clicked at a `blob:` URL. In the
+WebView that goes nowhere — the URL exists only inside the page. So the
+wrapper implements the framework's **`save-file`** contract
+(`docs/native-shell.md` in oss-framework), and every export in `src/` — the
+vCard / CSV / JSON files, a backup `.zip`, a birthday or date reminder `.ics`,
+an attachment — goes through the framework's `saveFile` (`src/app/saveExport.ts`):
+
+```
+saveFile({ text | blob, filename, mimeType })       (oss-framework)
+   │  window.__ossShell.capabilities has "save-file" — set before the page
+   │  loads by SAVE_FILE_DESCRIPTOR (src/saveFileBridge.ts)
+   ▼
+postMessage { type: "oss-framework/save-file", id, filename, mimeType, base64 }
+   ▼
+App.tsx → src/saveFile.ts → cache/exports/<id>/<name> → Sharing.shareAsync
+   │  the reader saves to Files, mails it, AirDrops it — or closes the sheet
+   ▼
+injectJavaScript: "oss-framework/save-file-result" { id, ok }
+```
+
+Without the descriptor the page keeps downloading, so a browser (and a shell
+without this half) behaves as it always did. The wrapper keeps only the latest
+export on disk, in the cache the next export clears, and never logs the bytes.
+Since nothing should navigate to a `blob:` or `data:` URL any more,
+`onShouldStartLoadWithRequest` refuses both rather than handing them to the
+system browser, which could not open them anyway. `tests/native_save_file_test.ts`
+pins the names against the framework's and runs a whole round trip.
 
 ## Things that will bite you
 

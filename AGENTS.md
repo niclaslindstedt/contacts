@@ -408,6 +408,14 @@ edit needs no fragment of its own.
   Dropbox app must list `se.agilator.contacts://oauth` — a different
   `APP_BUNDLE_ID` breaks phone sign-in until the App Console follows.
 
+- Every file the app hands the reader leaves through `src/app/saveExport.ts`
+  (the framework's `saveFile`), never `downloadText` / `downloadBlob` /
+  `saveDataUrl`: a `blob:` download goes nowhere in the phone app's WebView.
+  The shell's half is `native/src/saveFileBridge.ts` (the `save-file`
+  descriptor, injected before the page loads) and `native/src/saveFile.ts`
+  (the share sheet); the message and event names are the framework's, and
+  `tests/native_save_file_test.ts` pins them.
+
 ## Maintenance skills
 
 Per §21 of `OSS_SPEC.md`, this repo ships agent skills for keeping drift-prone

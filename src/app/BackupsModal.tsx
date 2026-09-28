@@ -13,7 +13,7 @@ import {
   TrashIcon,
 } from "@niclaslindstedt/oss-framework/components";
 import { unlock as unlockTrophy } from "./achievementsGate.ts";
-import { downloadBlob, MIME_ZIP } from "@niclaslindstedt/oss-framework/files";
+import { MIME_ZIP, saveFile } from "@niclaslindstedt/oss-framework/files";
 
 import {
   backupDisplayName,
@@ -120,11 +120,13 @@ export function BackupsModal({
       try {
         const bytes = await target.store.read(info.path);
         if (!bytes) throw new Error(t("settings.backups.gone"));
-        downloadBlob(
-          backupDisplayName(info),
-          new Blob([bytes as BlobPart], { type: MIME_ZIP }),
-        );
-        log.info(`backup: downloaded ${info.path}`);
+        // A download, or the share sheet in the phone app; a failure there
+        // lands in `failed` like a failed read.
+        await saveFile({
+          blob: new Blob([bytes as BlobPart], { type: MIME_ZIP }),
+          filename: backupDisplayName(info),
+        });
+        log.info(`backup: saved ${info.path}`);
       } catch (err) {
         failed("download", err);
       } finally {

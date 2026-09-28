@@ -2,7 +2,8 @@
 
 Export from **Settings → Storage** (all contacts), per-card from the header's
 download button, or a chosen few from the [List page](feature:list)'s Select
-mode. Three formats:
+mode. In the iPhone and Android apps an export opens the share sheet, so you can
+save it to Files, mail it, or hand it straight to another app. Three formats:
 
 - **vCard 3.0 (`.vcf`)** — one file with every card, including embedded photos;
   imports directly into iOS, Android/Google, and Outlook. A phone or email's

@@ -11,14 +11,11 @@ import {
   type FloatingPlacement,
 } from "@niclaslindstedt/oss-framework/components";
 import { unlock } from "./achievementsGate.ts";
-import {
-  downloadText,
-  MIME_CSV,
-  MIME_VCARD,
-} from "@niclaslindstedt/oss-framework/files";
+import { MIME_CSV, MIME_VCARD } from "@niclaslindstedt/oss-framework/files";
 
 import { useT } from "./i18n/index.ts";
 import { contactsToCsv, contactsToVCards } from "./export.ts";
+import { saveExport } from "./saveExport.ts";
 import type { Contact } from "./types.ts";
 
 // The export dropdown hangs off the download button in the List header, so it
@@ -55,9 +52,17 @@ export function SelectActions({
 
   const runExport = (kind: "vcf" | "csv") => {
     if (kind === "vcf") {
-      downloadText("contacts.vcf", contactsToVCards(contacts), MIME_VCARD);
+      void saveExport({
+        text: contactsToVCards(contacts),
+        filename: "contacts.vcf",
+        mimeType: MIME_VCARD,
+      });
     } else {
-      downloadText("contacts.csv", contactsToCsv(contacts), MIME_CSV);
+      void saveExport({
+        text: contactsToCsv(contacts),
+        filename: "contacts.csv",
+        mimeType: MIME_CSV,
+      });
     }
     unlock("exporter");
     setMenuOpen(false);

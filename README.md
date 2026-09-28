@@ -133,7 +133,8 @@ Enter — and start filling in the card.
   view's sections (Get in touch, Details, Tags, Addresses, Notes) as they stand,
   ready to paste into a note or a message.
 - **Export** — the download button in the card header (single vCard) or
-  Settings → Storage (all contacts as `.vcf`, CSV, or JSON).
+  Settings → Storage (all contacts as `.vcf`, CSV, or JSON). In the phone app
+  an export opens the share sheet.
 - **Import** — drag a `.vcf` (or CSV / JSON backup) straight onto the contact
   screen — handy for dropping a card shared out of the iOS Contacts app — or
   pick a file from Settings → Storage. Duplicates merge instead of piling up: a

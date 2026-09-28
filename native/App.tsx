@@ -4,8 +4,10 @@
 // This is a deliberately thin wrapper. It starts a loopback server, points a
 // WebView at it, keeps the native chrome in step with the page's theme, sends
 // off-origin links to the system browser, answers the page when it asks to
-// read or write the app's iCloud Drive container, and opens a provider's
-// sign-in in an authentication session when the page asks for one. There is
+// read or write the app's iCloud Drive container, opens a provider's sign-in
+// in an authentication session when the page asks for one, and hands an
+// export to the share sheet (the page's downloads cannot leave a WebView).
+// There is
 // no native UI at all beyond a spinner and a failure screen — everything a
 // reader sees is the web app, unchanged.
 //
@@ -63,6 +65,12 @@ import {
 } from "./src/authSessionBridge";
 import { answerAuthSession, authRedirectUri } from "./src/authSession";
 import { barStyleFor, type BarStyle } from "./src/statusBar";
+import {
+  SAVE_FILE_DESCRIPTOR,
+  isInPageUrl,
+  isSaveFileRequest,
+} from "./src/saveFileBridge";
+import { answerSaveFile } from "./src/saveFile";
 
 // Hold the native splash until the WebView actually paints. Called at module
 // scope so the auto-hide never wins the race; a rejection only means the
@@ -202,6 +210,14 @@ export default function App() {
         void signIn(parsed.id, parsed.url);
         return;
       }
+      // An export: the share sheet stays up as long as the reader leaves it,
+      // and the page's promise settles when it closes.
+      if (isSaveFileRequest(parsed)) {
+        void answerSaveFile(parsed, (script) =>
+          webViewRef.current?.injectJavaScript(script),
+        );
+        return;
+      }
       if (!isReport(parsed)) return;
 
       // The native chrome follows the page's theme so the status bar and the
@@ -244,6 +260,10 @@ export default function App() {
       if (!origin) return false;
       if (request.url.startsWith(origin)) return true;
       if (request.url.startsWith("about:")) return true;
+      // A `blob:` or `data:` URL exists only inside the page: the system
+      // browser cannot open it, and an export reaches the share sheet through
+      // `saveFile` instead (see `src/saveFileBridge.ts`).
+      if (isInPageUrl(request.url)) return false;
       void Linking.openURL(request.url);
       return false;
     },
@@ -298,7 +318,9 @@ export default function App() {
             incognito={false}
             allowsBackForwardNavigationGestures
             setSupportMultipleWindows={false}
-            injectedJavaScriptBeforeContentLoaded={BEFORE_LOAD_SCRIPT}
+            // Before the page's own scripts: the service-worker teardown, and
+            // the `save-file` capability the framework's `saveFile` reads.
+            injectedJavaScriptBeforeContentLoaded={`${BEFORE_LOAD_SCRIPT}\n${SAVE_FILE_DESCRIPTOR}`}
             // Three scripts, one prop: the theme reporter the native chrome
             // follows, the iCloud provider the app looks for, and the
             // auth-session provider its Dropbox sign-in looks for. All run

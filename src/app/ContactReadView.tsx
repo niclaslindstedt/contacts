@@ -24,7 +24,7 @@ import {
   daysUntilNextOccurrence,
   yearsSince,
 } from "@niclaslindstedt/oss-framework/calendar";
-import { downloadText, MIME_ICS } from "@niclaslindstedt/oss-framework/files";
+import { MIME_ICS } from "@niclaslindstedt/oss-framework/files";
 import { Lightbox } from "@niclaslindstedt/oss-framework/viewer";
 import {
   displayUrl,
@@ -35,9 +35,13 @@ import {
   attachmentList,
   formatFileSize,
   isImageAttachment,
-  isViewableAttachment,
 } from "./attachments.ts";
-import { downloadAttachment, openAttachment } from "./attachmentView.ts";
+import {
+  downloadAttachment,
+  openAttachment,
+  opensInTab,
+} from "./attachmentView.ts";
+import { saveExport } from "./saveExport.ts";
 import { autoArchiveAction } from "./autoArchive.ts";
 import {
   addressLines,
@@ -446,7 +450,7 @@ function BirthdayRow({
   const age = yearsSince(iso, now);
   const days = daysUntilNextOccurrence(iso, now);
 
-  // Download a one-event `.ics` for the calendar app to open and add. Recurs
+  // Save a one-event `.ics` for the calendar app to open and add. Recurs
   // yearly and stays a single entry across re-imports via a stable UID.
   const addToCalendar = () => {
     const name = displayName(contact) || t("contact.unnamed");
@@ -457,7 +461,11 @@ function BirthdayRow({
       now,
     });
     if (ics) {
-      downloadText(`${exportFileStem(contact)}-birthday.ics`, ics, MIME_ICS);
+      void saveExport({
+        text: ics,
+        filename: `${exportFileStem(contact)}-birthday.ics`,
+        mimeType: MIME_ICS,
+      });
     }
   };
 
@@ -512,7 +520,11 @@ function ImportantDateRow({
       now,
     });
     if (ics) {
-      downloadText(`${exportFileStem(contact)}-${date.id}.ics`, ics, MIME_ICS);
+      void saveExport({
+        text: ics,
+        filename: `${exportFileStem(contact)}-${date.id}.ics`,
+        mimeType: MIME_ICS,
+      });
     }
   };
 
@@ -704,16 +716,17 @@ function AttachmentsSection({ attachments }: { attachments: Attachment[] }) {
 
 // One non-image attachment as a tappable row: a file glyph, the name over the
 // size and any description, and a trailing mark for what the tap does — open in
-// a new tab for a viewable file (a PDF), or download for everything else.
+// a new tab for a viewable file (a PDF), or save everything else (and, in the
+// phone app, which has no tabs, a PDF too — see `opensInTab`).
 function FileAttachmentRow({ attachment }: { attachment: Attachment }) {
   const t = useT();
-  const viewable = isViewableAttachment(attachment);
+  const viewable = opensInTab(attachment);
   const size = formatFileSize(attachment.size);
   const description = attachment.description?.trim();
   const act = () => {
     // A viewable file opens in a new tab; if its bytes aren't ready (e.g. not
-    // yet pulled from a cloud file) fall back to a download. Non-viewable files
-    // download outright.
+    // yet pulled from a cloud file) fall back to saving it. Everything else is
+    // saved outright.
     if (viewable && openAttachment(attachment)) return;
     downloadAttachment(attachment);
   };
