@@ -33,14 +33,17 @@ iCloud **capability** on `window` and this installs one, so a browser (which
 has none) simply does not list the backend — down to its entry in the Storage
 picker. The app never asks what it is running inside.
 
-One thing is decided at build time instead, and it is about the channel, not
-the wrapper: `scripts/bundle-web.mjs` builds the site with
-`VITE_NATIVE_BUILD=on`, which compiles out what only the website carries: the
-side menu's Donate row — a payment link outside Apple's is an App Store
-rejection (guideline 3.1.1) — and the achievements (the trophies, the tour, the
-unlock celebration and their setting; `src/app/achievementsGate.ts`). Neither
-is in the bundle at all, and the script refuses to zip a `dist/` that carries
-them (a website build re-zipped with `--skip-build`).
+Two things are decided at build time instead. `scripts/bundle-web.mjs` builds
+the site with `VITE_SHELL_BUILD=on`, the desktop shell's edition: no service
+worker and no update prompt, because the files already ship inside the binary
+and a new version arrives through the App Store. And it sets
+`VITE_NATIVE_BUILD=on`, which is about the channel and compiles out what only
+the website carries: the side menu's Donate row — a payment link outside
+Apple's is an App Store rejection (guideline 3.1.1) — and the achievements (the
+trophies, the tour, the unlock celebration and their setting;
+`src/app/achievementsGate.ts`). None of it is in the bundle at all, and the
+script refuses to zip a `dist/` that carries `sw.js` or any of the rest (a
+website build re-zipped with `--skip-build`).
 
 The wrapper also decides nothing about the address book. It moves opaque files
 between the page and a folder. What the document is called, how photos are
@@ -208,10 +211,10 @@ Other off-origin links are unchanged: they still leave for the system browser.
 - **`localhost`, not `127.0.0.1`.** App Transport Security blocks the literal
   address from `WKWebView` even with exception domains declared. The failure
   mode is a silent blank page on iOS.
-- **The service worker is unregistered** (`src/injected.ts`). The origin is
-  stable across app updates, so a worker registered by an older build would
-  keep answering from its precache after a store update had already unpacked
-  the new one.
+- **The service worker is unregistered** (`src/injected.ts`). The bundle
+  ships none, but the origin is stable across app updates, so a worker
+  registered by an older build that did would keep answering from its
+  precache after a store update had already unpacked the new one.
 - **`url(forUbiquityContainerIdentifier:)` blocks.** It hits the disk and the
   iCloud account, so it never runs on the main thread — every entry point in
   the Swift module is an `AsyncFunction`, and the resolved URL is cached.

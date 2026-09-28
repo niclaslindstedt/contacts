@@ -210,11 +210,13 @@ const version = process.env.GITHUB_SHA
   ? buildLabel
   : `${buildLabel}+${new Date().toISOString()}`;
 
-// A build for the DESKTOP SHELL (tauri/), set by `tauri/scripts/bundle-web.mjs`.
+// A build for an app that carries its files inside it: the DESKTOP SHELL
+// (tauri/) and the PHONE WRAPPER (native/), set by each one's
+// `scripts/bundle-web.mjs`.
 //
 // It changes exactly one thing, and it is about the medium rather than the
 // audience: the service worker is left out (`serviceWorker: false` below —
-// everything else `appPwa` writes into the `<head>` still applies). A desktop
+// everything else `appPwa` writes into the `<head>` still applies). An app
 // build has no deployment to discover an update from — a new version arrives
 // as a new binary — so a worker here would precache a copy of files already on
 // local disk and then serve the page from ITS copy. `__SHELL_BUILD__` carries

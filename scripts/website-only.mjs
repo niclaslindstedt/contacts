@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
 // Refuses an app webroot that carries what only the website may:
 //
+//   - a service worker (`sw.js`) — an app's files ship inside it and a new
+//     version arrives as a new binary, so a worker would only serve a staler
+//     copy of them and prompt for updates nobody can apply;
 //   - a Donate link (App Store guideline 3.1.1; `src/app/donate.ts`);
 //   - the achievements (`src/app/achievementsBuilt.ts`);
 //   - a link back to the source, or any other mention of the owner's name —
 //     the repository, its issues, releases or sponsor page, the website's
 //     domain (the owner's decision D17; `src/app/sourceLinks.ts`).
 //
-// All three are compiled out of the phone build (`VITE_NATIVE_BUILD=on`) and
-// the desktop build (`VITE_SHELL_BUILD=on`); a `dist/` left by a website build
+// The worker is left out by `VITE_SHELL_BUILD=on`, which both app builds set;
+// the rest is compiled out of the phone build (`VITE_NATIVE_BUILD=on`) and the
+// desktop build (`VITE_SHELL_BUILD=on`) alike. A `dist/` left by a website build
 // carries them, and so would a webroot copied or zipped from it. This is the
 // check that the build honoured the flags — the failure is otherwise
 // invisible until review.
@@ -55,6 +59,11 @@ export function readTree(dir, root = dir, files = {}) {
 export function assertWebsiteOnlyAbsent(files, hint) {
   const list = needles();
   for (const [path, bytes] of Object.entries(files)) {
+    if (/^sw\.m?js$/.test(path)) {
+      throw new Error(
+        `${path} is a service worker — only the website may carry one. ${hint}`,
+      );
+    }
     const buf = Buffer.from(bytes);
     const hit = list.find(([, needle]) => buf.includes(needle));
     if (hit) {
@@ -80,7 +89,7 @@ if (
       "Build it through native/ or tauri/ scripts/bundle-web.mjs.",
     );
     console.log(
-      `✓ ${dir}: no Donate link, no achievements, no link to the source`,
+      `✓ ${dir}: no service worker, no Donate link, no achievements, no link to the source`,
     );
   } catch (err) {
     console.error(`✗ ${err.message}`);

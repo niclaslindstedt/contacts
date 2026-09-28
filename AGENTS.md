@@ -63,7 +63,9 @@ back into this tree, `VITE_SHELL_BUILD`, set by the shell's site build, which
 switches off the service-worker half of `appPwa` and — through
 `__SHELL_BUILD__` — the in-app update prompt, the Donate row, the
 achievements and the links back to the source. A desktop
-build updates by being replaced. The phone wrapper's site build sets
+build updates by being replaced. The phone wrapper's site build is the same
+shell edition — `VITE_SHELL_BUILD=on`, so no service worker and no update
+prompt, since a phone app updates through the App Store — and also sets
 `VITE_NATIVE_BUILD=on` (`__NATIVE_BUILD__`), which leaves out the Donate row,
 the achievements and the links back to the source and nothing else: no build
 but the website may carry a payment link outside Apple's (App Store guideline

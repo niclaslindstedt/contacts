@@ -6,19 +6,27 @@
 // on-device, and changes only when a new build ships to the store.
 //
 // The web build is `npm run build` at the repo root — base `/`, which is
-// exactly what a localhost origin wants — with one flag, `VITE_NATIVE_BUILD=on`.
-// It is about the channel rather than the medium: it compiles out what only
-// the website carries — the side menu's Donate row (App Store guideline 3.1.1;
-// see `src/app/donate.ts`), the achievements (`src/app/achievementsGate.ts`),
-// and every link back to the source (`src/app/sourceLinks.ts`).
+// exactly what a localhost origin wants — with two flags:
+//
+//   - `VITE_NATIVE_BUILD=on` is about the channel: it compiles out what only
+//     the website carries — the side menu's Donate row (App Store guideline
+//     3.1.1; see `src/app/donate.ts`), the achievements
+//     (`src/app/achievementsGate.ts`), and every link back to the source
+//     (`src/app/sourceLinks.ts`).
+//   - `VITE_SHELL_BUILD=on` is about the medium, exactly as for the desktop
+//     shell: the files already ship inside the binary and a new version
+//     arrives through the App Store, so there is no service worker (it would
+//     only stand a staler cache in front of files on local disk) and no update
+//     prompt nobody can act on.
+//
 // Nothing else in `src/` changes for the app. If the wrapper ever needs the
 // web app to behave differently in some other way, that is a sign it has
 // stopped being thin.
 //
-// The flag is build-time, so `--skip-build` re-zips whatever the last build
-// left in `dist/` — and a website build there carries the Donate link, the
-// achievements and the source links. The zip is refused when any is found in
-// it (`assertWebsiteOnlyAbsent`).
+// The flags are build-time, so `--skip-build` re-zips whatever the last build
+// left in `dist/` — and a website build there carries the service worker, the
+// Donate link, the achievements and the source links. The zip is refused when
+// any is found in it (`assertWebsiteOnlyAbsent`).
 //
 // Usage:
 //   node scripts/bundle-web.mjs                 # build the site, then zip it
@@ -70,7 +78,7 @@ if (!skipBuild) {
     stdio: "inherit",
     // npm on Windows is a batch shim, which Node cannot execute directly.
     shell: WINDOWS,
-    env: { ...process.env, VITE_NATIVE_BUILD: "on" },
+    env: { ...process.env, VITE_NATIVE_BUILD: "on", VITE_SHELL_BUILD: "on" },
   });
 }
 
@@ -108,16 +116,17 @@ if (count === 0 || !files["index.html"]) {
   );
 }
 
-// Refuse a webroot that carries what only the website may: a Donate link
-// (App Store guideline 3.1.1), the achievements, or a link back to the source
-// — anything spelling the owner's name (`../../scripts/website-only.mjs`). A
-// `dist/` left by a website build — which `--skip-build` would re-zip —
-// carries all three.
+// Refuse a webroot that carries what only the website may: a service worker,
+// a Donate link (App Store guideline 3.1.1), the achievements, or a link back
+// to the source — anything spelling the owner's name
+// (`../../scripts/website-only.mjs`). A `dist/` left by a website build —
+// which `--skip-build` would re-zip — carries all four.
 try {
   assertWebsiteOnlyAbsent(
     files,
     "The phone app must not. Rebuild through this script (drop " +
-      "--skip-build) so VITE_NATIVE_BUILD=on compiles it out.",
+      "--skip-build) so VITE_NATIVE_BUILD=on and VITE_SHELL_BUILD=on " +
+      "compile it out.",
   );
 } catch (error) {
   console.error(`\n✗ dist/${error.message}\n`);
