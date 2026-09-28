@@ -29,6 +29,27 @@ export type CountryCode = (typeof COUNTRIES)[number]["code"];
 /** The country used when nothing else matches. */
 export const DEFAULT_COUNTRY: CountryCode = SE.code;
 
+/** The home country a device's locale tags imply, most preferred tag first:
+ *  the first tag whose region is a registered country ("en-US" → US,
+ *  "sv-SE" → SE, "de-DE" → DE). A tag without a region reads as its
+ *  language's likeliest one ("sv" → SE, "en" → US). Nothing registered →
+ *  {@link DEFAULT_COUNTRY}. It seeds a new install's home country; a saved
+ *  setting always wins over it. */
+export function countryFromLocales(tags: readonly string[]): CountryCode {
+  for (const tag of tags) {
+    let region: string | undefined;
+    try {
+      const locale = new Intl.Locale(tag);
+      region = locale.region ?? locale.maximize().region;
+    } catch {
+      continue;
+    }
+    const country = region ? BY_CODE.get(region) : undefined;
+    if (country) return country.code;
+  }
+  return DEFAULT_COUNTRY;
+}
+
 const BY_CODE = new Map(COUNTRIES.map((c) => [c.code, c]));
 
 // A calling code can be shared (the US and Canada both own +1). The map keeps

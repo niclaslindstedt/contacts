@@ -10,7 +10,10 @@ toggles here never touch it.)
 
 ## Pick a country
 
-The tab is organized around a **country**, and it defaults to **Sweden**. Tap
+The tab is organized around a **country**, and it starts on the one your
+device is set to — the **United States** on a US phone, **Sweden** on a Swedish
+one (Sweden when your region isn't on the list yet). Once the app has opened,
+that choice is saved and stays put until you change it. Tap
 the country row to open the country picker — a searchable list of the world's
 thirty most developed countries, each with its flag and name. Start typing and
 the list narrows as you go: type `Fin` and **Finland** jumps to the top with the

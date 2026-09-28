@@ -28,7 +28,7 @@ import { type PwaUpdate } from "@niclaslindstedt/oss-framework/pwa";
 import { FormatIcon } from "./icons.tsx";
 import { useT } from "./i18n/index.ts";
 import { APP_LOOK } from "./look.ts";
-import { DEFAULT_SETTINGS, type AppSettings } from "./useAppSettings.ts";
+import { defaultSettings, type AppSettings } from "./useAppSettings.ts";
 import type { ContactStore } from "./useContactStore.ts";
 import type { MutablePasswordRef, SyncEngine } from "./useSyncEngine.ts";
 import {
@@ -158,7 +158,7 @@ export function SettingsModal({
   }
   function reset() {
     setAppearance(APP_LOOK);
-    setDraft(DEFAULT_SETTINGS);
+    setDraft(defaultSettings());
   }
 
   return (

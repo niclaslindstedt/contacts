@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   COUNTRIES,
   DEFAULT_COUNTRY,
+  countryFromLocales,
   formatPhoneValue,
   formatPostalValue,
   formatStoredPhone,
@@ -338,5 +339,29 @@ describe("catalogue postal conventions", () => {
     expect(formatPostalValue("0150", "NO", postal({ spaces: false }))).toBe(
       "0150",
     );
+  });
+});
+
+describe("countryFromLocales", () => {
+  it("takes the home country from the device's region", () => {
+    expect(countryFromLocales(["en-US"])).toBe("US");
+    expect(countryFromLocales(["sv-SE"])).toBe("SE");
+    expect(countryFromLocales(["en-GB"])).toBe("GB");
+    expect(countryFromLocales(["de-DE"])).toBe("DE");
+  });
+
+  it("reads a bare language as its likeliest region", () => {
+    expect(countryFromLocales(["sv"])).toBe("SE");
+    expect(countryFromLocales(["en"])).toBe("US");
+  });
+
+  it("takes the first preferred tag it has a country for", () => {
+    expect(countryFromLocales(["xx-ZZ", "en-US", "sv-SE"])).toBe("US");
+  });
+
+  it("falls back to the default without a usable tag", () => {
+    expect(countryFromLocales([])).toBe(DEFAULT_COUNTRY);
+    expect(countryFromLocales(["not a tag!"])).toBe(DEFAULT_COUNTRY);
+    expect(countryFromLocales(["xx-ZZ"])).toBe(DEFAULT_COUNTRY);
   });
 });

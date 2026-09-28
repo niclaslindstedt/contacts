@@ -36,8 +36,10 @@ On first launch you land in the **Personal** namespace with one blank card.
 
 ## Choose your formats (optional)
 
-Settings → **Format** is organised around a **country**. Pick yours — Sweden or
-the United States to start — and phone numbers and postal codes are shown that
+Settings → **Format** is organised around a **country**. It starts on your
+device's region (Sweden when the app doesn't know it yet), and you can pick
+another — Sweden or the United States to start — and phone numbers and postal
+codes are shown that
 country's way: Sweden's `+46 (0)76-818 13 37` and `123 45`, or the US's
 `+1 (202) 555-0100` and `12345-6789`. A number that carries its own country
 code (`+1`, `+46`) is formatted for that country automatically, so a Swedish
