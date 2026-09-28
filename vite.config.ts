@@ -44,8 +44,8 @@ const SHOWCASE_ROUTE: RouteHead = {
   path: "/home/",
   title: "Contacts — what it does & why it asks for access",
   description:
-    "What Contacts does, where your data lives, and why it requests Google " +
-    "Drive or Dropbox access — only when you turn on optional cloud sync.",
+    "What Contacts does, where your data lives, and why it requests " +
+    "Dropbox access — only when you turn on optional cloud sync.",
   ogType: "website",
 };
 
