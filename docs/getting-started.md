@@ -54,7 +54,8 @@ to show it only for foreign numbers, so numbers in your own country read plainly
 without a `+46`), whether to show the leading-zero trunk digit, and whether to
 group postal codes with spaces. Each country decides what those toggles mean and ignores the ones it has
 no use for. The birthday **date** keeps its own independent style — ISO, US,
-European, or a long `3 July 2026` form.
+European, or a long `3 July 2026` form — and starts the way your device writes
+dates.
 
 Every section previews your choice with a live sample. These change the display
 only — what you typed is stored untouched, and focusing a phone field reveals

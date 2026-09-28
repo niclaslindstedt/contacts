@@ -29,6 +29,37 @@ export const DATE_FORMATS: readonly DateFormat[] = [
   "long",
 ] as const;
 
+// The regions that write the day first (`03/07/2026`, `3.7.2026`), which the
+// "eu" style is closest to. The United States writes the month first; every
+// other region — Sweden, Japan, Korea, Canada's official form, and any region
+// not listed here — gets ISO, which nobody misreads.
+// prettier-ignore
+const DAY_FIRST_REGIONS: ReadonlySet<string> = new Set([
+  "AT", "AU", "BE", "CH", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GB", "GR",
+  "IE", "IL", "IS", "IT", "LU", "NL", "NO", "NZ", "PL", "PT", "SG", "SI",
+]);
+
+/** The date style a device's locale tags imply, most preferred tag first —
+ *  read the way the home country is (`countryFromLocales`): the first tag
+ *  with a region decides, a tag without one reads as its language's likeliest
+ *  region. US → "us", a day-first region → "eu", anything else → "iso". It
+ *  seeds a new install's date format; a saved setting always wins over it. */
+export function dateFormatFromLocales(tags: readonly string[]): DateFormat {
+  for (const tag of tags) {
+    let region: string | undefined;
+    try {
+      const locale = new Intl.Locale(tag);
+      region = locale.region ?? locale.maximize().region;
+    } catch {
+      continue;
+    }
+    if (!region) continue;
+    if (region === "US") return "us";
+    return DAY_FIRST_REGIONS.has(region) ? "eu" : "iso";
+  }
+  return "iso";
+}
+
 /** English month names, index 0 = January. Shared with the important-date
  *  formatter so its "long" form matches the birthday's. */
 export const MONTHS_EN = [

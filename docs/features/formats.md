@@ -53,8 +53,11 @@ no use for, so the same switches read sensibly whichever country you pick.
 
 The birthday and other important dates follow a **date format** of their own —
 ISO (`2026-07-03`), US (`07/03/2026`), European (`03/07/2026`), or a long
-`3 July 2026`. As with the rest of the tab, the stored date is never rewritten;
-only how it reads on the card changes.
+`3 July 2026`. Like the country, it starts the way your device writes dates:
+month first on a US phone, day first in Norway, Denmark, Finland, Iceland and
+most of Europe, and ISO in Sweden and everywhere else. Once the app has opened,
+that choice is saved and stays put until you change it. As with the rest of the
+tab, the stored date is never rewritten; only how it reads on the card changes.
 
 ## Adding more countries
 

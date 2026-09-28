@@ -8,7 +8,7 @@ import {
   type BackdropBlurPreset,
   type BackdropDarknessPreset,
 } from "@niclaslindstedt/oss-framework/theme";
-import type { DateFormat } from "./format.ts";
+import { dateFormatFromLocales, type DateFormat } from "./format.ts";
 import {
   DEFAULT_COUNTRY,
   countryFromLocales,
@@ -107,7 +107,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   disableAchievements: false,
   devMode: false,
   captureLogs: false,
-  // Dates default to ISO; phone/postal formatting defaults *on*, so phones and
+  // Dates default to ISO here, and to the device's style on a new install
+  // (`defaultSettings`); phone/postal formatting defaults *on*, so phones and
   // postal codes render in the home country's convention out of the box. The
   // Format tab can switch either back off to show values exactly as typed.
   dateFormat: "iso",
@@ -149,14 +150,18 @@ export function deviceLocales(): readonly string[] {
 }
 
 /** The defaults for THIS device: {@link DEFAULT_SETTINGS} with the home
- *  country taken from the device's locale, so a US phone starts with US phone
- *  numbers and ZIP codes before the city, and a Swedish one with Swedish
- *  conventions. Only a new install (or a reset) sees it: a saved country
- *  always wins. */
+ *  country and the date format taken from the device's locale, so a US phone
+ *  starts with US phone numbers, ZIP codes before the city and month-first
+ *  dates, and a Swedish one with Swedish conventions and ISO dates. Only a new
+ *  install (or a reset) sees it: a saved country or date format always wins. */
 export function defaultSettings(
   locales: readonly string[] = deviceLocales(),
 ): AppSettings {
-  return { ...DEFAULT_SETTINGS, country: countryFromLocales(locales) };
+  return {
+    ...DEFAULT_SETTINGS,
+    country: countryFromLocales(locales),
+    dateFormat: dateFormatFromLocales(locales),
+  };
 }
 
 const STORAGE_KEY = "contacts:settings";
@@ -212,9 +217,9 @@ export function useAppSettings() {
   // migration of the display formats.
   //
   // The hook writes what it read straight back, so every install that has
-  // opened the app once has its home country saved — Sweden, for the ones
-  // from before it followed the device — and keeps it. Only a first launch
-  // takes the device's.
+  // opened the app once has its home country and date format saved — Sweden
+  // and ISO, for the ones from before they followed the device — and keeps
+  // them. Only a first launch takes the device's.
   const defaults = useMemo(() => defaultSettings(), []);
   const [settings, setSettings] = useLocalStorageState<AppSettings>(
     STORAGE_KEY,
