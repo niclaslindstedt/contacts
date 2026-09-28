@@ -418,6 +418,7 @@ symlink.
 | `update-docs`         | After any change to user-visible behavior, configuration keys, or the export formats.                                                       |
 | `update-readme`       | After any change that alters user-visible behavior, commands, or install instructions.                                                      |
 | `update-achievements` | After shipping a user-visible feature that deserves a trophy, or when the achievements catalog / i18n has drifted from the feature surface. |
+| `sync-oss-spec`       | When `validate.sh` reports violations, or the spec copy at the root was bumped — last in a `maintenance` sweep.                             |
 
 Each skill has a `SKILL.md` (the playbook) and a `.last-updated` file (the
 baseline commit hash). The `maintenance` skill owns a **Registry** table
