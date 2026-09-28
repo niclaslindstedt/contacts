@@ -1,4 +1,4 @@
-.PHONY: demo build test lint fmt fmt-check actionlint release clean docs website website-dev install icons changelog bump native-install native-bundle native-typecheck native-prebuild store-preflight store-metadata store-upload tauri tauri-bundle tauri-clean tauri-fast tauri-fmt tauri-fmt-check tauri-install tauri-lint tauri-package tauri-package-debug tauri-test
+.PHONY: demo build test lint fmt fmt-check actionlint release clean docs website website-dev install icons changelog bump native-install native-bundle native-typecheck native-doctor native-prebuild store-preflight store-metadata store-upload tauri tauri-bundle tauri-clean tauri-fast tauri-fmt tauri-fmt-check tauri-install tauri-lint tauri-package tauri-package-debug tauri-test
 
 build:
 	npm run build
@@ -81,6 +81,10 @@ native-bundle:
 
 native-typecheck:
 	npm --prefix native run typecheck
+
+# Expo's health check over the wrapper (SDK versions, config). CI runs it.
+native-doctor:
+	npm --prefix native run doctor
 
 # Regenerate native/ios and native/android from app.config.js and the config
 # plugin. Both are gitignored build output — this is only for inspecting what

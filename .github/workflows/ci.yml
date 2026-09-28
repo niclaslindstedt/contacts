@@ -53,6 +53,10 @@ jobs:
           cache-dependency-path: native/package-lock.json
       - run: npm ci
       - run: npm run typecheck
+      # Expo's own health check: the SDK's pinned versions, duplicate native
+      # modules, config the prebuild would reject. It reads only the checked-in
+      # project, so no Expo account or token is needed.
+      - run: npx expo-doctor
 
   changeset:
     # Enforces that every PR touching user-visible code drops a

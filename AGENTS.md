@@ -37,6 +37,7 @@ install` does not touch it, and neither does `npm ci` at the root:
 make native-install    # npm --prefix native install
 make native-bundle     # build the web app into native/assets/webroot.zip
 make native-typecheck  # the wrapper's own tsc
+make native-doctor     # expo-doctor over the wrapper (CI runs it)
 make native-prebuild   # inspect what the config plugin generates
 ```
 
