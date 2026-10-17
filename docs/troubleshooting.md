@@ -14,7 +14,8 @@ authentication even for public packages. Add a personal access token with
 
 The OAuth identities are baked in at build time (`VITE_DROPBOX_APP_KEY`,
 ); a backend whose identifier is unset is hidden from
-the picker rather than offered as a dead option. See
+the picker rather than offered as a dead option. The phone app never offers
+Dropbox, whatever the key: it syncs through iCloud Drive. See
 [configuration.md](configuration.md).
 
 ## The sync glyph shows a conflict

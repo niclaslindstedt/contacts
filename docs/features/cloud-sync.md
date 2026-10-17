@@ -15,8 +15,8 @@ attachments are filed out of the document as real files — see
 
 ## iCloud Drive
 
-In the [App Store app](feature:native-app) there is a fourth choice, and it's
-the simplest one: **iCloud Drive**. There's no account to create and no consent
+In the [App Store app](feature:native-app) you can choose **iCloud Drive**,
+and it's the simplest choice of all. There's no account to create and no consent
 screen — your iPhone or iPad is already signed in to iCloud, so connecting is a
 single tap and your address book starts following you between your own devices.
 Nobody else is holding the file.

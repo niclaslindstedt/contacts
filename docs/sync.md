@@ -9,7 +9,9 @@ keeps a copy in sync:
   network. Available in Chromium-based browsers (Chrome, Edge, Opera, Brave,
   Arc); hidden elsewhere.
 - **Dropbox** — OAuth (PKCE) with silent token refresh; the document lives in
-  the app's folder as `contacts-<namespace>.json`.
+  the app's folder as `contacts-<namespace>.json`. On the website and in the
+  desktop app only: the phone build has no Dropbox
+  ([configuration.md](configuration.md#no-dropbox-in-the-phone-app)).
 - **iCloud Drive** — only in the App Store build, where the app's own iCloud
   container is filed under `Contacts` in the Files app. No account to create and
   no consent screen: the device is already signed in, or it is not.

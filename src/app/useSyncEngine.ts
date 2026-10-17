@@ -50,6 +50,7 @@ import type {
   SyncLocation,
 } from "@niclaslindstedt/oss-framework/sync";
 
+import { DROPBOX_BUILT } from "./dropboxBuilt.ts";
 import { createICloudAdapter } from "./icloudStore.ts";
 import { useICloudBackend } from "./useICloudBackend.ts";
 import { logStore } from "./log.ts";
@@ -101,9 +102,12 @@ const ENCRYPTED_KEY = "contacts:sync:encrypted";
 const SAVE_DEBOUNCE_MS = 1200;
 
 // OAuth app identities, injected at build time. Without them the matching
-// backend's Connect button explains what to configure instead of failing.
-export const DROPBOX_APP_KEY: string =
-  (import.meta.env.VITE_DROPBOX_APP_KEY as string | undefined) ?? "";
+// backend's Connect button explains what to configure instead of failing. A
+// build without Dropbox (the phone app, `./dropboxBuilt.ts`) has no key even
+// when the environment carries one, so every path that needs it folds away.
+export const DROPBOX_APP_KEY: string = DROPBOX_BUILT
+  ? ((import.meta.env.VITE_DROPBOX_APP_KEY as string | undefined) ?? "")
+  : "";
 
 // Dropbox fixes the app-folder name from the app's own configuration (an
 // "App folder"-scoped app lives under `Apps/<name>/`), so it isn't always
@@ -146,9 +150,14 @@ export type PendingCloudSetup = {
   local: CloudDocSummary;
 };
 
-function readBackend(): SyncBackendId {
+// A backend this build does not carry reads as this device, where the working
+// copy already is — a phone install that remembers Dropbox opens on its own
+// contacts rather than a backend it cannot reach.
+export function readBackend(): SyncBackendId {
   const raw = localStorage.getItem(BACKEND_KEY);
-  return raw === "dropbox" || raw === "folder" || raw === "icloud"
+  return (raw === "dropbox" && DROPBOX_BUILT) ||
+    raw === "folder" ||
+    raw === "icloud"
     ? raw
     : "local";
 }
@@ -182,7 +191,9 @@ export function cloudFileName(slug: string): string {
  *  Dropbox. Shown under "File location" in the command centre. */
 function backendPath(backend: SyncBackendId, slug: string): string {
   const file = cloudFileName(slug);
-  if (backend === "dropbox") return `Apps/${DROPBOX_APP_FOLDER}/${file}`;
+  if (DROPBOX_BUILT && backend === "dropbox") {
+    return `Apps/${DROPBOX_APP_FOLDER}/${file}`;
+  }
   // The Files-app folder the container is published under — see
   // `native/plugins/with-icloud.js`, which is where that name is set.
   if (backend === "icloud") return `iCloud Drive/${ICLOUD_FOLDER}/${file}`;
@@ -197,7 +208,7 @@ function backendPath(backend: SyncBackendId, slug: string): string {
 // backend that could open straight onto a namespace's file, is gone, and the
 // callers still describe the file they mean.
 function backendWebUrl(backend: SyncBackendId, _slug: string): string | null {
-  if (backend === "dropbox") {
+  if (DROPBOX_BUILT && backend === "dropbox") {
     return `https://www.dropbox.com/home/Apps/${encodeURIComponent(
       DROPBOX_APP_FOLDER,
     )}`;
@@ -405,7 +416,7 @@ export function useSyncEngine(
   // copy is readable offline (`withLocalCache`) and — when the user opted in —
   // encrypted at the byte boundary (`withEncryption`).
   const adapter: StorageAdapter | null = useMemo(() => {
-    if (backend === "dropbox" && dropboxTokens) {
+    if (DROPBOX_BUILT && backend === "dropbox" && dropboxTokens) {
       const dropboxAuth = {
         accessToken: dropboxTokens.accessToken,
         refreshToken: dropboxTokens.refreshToken,
@@ -511,7 +522,7 @@ export function useSyncEngine(
   // attachment externalisers already drive, scoped to the `backups/` subtree.
   const backupTarget = useMemo<BackupTarget | null>(() => {
     if (paused || encrypted) return null;
-    if (backend === "dropbox" && dropboxTokens) {
+    if (DROPBOX_BUILT && backend === "dropbox" && dropboxTokens) {
       const dropboxAuth = {
         accessToken: dropboxTokens.accessToken,
         refreshToken: dropboxTokens.refreshToken,
@@ -558,7 +569,7 @@ export function useSyncEngine(
   // disconnected; the screens then simply show whatever bytes they already hold.
   const photoBytes = useMemo<PhotoStore | null>(() => {
     if (paused || encrypted) return null;
-    if (backend === "dropbox" && dropboxTokens) {
+    if (DROPBOX_BUILT && backend === "dropbox" && dropboxTokens) {
       return dropboxPhotoStore(
         {
           accessToken: dropboxTokens.accessToken,
@@ -1212,7 +1223,7 @@ export function useSyncEngine(
 
   // Re-run the backend's consent flow — the command centre's "Reconnect".
   const reconnect = useCallback(async () => {
-    if (backend === "dropbox") await connectDropbox();
+    if (DROPBOX_BUILT && backend === "dropbox") await connectDropbox();
     else if (backend === "folder") {
       await reconnectFolder();
       return; // reconnectFolder clears the fault only on a granted re-confirm.

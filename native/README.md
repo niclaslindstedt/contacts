@@ -21,7 +21,8 @@ Thin is the design, not an aspiration. The wrapper:
   `modules/icloud-store`);
 - opens a cloud provider's sign-in in an **authentication session** when the
   page asks for one (`src/authSessionBridge.ts` → `src/authSession.ts` →
-  `expo-web-browser`) — see [Signing in to Dropbox](#signing-in-to-dropbox);
+  `expo-web-browser`) — see [Signing in to Dropbox](#signing-in-to-dropbox).
+  The phone build offers no Dropbox today, so nothing asks for it yet;
 - hands an export to the **share sheet** when the page saves a file
   (`src/saveFileBridge.ts` → `src/saveFile.ts` → `expo-sharing`) — see
   [Exports](#exports).
@@ -151,10 +152,17 @@ There is no iCloud on Android, and the module says so rather than pretending:
 `modules/icloud-store` declares only the `apple` platform, so
 `requireOptionalNativeModule` returns `null` there and the backend is reported
 unavailable — which means the web app never lists it. The Android build is the
-same offline-capable address book with the same Dropbox and
-on-device backends the website has.
+same offline-capable address book, kept on the device: the phone build carries
+no Dropbox (`src/app/dropboxBuilt.ts`).
 
 ## Signing in to Dropbox
+
+**The phone build offers no Dropbox.** `VITE_NATIVE_BUILD=on` compiles the
+backend out of the page (`src/app/dropboxBuilt.ts`; see
+[configuration.md](../docs/configuration.md#no-dropbox-in-the-phone-app)), and
+`native.yml` passes no Dropbox key, so nothing below runs in the store build
+today. The seam stays because it is a capability, not a Dropbox feature: a
+phone build that offered Dropbox again would sign in exactly this way.
 
 The page's own Dropbox sign-in is a redirect: consent at dropbox.com, then
 back to the page's origin with a code, which the page trades for tokens using

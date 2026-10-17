@@ -7,7 +7,7 @@ server and no runtime config file). Vite reads these from the environment:
 | ------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `VITE_BASE`               | `/`                                                            | The deploy base path. Drives asset URLs, the service-worker scope, and the precache cache id. The site is served from the custom domain (`contacts.niclaslindstedt.se`); each release channel builds at its own base: `/` (release), `/preview/` (main), `/branch/` (the on-demand branch slot).                                                                                                                                                               |
 | `VITE_PWA_IGNORE_PATHS`   | _(unset)_                                                      | Comma-separated absolute paths the service worker must **disown** — the sibling channels nested under this build's base. Only the root release sets it (`/preview/,/branch/`); its worker's scope `/` is a prefix of the siblings, so without this it would serve the released shell in place of a preview/branch page.                                                                                                                                        |
-| `VITE_DROPBOX_APP_KEY`    | _(unset)_                                                      | Dropbox app key for the OAuth PKCE connect flow. Create a Dropbox app with the `files.content.write`/`files.content.read` scopes and an app folder; no secret is needed (PKCE). When unset, Dropbox is hidden from the storage backend picker.                                                                                                                                                                                                                 |
+| `VITE_DROPBOX_APP_KEY`    | _(unset)_                                                      | Dropbox app key for the OAuth PKCE connect flow. Create a Dropbox app with the `files.content.write`/`files.content.read` scopes and an app folder; no secret is needed (PKCE). When unset, Dropbox is hidden from the storage backend picker. The phone build ignores it: it has no Dropbox (see [below](#no-dropbox-in-the-phone-app)).                                                                                                                      |
 | `VITE_DROPBOX_APP_FOLDER` | `Contacts`                                                     | The name of the Dropbox **app folder** (`Apps/<name>/`), fixed by your Dropbox app's configuration. Sets where the "Open in Dropbox" link and the "File location" line in the sync command centre point; it does not create the folder (Dropbox does). Set it to match your app's real folder name when it isn't `Contacts`.                                                                                                                                   |
 | `VITE_SEED`               | _(unset)_                                                      | Boot into a developer in-memory backend, seeded with sample contacts. `1`/`true`/`sample` loads the curated edge-case set; a number loads roughly that many contacts; `large` loads a big stress-test spread; `demo` loads the presentation-grade demo address book; `0` or unset starts on the real address book. In-memory only — nothing is persisted. `npm run dev` sets this to `large` by default. See [Fake data](#fake-data--seeded-dev-server) below. |
 | `VITE_DONATE_URL`         | [GitHub Sponsors](https://github.com/sponsors/niclaslindstedt) | The link target for the side menu's **Donate** row — **on the website only**. The phone and desktop builds compile the row out whatever this says (App Store guideline 3.1.1; see [below](#no-donate-link-in-the-apps)). Set it to point the button at a different sponsorship page; when unset it falls back to the project's GitHub Sponsors page.                                                                                                           |
@@ -73,10 +73,29 @@ spells `niclaslindstedt` anywhere, in any file (`scripts/website-only.mjs`).
 
 The Dropbox app behind `VITE_DROPBOX_APP_KEY` must list, under **Settings →
 OAuth 2 → Redirect URIs** in the App Console, every redirect URI the app signs
-in with: the deployed URL for the website, `http://127.0.0.1:53682/`,
-`:53683/` and `:53684/` for the desktop app, and
-`se.agilator.contacts://oauth` (the bundle id as the scheme) for the phone app
-— see [native/README.md](../native/README.md#signing-in-to-dropbox).
+in with: the deployed URL for the website, and `http://127.0.0.1:53682/`,
+`:53683/` and `:53684/` for the desktop app.
+
+## No Dropbox in the phone app
+
+The phone app keeps the address book on the device or in the reader's own
+iCloud Drive, and offers no Dropbox: no option in the storage picker, no
+connect button, no mention in Settings, the privacy page or What's new. The
+website and the desktop app keep Dropbox unchanged. `VITE_NATIVE_BUILD=on`
+decides it at compile time (`src/app/dropboxBuilt.ts`), so the Dropbox UI is
+folded out of that bundle rather than hidden, `DROPBOX_APP_KEY` is empty there
+whatever the environment says, and the phone workflow (`native.yml`) passes
+neither Dropbox variable. `vite.config.ts` loads the CHANGELOG and the feature
+docs without the paragraphs, list items and sections that name Dropbox
+(`src/app/withoutDropbox.ts`), so a feature doc keeps Dropbox in blocks of its
+own. A phone install that still remembers Dropbox as its backend (an early
+test build) opens on this device, where its working copy already is.
+
+The wrapper's in-app sign-in sheet (`native/src/authSessionBridge.ts`) stays:
+it is a capability the page asks for, not a Dropbox feature, and a phone build
+that offered Dropbox again would sign in through it with
+`se.agilator.contacts://oauth` (the bundle id as the scheme) as its redirect
+URI — see [native/README.md](../native/README.md#signing-in-to-dropbox).
 
 ## Fake data / seeded dev server
 

@@ -79,6 +79,7 @@ import {
   type MutablePasswordRef,
   type SyncEngine,
 } from "../useSyncEngine.ts";
+import { DROPBOX_BUILT } from "../dropboxBuilt.ts";
 import { LanguagePicker } from "./shared.tsx";
 import { CountryPickerModal } from "./CountryPickerModal.tsx";
 
@@ -590,7 +591,8 @@ export function StorageTab({
 
   // A cloud backend only appears in the picker when its OAuth identifier is
   // baked into the build — an unconfigured backend can't be connected, so we
-  // hide it rather than offer a dead option. The local folder appears only in
+  // hide it rather than offer a dead option. The phone app has no Dropbox at
+  // all (`../dropboxBuilt.ts` empties its key). The local folder appears only in
   // browsers that expose the File System Access API (Chromium-based), and
   // iCloud Drive only where a host offers one (see `icloudHost.ts`) — in a
   // browser there is none, so the option simply isn't there. `local` is always
@@ -613,7 +615,7 @@ export function StorageTab({
           },
         ]
       : []),
-    ...(DROPBOX_APP_KEY
+    ...(DROPBOX_BUILT && DROPBOX_APP_KEY
       ? [
           {
             value: "dropbox" as const,
@@ -638,7 +640,8 @@ export function StorageTab({
   };
   const pickedFolder = picked === "folder";
   const pickedICloud = picked === "icloud";
-  const pickedCloud = picked === "dropbox" ? picked : null;
+  // A build without Dropbox (the phone app) folds the whole block away.
+  const pickedCloud = DROPBOX_BUILT && picked === "dropbox" ? picked : null;
   // Unconfigured backends are hidden above, so this only fires for a backend
   // persisted by an earlier build that had the key and this one doesn't —
   // still worth explaining rather than leaving the picker silently stuck.

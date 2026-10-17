@@ -10,12 +10,14 @@
 // The phone and desktop apps carry the same policy without the website's
 // domain or a link back to the source (`SOURCE_LINKS_BUILT`): they name the
 // app rather than an origin, and send questions to the company's support
-// address instead of the repository's issues.
+// address instead of the repository's issues. The phone app carries no
+// Dropbox (`./dropboxBuilt.ts`), so its policy names iCloud Drive alone.
 import { type ReactNode } from "react";
 
 import { ArrowLeftIcon } from "@niclaslindstedt/oss-framework/components";
 
 import { ACHIEVEMENTS_BUILT } from "./achievementsBuilt.ts";
+import { DROPBOX_BUILT } from "./dropboxBuilt.ts";
 import { SOURCE_LINKS_BUILT, SUPPORT_EMAIL } from "./sourceLinks.ts";
 
 // The name the app calls itself: the store listing's in the phone build
@@ -25,7 +27,7 @@ const APP_NAME = __APP_NAME__;
 // Last meaningful change to the policy text below. Bump this whenever the
 // wording is edited — it renders verbatim at the top of the page and is the
 // only line readers have to look at to see how fresh the policy is.
-const LAST_UPDATED = "2026-09-23";
+const LAST_UPDATED = "2026-10-17";
 
 export function PrivacyPage() {
   return (
@@ -60,11 +62,14 @@ export function PrivacyPage() {
             There is no backend of our own, no account, no cookies, and no
             analytics or tracking. By default your contacts are stored only on
             your device and never leave it. You may optionally connect a cloud
-            backend (Dropbox, or iCloud Drive in the App Store app) to sync your
-            address book across your own devices — in that case, and only then,
-            your contacts are sent to that one provider at your explicit
-            request. The project authors never receive your contacts in any
-            configuration.
+            backend (
+            {DROPBOX_BUILT
+              ? "Dropbox, or iCloud Drive in the App Store app"
+              : "your own iCloud Drive"}
+            ) to sync your address book across your own devices — in that case,
+            and only then, your contacts are sent to that one provider at your
+            explicit request. The project authors never receive your contacts in
+            any configuration.
           </p>
         </Section>
 
@@ -98,13 +103,17 @@ export function PrivacyPage() {
                 : "and other appearance settings"}
               .
             </li>
-            <li>
-              Which storage backend you&apos;ve chosen, and — if you&apos;ve
-              connected Dropbox — the OAuth access and refresh tokens for that
-              provider. These tokens grant access only to the app&apos;s own
-              folder, never your whole account, and never leave your device
-              except to authenticate with that provider.
-            </li>
+            {DROPBOX_BUILT ? (
+              <li>
+                Which storage backend you&apos;ve chosen, and — if you&apos;ve
+                connected Dropbox — the OAuth access and refresh tokens for that
+                provider. These tokens grant access only to the app&apos;s own
+                folder, never your whole account, and never leave your device
+                except to authenticate with that provider.
+              </li>
+            ) : (
+              <li>Which storage backend you&apos;ve chosen.</li>
+            )}
           </ul>
           <p>
             This data is stored as plain JSON on your own device. Clearing your
@@ -134,15 +143,17 @@ export function PrivacyPage() {
               your browser&apos;s IndexedDB so the app can reopen the folder
               without asking again.
             </li>
-            <li>
-              <strong className="text-fg-bright">Dropbox</strong> — only when
-              you explicitly connect it, your contacts are stored in your
-              Dropbox (in an app-scoped folder) so they sync across your own
-              devices. Connecting sends you to Dropbox&apos;s own consent
-              screen; the app requests access to its own folder only. Your data
-              is then also subject to Dropbox&apos;s privacy policy. You can
-              disconnect at any time.
-            </li>
+            {DROPBOX_BUILT && (
+              <li>
+                <strong className="text-fg-bright">Dropbox</strong> — only when
+                you explicitly connect it, your contacts are stored in your
+                Dropbox (in an app-scoped folder) so they sync across your own
+                devices. Connecting sends you to Dropbox&apos;s own consent
+                screen; the app requests access to its own folder only. Your
+                data is then also subject to Dropbox&apos;s privacy policy. You
+                can disconnect at any time.
+              </li>
+            )}
             <li>
               <strong className="text-fg-bright">iCloud Drive</strong> — in the
               App Store app only, and only when you choose it: your contacts are
@@ -174,12 +185,13 @@ export function PrivacyPage() {
             calls. The only requests your browser makes are to fetch the
             app&apos;s own static files (HTML, JavaScript, CSS, fonts, and
             icons) from its origin, and once loaded it works fully offline as an
-            installed PWA. The one exception is the cloud backends: if — and
-            only if — you connect Dropbox, the app talks to that provider&apos;s
-            API to read and write your contacts. iCloud Drive needs no request
-            from the app at all: it writes to a folder on the device, and the
-            system syncs it. No fonts, analytics scripts, error-reporting
-            services, or advertising networks are ever loaded.
+            installed PWA.{" "}
+            {DROPBOX_BUILT &&
+              "The one exception is the cloud backends: if — and only if — you connect Dropbox, the app talks to that provider's API to read and write your contacts. "}
+            iCloud Drive needs no request from the app at all: it writes to a
+            folder on the device, and the system syncs it. No fonts, analytics
+            scripts, error-reporting services, or advertising networks are ever
+            loaded.
           </p>
         </Section>
 

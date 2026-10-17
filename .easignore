@@ -4,8 +4,8 @@
 # .gitignore files' own, with one deliberate difference:
 #
 #   native/assets/webroot.zip is NOT ignored. It is the packed web app — the
-#   address book itself — built by `npm run bundle` (in CI by native.yml,
-#   which bakes the Dropbox key into it). It is gitignored as build output;
+#   address book itself — built by `npm run bundle` (in CI by native.yml;
+#   the phone build carries no Dropbox). It is gitignored as build output;
 #   left out of the upload, the EAS worker fails at "Unable to resolve module
 #   ../assets/webroot.zip".
 #

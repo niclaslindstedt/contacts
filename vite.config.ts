@@ -11,6 +11,7 @@ import { defineConfig, type Plugin } from "vite";
 
 import { appPwa } from "./pwa-plugin.ts";
 import { resolveAppName } from "./src/app/appName.ts";
+import { withoutDropbox } from "./src/app/withoutDropbox.ts";
 import { withoutSourceLinks } from "./src/app/withoutSourceLinks.ts";
 
 // The production origin — the alias pages point their Open Graph URLs here
@@ -235,7 +236,9 @@ const shellBuild = process.env.VITE_SHELL_BUILD === "on";
 // is an App Store rejection (guideline 3.1.1), the listings promise nothing is
 // sold, and no app build ships achievements, only the website. Both are
 // compile-time constants, so those parts are folded out of the bundles rather
-// than hidden.
+// than hidden. On its own it also leaves out Dropbox (`src/app/dropboxBuilt.ts`):
+// the phone app keeps the address book on the device or in the reader's own
+// iCloud Drive, while the website and the desktop app keep Dropbox.
 const nativeBuild = process.env.VITE_NATIVE_BUILD === "on";
 
 // The name the app calls itself inside: the listing name (`APP_DISPLAY_NAME`)
@@ -254,7 +257,9 @@ const appBuild = nativeBuild || shellBuild;
 // behind it is the website's alone, see `src/main.tsx`), and `public/CNAME`,
 // which names the domain for GitHub Pages. The markdown What's new renders —
 // the CHANGELOG and the feature docs, each a `.md?raw` module — is loaded
-// without its source links (`src/app/withoutSourceLinks.ts`).
+// without its source links (`src/app/withoutSourceLinks.ts`), and in the phone
+// build without a word about Dropbox, which it does not carry
+// (`src/app/dropboxBuilt.ts`, `src/app/withoutDropbox.ts`).
 // `scripts/website-only.mjs` refuses an app webroot that still carries the
 // domain.
 function withoutWebsiteHead(): Plugin {
@@ -269,7 +274,8 @@ function withoutWebsiteHead(): Plugin {
     load(id) {
       const [file, query] = id.split("?");
       if (query !== "raw" || !file!.endsWith(".md")) return null;
-      const md = withoutSourceLinks(readFileSync(file!, "utf8"));
+      const unlinked = withoutSourceLinks(readFileSync(file!, "utf8"));
+      const md = nativeBuild ? withoutDropbox(unlinked) : unlinked;
       return `export default ${JSON.stringify(md)};`;
     },
     transformIndexHtml(html) {

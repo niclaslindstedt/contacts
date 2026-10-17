@@ -1,6 +1,6 @@
 # Cloud photo files
 
-On a folder or cloud backend (local folder, Dropbox,), each
+On a folder or cloud backend (a local folder or a cloud drive), each
 photo in a contact's gallery is filed out of the document into its own **binary
 JPEG** — a display crop at `photos/<name>-<tag>-<number>.jpg` and the larger
 original beside it — instead of riding along as base64 text. The name is the
@@ -20,7 +20,7 @@ under an older name, is **brought up to date automatically** on open: its photos
 are filed out (or renamed) once in the background, and any file left behind under
 the old name removed.
 
-## The photo atlas
+## The photo atlas on Dropbox
 
 Reading those files back one at a time is what makes opening a big address book
 on a new device slow — and it's the burst of requests a drive answers by
@@ -53,7 +53,7 @@ device — nothing is re-downloaded to do it.
 ## When the drive is busy
 
 A big address book means a lot of image files, and a drive will push back if the
-app asks for them all at once — Dropbox starts answering "too many requests", and
+app asks for them all at once — the drive starts answering "too many requests", and
 the browser itself begins refusing connections. So photos move **a few files at a
 time**, and when a drive asks the app to slow down it waits as long as it was
 asked and tries again before giving up on a picture.

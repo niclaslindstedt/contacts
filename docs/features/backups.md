@@ -11,7 +11,7 @@ to disk, or **Restore from file…** to replace the current document with a
 downloaded snapshot (a destructive replace, so it confirms first, and files a
 safety-net backup before overwriting).
 
-When a **file-backed backend** is connected (local folder or Dropbox) and the
+When a **file-backed backend** is connected (a local folder or a cloud drive) and the
 copy isn't encrypted, **Browse backups** opens a manager over a `backups/`
 folder on that backend: **Back up now** writes a fresh snapshot, and
 each row can be downloaded, deleted, or restored. Snapshots are named with their

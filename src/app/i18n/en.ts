@@ -697,7 +697,7 @@ export const en = {
         "Rescan the connected drive's photos/ folder and reconnect any photo file that isn't linked to a contact — recovering lost photos, and adopting images you dropped in yourself under the photos/<name>-<contactId>-<photoId>.jpg pattern. Watch the Logs tab for the per-file detail.",
       reindexDone: "Reconnected {reconnected} photo(s); {total} now linked.",
       reindexNoBackend:
-        "Connect a local folder, Dropbox, first — there are no photo files to reindex without one.",
+        "Connect a local folder or a cloud drive first — there are no photo files to reindex without one.",
       reindexEncrypted:
         "The cloud copy is encrypted, so photos live inside the envelope, not as separate files — there's nothing to reindex.",
       reindexEmpty: "The backend holds no document yet.",

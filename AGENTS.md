@@ -4,7 +4,7 @@ This file is the canonical source of truth for AI coding agents working in this
 repo. `CLAUDE.md`, `.cursorrules`, `.windsurfrules`, `GEMINI.md`, and
 `.github/copilot-instructions.md` are symlinks to this file.
 
-Fleet guidelines: APP_GUIDELINES 1.2.0
+Fleet guidelines: APP_GUIDELINES 2.0.0
 
 ## Build and test commands
 
@@ -55,7 +55,11 @@ build updates by being replaced. The phone wrapper's site build is the same
 shell edition — `VITE_SHELL_BUILD=on`, so no service worker and no update
 prompt, since a phone app updates through the App Store — and also sets
 `VITE_NATIVE_BUILD=on` (`__NATIVE_BUILD__`), which leaves out the Donate row,
-the achievements and the links back to the source and nothing else: no build
+the achievements, the links back to the source and Dropbox, and nothing else:
+the phone app keeps the address book on the device or in iCloud Drive, with
+no Dropbox option or mention (`src/app/dropboxBuilt.ts`; `native.yml` passes
+no Dropbox key, and `src/app/withoutDropbox.ts` takes it out of What's new);
+no build
 but the website may carry a payment link outside Apple's (App Store guideline
 3.1.1; `src/app/donate.ts`), no phone or
 desktop build ships achievements (`src/app/achievementsBuilt.ts`), and no phone or desktop build
@@ -394,8 +398,10 @@ edit needs no fragment of its own.
   `native/src/authSessionBridge.ts`; `tests/native_auth_session_test.ts` pins
   them. Its redirect URI is `<scheme>://oauth`, and the scheme is the bundle
   id (`native/app.config.js` takes it from `native/identifiers.js`), so the
-  Dropbox app must list `se.agilator.contacts://oauth` — a different
-  `APP_BUNDLE_ID` breaks phone sign-in until the App Console follows.
+  Dropbox app would have to list `se.agilator.contacts://oauth` — the phone
+  build offers no Dropbox today, so nothing signs in through it yet, but a
+  build that did would break with a different `APP_BUNDLE_ID` until the App
+  Console followed.
 
 - Every file the app hands the reader leaves through `src/app/saveExport.ts`
   (the framework's `saveFile`), never `downloadText` / `downloadBlob` /
