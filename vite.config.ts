@@ -33,10 +33,16 @@ type RouteHead = {
 const PRIVACY_ROUTE: RouteHead = {
   path: "/privacy/",
   title: "Privacy — Contacts",
+  // The phone app's says what its page says: no Dropbox, and the sync it has
+  // is the reader's own iCloud Drive.
   description:
-    "Contacts privacy: local-first by default — no account, no cookies, no " +
-    "analytics, no tracking. Optional Dropbox sync only when " +
-    "you connect it.",
+    process.env.VITE_NATIVE_BUILD === "on"
+      ? "Contacts privacy: local-first by default — nothing to sign up for, " +
+        "no cookies, no analytics, no tracking. Optional iCloud Drive sync " +
+        "only when you turn it on."
+      : "Contacts privacy: local-first by default — no sign-up, no cookies, " +
+        "no analytics, no tracking. Optional Dropbox sync only when " +
+        "you connect it.",
   ogType: "article",
 };
 
@@ -293,6 +299,48 @@ function withoutWebsiteHead(): Plugin {
   };
 }
 
+// The phone app's documents name no other edition of the app. `index.html`
+// is written for the website: its HTML comments talk about the installed PWA
+// and the website's indexing, its description calls the app a PWA that syncs
+// to Dropbox, and its share tags describe a link to the website. Nothing on a
+// phone reads any of it, so the phone build's `index.html` and `privacy/`
+// alias ship without the comments and the share tags, and with a description
+// of the phone app. Runs after the privacy alias, which still needs the share
+// tags to splice into.
+const PHONE_DESCRIPTION =
+  "Contacts is a local-first address book app. Your contacts live on your " +
+  "device, sync to your own iCloud Drive if you want, can be encrypted at " +
+  "rest, and export as vCard or CSV for Outlook, iOS, and Android.";
+
+function phoneOnlyHtml(): Plugin {
+  return {
+    name: "phone-only-html",
+    apply: "build",
+    enforce: "post",
+    generateBundle(_options, bundle) {
+      for (const file of Object.values(bundle)) {
+        if (file.type !== "asset" || !file.fileName.endsWith(".html")) {
+          continue;
+        }
+        let html = String(file.source)
+          .replace(/[ \t]*<!--[\s\S]*?-->\n?/g, "")
+          .replace(
+            /[ \t]*<meta\b[^>]*\b(?:property="og:|name="twitter:)[^>]*>\n?/g,
+            "",
+          )
+          .replace(/\n(?:[ \t]*\n)+/g, "\n");
+        if (file.fileName === "index.html") {
+          html = html.replace(
+            /(<meta\s+name="description"\s+content=")[\s\S]*?("\s*\/>)/,
+            `$1${escapeHtml(PHONE_DESCRIPTION)}$2`,
+          );
+        }
+        file.source = html;
+      }
+    },
+  };
+}
+
 export default defineConfig({
   base,
   build: {
@@ -337,5 +385,7 @@ export default defineConfig({
       ? [withoutWebsiteHead()]
       : [emitRouteAlias(SHOWCASE_ROUTE, "home")]),
     emitRouteAlias(PRIVACY_ROUTE, "privacy"),
+    // After the privacy alias, so it still finds the tags it splices into.
+    ...(nativeBuild ? [phoneOnlyHtml()] : []),
   ],
 });

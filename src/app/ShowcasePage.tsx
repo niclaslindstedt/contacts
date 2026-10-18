@@ -36,7 +36,7 @@ export function ShowcasePage() {
           <h1 className="text-2xl font-bold text-fg-bright">Contacts</h1>
           <p className="max-w-md text-muted">
             A fast, local-first address book that runs entirely in your browser,
-            works offline, and needs no account.
+            works offline, and has nothing to sign up for.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
             <a

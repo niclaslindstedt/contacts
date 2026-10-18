@@ -578,7 +578,7 @@ export const sv: Catalog = {
       connectedAs: "Ansluten — synkar till {name}.",
       disconnect: "Koppla från",
       icloudHint:
-        "Synka via ditt eget iCloud Drive — dina kontakter följer med mellan dina Apple-enheter utan något konto att skapa och utan att någon annan håller i filen. De skrivs som ett JSON-dokument i appens Contacts-mapp, med foton och bilagor arkiverade bredvid som riktiga bild- och dokumentfiler du kan öppna i Filer.",
+        "Synka via ditt eget iCloud Drive — dina kontakter följer med mellan dina Apple-enheter utan någon registrering och utan att någon annan håller i filen. De skrivs som ett JSON-dokument i appens Contacts-mapp, med foton och bilagor arkiverade bredvid som riktiga bild- och dokumentfiler du kan öppna i Filer.",
       icloudConnected: "Ansluten — synkar till iCloud Drive.",
       icloudSignedOut:
         "Den här enheten är inte inloggad på iCloud, eller så är iCloud Drive avstängt. Slå på det i systeminställningarna och anslut sedan igen.",

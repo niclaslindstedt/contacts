@@ -5,7 +5,7 @@ keeps a copy in sync:
 
 - **Local folder** — a folder on this computer, picked through the browser's
   File System Access API; the document lives in it as `contacts-<namespace>.json`
-  with photos and attachments filed beside it as real files. No account, no
+  with photos and attachments filed beside it as real files. No sign-in, no
   network. Available in Chromium-based browsers (Chrome, Edge, Opera, Brave,
   Arc); hidden elsewhere.
 - **Dropbox** — OAuth (PKCE) with silent token refresh; the document lives in
@@ -13,7 +13,7 @@ keeps a copy in sync:
   desktop app only: the phone build has no Dropbox
   ([configuration.md](configuration.md#no-dropbox-in-the-phone-app)).
 - **iCloud Drive** — only in the App Store build, where the app's own iCloud
-  container is filed under `Contacts` in the Files app. No account to create and
+  container is filed under `Contacts` in the Files app. Nothing to sign up for and
   no consent screen: the device is already signed in, or it is not.
 
 Saves are debounced, retried with backoff on transient failures, and guarded by
@@ -28,7 +28,7 @@ opened could push against an unknown copy and trip a spurious conflict.)
 ## Local folder
 
 The **Local folder** backend syncs to a directory you pick on this computer,
-using the browser's File System Access API — so it works with no account and no
+using the browser's File System Access API — so it works with no sign-in and no
 network at all. The document is written as `contacts-<namespace>.json` in the
 picked folder, and (in the plaintext case) each contact's photos and attachments
 are filed beside it under `photos/` and `attachments/` as real image and

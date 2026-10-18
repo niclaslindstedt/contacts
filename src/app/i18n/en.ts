@@ -604,7 +604,7 @@ export const en = {
       connectedAs: "Connected — syncing to {name}.",
       disconnect: "Disconnect",
       icloudHint:
-        "Sync through your own iCloud Drive — your contacts follow you between your Apple devices with no account to create and nobody else holding the file. They are written as a JSON document in the app's Contacts folder, with photos and attachments filed beside it as real image and document files you can open in the Files app.",
+        "Sync through your own iCloud Drive — your contacts follow you between your Apple devices with nothing to sign up for and nobody else holding the file. They are written as a JSON document in the app's Contacts folder, with photos and attachments filed beside it as real image and document files you can open in the Files app.",
       icloudConnected: "Connected — syncing to iCloud Drive.",
       icloudSignedOut:
         "This device isn't signed in to iCloud, or iCloud Drive is switched off. Turn it on in the system settings, then connect again.",

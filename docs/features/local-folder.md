@@ -2,7 +2,7 @@
 
 The **Local folder** backend syncs your address book to a directory you pick on
 this computer, using the browser's **File System Access API** — so it works with
-**no account and no network** at all. Choose it from **Settings → Storage** and
+**no sign-in and no network** at all. Choose it from **Settings → Storage** and
 pick a folder.
 
 The document is written as `contacts-<namespace>.json` in the folder, and each

@@ -69,7 +69,15 @@ but the website may carry a payment link outside Apple's (App Store guideline
 desktop build ships achievements (`src/app/achievementsBuilt.ts`), and no phone or desktop build
 may link back to the source or carry the string `niclaslindstedt` anywhere —
 strictly forbidden (`src/app/sourceLinks.ts`; `scripts/website-only.mjs`
-refuses such a webroot in both bundle scripts). Every `unlock(…)` comes from
+refuses such a webroot in both bundle scripts). The phone app's privacy page and
+documents name no other edition of it — no website, web host, browser, PWA or
+localStorage; everything comes inside the download, nothing is sent on launch,
+and the only traffic is the iCloud Drive sync the user turns on (the owner's
+decision). `src/app/PrivacyPage.tsx` tests the raw `__NATIVE_BUILD__` define at
+every use site so the other wording leaves the bundle, `phoneOnlyHtml` in
+`vite.config.ts` strips the shell's HTML comments and share tags, and
+`tests/privacyPage_test.ts` pins both sides. No build says "no account": the
+copy says there is nothing to sign up for (the owner's decision). Every `unlock(…)` comes from
 `src/app/achievementsGate.ts`, never from the framework directly, and the
 achievements copy lives in `src/app/i18n/enAchievements.ts` /
 `svAchievements.ts`, joined onto the catalog only when the build carries it. The package's name and identifier come from `APP_DISPLAY_NAME` and

@@ -18,7 +18,7 @@ can save it to Files, mail it or hand it to another app.
 
 What it adds is one thing the browser genuinely cannot do: syncing through your
 own **iCloud Drive**, so your contacts follow you between your Apple devices
-with no account to create and nobody else holding the file. See
+with nothing to sign up for and nobody else holding the file. See
 [Cloud sync](feature:cloud-sync) for how that works and how it compares to the
 other backends.
 

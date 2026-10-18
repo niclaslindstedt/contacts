@@ -13,14 +13,14 @@ folder, Dropbox (website and desktop) or (in the App Store build) iCloud Drive
 
 ## Why?
 
-- **Your contacts are yours.** Everything lives on your device first — no
-  account, no server, works fully offline as an installable PWA.
+- **Your contacts are yours.** Everything lives on your device first —
+  nothing to sign up for, no server, works fully offline as an installable PWA.
 - **Sync when you want it.** Point it at a local folder on your computer (a
-  browsable, git-trackable tree — no account, no network) or connect Dropbox
+  browsable, git-trackable tree — no sign-in, no network) or connect Dropbox
   and the app keeps an off-device copy in sync — optionally
   wrapped in an AES-GCM envelope keyed by a passphrase that never leaves memory.
-  The App Store build syncs through **iCloud Drive** instead of Dropbox: no
-  account to create, nobody else holding the file, and the synced tree visible
+  The App Store build syncs through **iCloud Drive** instead of Dropbox:
+  nothing to sign up for, nobody else holding the file, and the synced tree visible
   in the Files app.
 - **Never locked in.** One tap exports vCard 3.0 (imports straight into
   Outlook, iOS, and Android/Google Contacts), Outlook-compatible CSV, or a

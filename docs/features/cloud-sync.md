@@ -7,7 +7,7 @@ the app keeps a copy in sync:
   app's folder as `contacts-<namespace>.json`.
 - **iCloud Drive** — in the App Store app only. See below.
 
-(Prefer no account or network? See [Local folder](feature:local-folder).)
+(Prefer no sign-in and no network? See [Local folder](feature:local-folder).)
 
 Saves are debounced and retried with backoff on transient failures. Photos and
 attachments are filed out of the document as real files — see
@@ -16,7 +16,7 @@ attachments are filed out of the document as real files — see
 ## iCloud Drive
 
 In the [App Store app](feature:native-app) you can choose **iCloud Drive**,
-and it's the simplest choice of all. There's no account to create and no consent
+and it's the simplest choice of all. There's nothing to sign up for and no consent
 screen — your iPhone or iPad is already signed in to iCloud, so connecting is a
 single tap and your address book starts following you between your own devices.
 Nobody else is holding the file.

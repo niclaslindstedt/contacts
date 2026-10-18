@@ -82,7 +82,7 @@ editor — sits at the very bottom of the tab, below the Dialogs controls.
 ## Keep it synced (optional)
 
 Settings → Storage → _Where your data lives_: pick a **local folder** (a
-directory on this computer — no account, Chromium-based browsers only), or
+directory on this computer — no sign-in, Chromium-based browsers only), or
 **Dropbox**, and hit Connect — or, in the phone app, **iCloud Drive**. See
 [sync.md](sync.md) and [configuration.md](configuration.md)
 for the OAuth setup a self-hosted build needs (the local folder needs none).
