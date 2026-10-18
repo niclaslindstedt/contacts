@@ -89,6 +89,14 @@ whatever the environment says, and the phone workflow (`native.yml`) passes
 neither Dropbox variable. A phone install that still remembers Dropbox as its backend (an early
 test build) opens on this device, where its working copy already is.
 
+Nor does the phone app offer a local folder: a WebView has no directory
+picker, so the option could only ever be missing or dead there. The same flag
+folds the row, its panel, the picker flow and the folder adapter out of that
+bundle, the Storage tab's own wording names a cloud drive alone, and a stored
+folder choice opens on this device too. Every gate tests `__NATIVE_BUILD__`
+where it stands rather than reading `DROPBOX_BUILT`, so the minifier drops the
+branch instead of keeping it as dead code.
+
 The wrapper's in-app sign-in sheet (`native/src/authSessionBridge.ts`) stays:
 it is a capability the page asks for, not a Dropbox feature, and a phone build
 that offered Dropbox again would sign in through it with

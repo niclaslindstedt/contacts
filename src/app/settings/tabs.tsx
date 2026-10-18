@@ -79,7 +79,6 @@ import {
   type MutablePasswordRef,
   type SyncEngine,
 } from "../useSyncEngine.ts";
-import { DROPBOX_BUILT } from "../dropboxBuilt.ts";
 import { LanguagePicker } from "./shared.tsx";
 import { CountryPickerModal } from "./CountryPickerModal.tsx";
 
@@ -591,12 +590,14 @@ export function StorageTab({
 
   // A cloud backend only appears in the picker when its OAuth identifier is
   // baked into the build — an unconfigured backend can't be connected, so we
-  // hide it rather than offer a dead option. The phone app has no Dropbox at
-  // all (`../dropboxBuilt.ts` empties its key). The local folder appears only in
-  // browsers that expose the File System Access API (Chromium-based), and
-  // iCloud Drive only where a host offers one (see `icloudHost.ts`) — in a
-  // browser there is none, so the option simply isn't there. `local` is always
-  // available.
+  // hide it rather than offer a dead option. The phone app has neither Dropbox
+  // nor the local folder (`../dropboxBuilt.ts`): a WebView has no directory
+  // picker. Both gates test `__NATIVE_BUILD__` right here, so that build drops
+  // the rows and their panels rather than carrying them as dead code. Elsewhere
+  // the local folder appears only in browsers that expose the File System
+  // Access API (Chromium-based), and iCloud Drive only where a host offers one
+  // (see `icloudHost.ts`) — in a browser there is none, so the option simply
+  // isn't there. `local` is always available.
   const backendOptions = [
     { value: "local" as const, label: t("settings.storage.backendThisDevice") },
     ...(sync.icloudAvailable
@@ -607,7 +608,7 @@ export function StorageTab({
           },
         ]
       : []),
-    ...(FOLDER_BACKEND_AVAILABLE
+    ...(!__NATIVE_BUILD__ && FOLDER_BACKEND_AVAILABLE
       ? [
           {
             value: "folder" as const,
@@ -615,7 +616,7 @@ export function StorageTab({
           },
         ]
       : []),
-    ...(DROPBOX_BUILT && DROPBOX_APP_KEY
+    ...(!__NATIVE_BUILD__ && DROPBOX_APP_KEY
       ? [
           {
             value: "dropbox" as const,
@@ -638,10 +639,10 @@ export function StorageTab({
     setConnecting(true);
     void fn().finally(() => setConnecting(false));
   };
-  const pickedFolder = picked === "folder";
+  const pickedFolder = !__NATIVE_BUILD__ && picked === "folder";
   const pickedICloud = picked === "icloud";
   // A build without Dropbox (the phone app) folds the whole block away.
-  const pickedCloud = DROPBOX_BUILT && picked === "dropbox" ? picked : null;
+  const pickedCloud = !__NATIVE_BUILD__ && picked === "dropbox" ? picked : null;
   // Unconfigured backends are hidden above, so this only fires for a backend
   // persisted by an earlier build that had the key and this one doesn't —
   // still worth explaining rather than leaving the picker silently stuck.
@@ -753,7 +754,11 @@ export function StorageTab({
 
   return (
     <div>
-      <p className="mb-3 text-xs text-muted">{t("settings.storage.intro")}</p>
+      <p className="mb-3 text-xs text-muted">
+        {__NATIVE_BUILD__
+          ? t("settings.storage.introPhone")
+          : t("settings.storage.intro")}
+      </p>
 
       <Section title={t("settings.storage.backendTitle")}>
         <SegmentedControl
@@ -1035,7 +1040,9 @@ export function StorageTab({
 
       <Section title={t("settings.storage.backupsTitle")}>
         <p className="text-xs text-muted">
-          {t("settings.storage.backupsIntro")}
+          {__NATIVE_BUILD__
+            ? t("settings.storage.backupsIntroPhone")
+            : t("settings.storage.backupsIntro")}
         </p>
         {sync.backupTarget ? (
           <Button
@@ -1050,7 +1057,9 @@ export function StorageTab({
           </Button>
         ) : (
           <p className="text-xs text-muted">
-            {t("settings.storage.backupsOffline")}
+            {__NATIVE_BUILD__
+              ? t("settings.storage.backupsOfflinePhone")
+              : t("settings.storage.backupsOffline")}
           </p>
         )}
         <input
@@ -1127,9 +1136,12 @@ export function StorageTab({
 // --- Developer -------------------------------------------------------------
 
 // The message shown when a photo re-index can't run, keyed by the engine's
-// reason. Static literal keys so `t()` stays typed (no runtime-built key).
+// reason. Static literal keys so `t()` stays typed (no runtime-built key). The
+// phone app has no local folder to suggest connecting.
 const REINDEX_REASON_KEY = {
-  "no-backend": "settings.developer.reindexNoBackend",
+  "no-backend": __NATIVE_BUILD__
+    ? "settings.developer.reindexNoBackendPhone"
+    : "settings.developer.reindexNoBackend",
   encrypted: "settings.developer.reindexEncrypted",
   empty: "settings.developer.reindexEmpty",
   error: "settings.developer.reindexError",
@@ -1250,28 +1262,32 @@ export function DeveloperTab({
           onChange={(next) => update("captureLogs", next)}
         />
       </Section>
-      <Section title={t("settings.developer.updatesTitle")}>
-        <p className="text-xs text-muted">
-          {t("settings.developer.updatesHint")}
-        </p>
-        <Button
-          variant="secondary"
-          className="self-start"
-          disabled={pwa.checking}
-          aria-busy={pwa.checking}
-          onClick={() => void runUpdateCheck()}
-        >
-          <span className="flex items-center gap-1.5">
-            {pwa.checking && <SpinnerIcon className="h-4 w-4 animate-spin" />}
-            {t("settings.developer.checkUpdates")}
-          </span>
-        </Button>
-        {updateStatus && (
-          <p className="text-sm text-fg" role="status">
-            {updateStatus}
+      {/* The phone app updates through the App Store, with no service worker
+          to ask and no reload to offer, so it has no Updates section. */}
+      {!__NATIVE_BUILD__ && (
+        <Section title={t("settings.developer.updatesTitle")}>
+          <p className="text-xs text-muted">
+            {t("settings.developer.updatesHint")}
           </p>
-        )}
-      </Section>
+          <Button
+            variant="secondary"
+            className="self-start"
+            disabled={pwa.checking}
+            aria-busy={pwa.checking}
+            onClick={() => void runUpdateCheck()}
+          >
+            <span className="flex items-center gap-1.5">
+              {pwa.checking && <SpinnerIcon className="h-4 w-4 animate-spin" />}
+              {t("settings.developer.checkUpdates")}
+            </span>
+          </Button>
+          {updateStatus && (
+            <p className="text-sm text-fg" role="status">
+              {updateStatus}
+            </p>
+          )}
+        </Section>
+      )}
       <Section title={t("settings.developer.buildTitle")}>
         <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
           <dt className="text-muted">app</dt>
@@ -1282,12 +1298,20 @@ export function DeveloperTab({
           <dd className="text-fg tabular-nums">{__BUILD_COMMIT__}</dd>
           <dt className="text-muted">{t("settings.developer.modeLabel")}</dt>
           <dd className="text-fg">{import.meta.env.MODE}</dd>
-          <dt className="text-muted">{t("settings.developer.displayLabel")}</dt>
-          <dd className="text-fg">
-            {standalone
-              ? t("settings.developer.installedPwa")
-              : t("settings.developer.browserTab")}
-          </dd>
+          {/* Installed web app or browser tab — neither describes the phone
+              app, which leaves the row out. */}
+          {!__NATIVE_BUILD__ && (
+            <>
+              <dt className="text-muted">
+                {t("settings.developer.displayLabel")}
+              </dt>
+              <dd className="text-fg">
+                {standalone
+                  ? t("settings.developer.installedPwa")
+                  : t("settings.developer.browserTab")}
+              </dd>
+            </>
+          )}
         </dl>
       </Section>
     </div>

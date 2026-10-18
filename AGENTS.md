@@ -55,10 +55,14 @@ build updates by being replaced. The phone wrapper's site build is the same
 shell edition — `VITE_SHELL_BUILD=on`, so no service worker and no update
 prompt, since a phone app updates through the App Store — and also sets
 `VITE_NATIVE_BUILD=on` (`__NATIVE_BUILD__`), which leaves out the Donate row,
-the achievements, the links back to the source, Dropbox and What's new, and
+the achievements, the links back to the source, Dropbox, the local folder,
+What's new and the Developer tab's Updates section and display row, and
 nothing else: the phone app keeps the address book on the device or in iCloud
-Drive, with no Dropbox option or mention (`src/app/dropboxBuilt.ts`;
-`native.yml` passes no Dropbox key); its version history is the App Store's
+Drive, with no Dropbox or local-folder option or mention — a WebView has no
+directory picker (`src/app/dropboxBuilt.ts`; `native.yml` passes no Dropbox
+key; every gate tests `__NATIVE_BUILD__` in place so the minifier drops the
+branch, and the Storage tab's phone wording comes from its own `…Phone`
+catalog entries); its version history is the App Store's
 What's New, so it has no What's new row, no About dropdown and neither the
 CHANGELOG nor a feature doc in its bundle (`src/app/changelogBuilt.ts` — the
 owner's decision; `vite.config.ts` fails a phone build that still reaches a

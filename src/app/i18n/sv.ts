@@ -569,6 +569,8 @@ export const sv: Catalog = {
     storage: {
       intro:
         "Var dina kontakter finns. De sparas alltid på den här enheten; anslut en lokal mapp eller en molntjänst för att hålla en kopia synkad utanför enheten.",
+      introPhone:
+        "Var dina kontakter finns. De sparas alltid på den här enheten; anslut en molntjänst för att hålla en kopia synkad mellan dina enheter.",
       backendTitle: "Var din data finns",
       backendThisDevice: "Den här enheten",
       backendICloud: "iCloud Drive",
@@ -623,8 +625,12 @@ export const sv: Catalog = {
       backupsTitle: "Säkerhetskopior",
       backupsIntro:
         "Daterade ögonblicksbilder av hela din adressbok — varje kontakt, mapp, foto och bilaga — packade i en komprimerad .zip. Anslut en lokal mapp eller molnlagring för att spara dem utanför enheten, eller ladda ner och återställ en direkt från disk.",
+      backupsIntroPhone:
+        "Daterade ögonblicksbilder av hela din adressbok — varje kontakt, mapp, foto och bilaga — packade i en komprimerad .zip. Anslut molnlagring för att spara dem utanför enheten, eller spara en och återställ den från en fil.",
       backupsOffline:
         "Anslut en lokal mapp eller molnlagring (och stäng av kryptering) för att spara daterade säkerhetskopior utanför enheten. Du kan fortfarande ladda ner och återställa en säkerhetskopia från disk nedan.",
+      backupsOfflinePhone:
+        "Anslut molnlagring (och stäng av kryptering) för att spara daterade säkerhetskopior utanför enheten. Du kan fortfarande spara en säkerhetskopia och återställa den från en fil nedan.",
       backupExport: "Ladda ner säkerhetskopia (.zip)",
       backupImport: "Återställ från fil…",
     },
@@ -672,6 +678,8 @@ export const sv: Catalog = {
       reindexDone: "Återkopplade {reconnected} foto(n); {total} är nu länkade.",
       reindexNoBackend:
         "Anslut en lokal mapp eller molnlagring först — utan en sådan finns inga fotofiler att indexera om.",
+      reindexNoBackendPhone:
+        "Anslut molnlagring först — utan den finns inga fotofiler att indexera om.",
       reindexEncrypted:
         "Molnkopian är krypterad, så foton ligger inuti kuvertet och inte som separata filer — det finns inget att indexera om.",
       reindexEmpty: "Lagringen innehåller inget dokument ännu.",

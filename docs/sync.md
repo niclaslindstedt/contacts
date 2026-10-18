@@ -7,7 +7,8 @@ keeps a copy in sync:
   File System Access API; the document lives in it as `contacts-<namespace>.json`
   with photos and attachments filed beside it as real files. No sign-in, no
   network. Available in Chromium-based browsers (Chrome, Edge, Opera, Brave,
-  Arc); hidden elsewhere.
+  Arc); hidden elsewhere, and not in the phone app, whose WebView has no
+  picker.
 - **Dropbox** — OAuth (PKCE) with silent token refresh; the document lives in
   the app's folder as `contacts-<namespace>.json`. On the website and in the
   desktop app only: the phone build has no Dropbox

@@ -156,7 +156,7 @@ There is no iCloud on Android, and the module says so rather than pretending:
 `requireOptionalNativeModule` returns `null` there and the backend is reported
 unavailable — which means the web app never lists it. The Android build is the
 same offline-capable address book, kept on the device: the phone build carries
-no Dropbox (`src/app/dropboxBuilt.ts`).
+neither Dropbox nor a local folder (`src/app/dropboxBuilt.ts`).
 
 ## Signing in to Dropbox
 

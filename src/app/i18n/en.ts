@@ -595,6 +595,10 @@ export const en = {
     storage: {
       intro:
         "Where your contacts live. They are always saved on this device; connect a local folder or a cloud drive to keep an off-device copy in sync.",
+      // The phone app offers no local folder (a WebView has no directory
+      // picker), so its Storage tab says so without naming one.
+      introPhone:
+        "Where your contacts live. They are always saved on this device; connect a cloud drive to keep a copy in sync between your devices.",
       backendTitle: "Where your data lives",
       backendThisDevice: "This device",
       backendICloud: "iCloud Drive",
@@ -649,8 +653,12 @@ export const en = {
       backupsTitle: "Backups",
       backupsIntro:
         "Dated snapshots of your whole address book — every contact, folder, photo, and attachment — packed into a compressed .zip. Connect a local folder or cloud drive to keep them off-device, or download and restore one straight from disk.",
+      backupsIntroPhone:
+        "Dated snapshots of your whole address book — every contact, folder, photo, and attachment — packed into a compressed .zip. Connect a cloud drive to keep them off-device, or save one and restore it from a file.",
       backupsOffline:
         "Connect a local folder or a cloud drive (and turn encryption off) to keep dated backups off-device. You can still download and restore a backup from disk below.",
+      backupsOfflinePhone:
+        "Connect a cloud drive (and turn encryption off) to keep dated backups off-device. You can still save a backup and restore it from a file below.",
       backupExport: "Download backup (.zip)",
       backupImport: "Restore from file…",
     },
@@ -698,6 +706,8 @@ export const en = {
       reindexDone: "Reconnected {reconnected} photo(s); {total} now linked.",
       reindexNoBackend:
         "Connect a local folder or a cloud drive first — there are no photo files to reindex without one.",
+      reindexNoBackendPhone:
+        "Connect a cloud drive first — there are no photo files to reindex without one.",
       reindexEncrypted:
         "The cloud copy is encrypted, so photos live inside the envelope, not as separate files — there's nothing to reindex.",
       reindexEmpty: "The backend holds no document yet.",
