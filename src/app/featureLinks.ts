@@ -3,7 +3,7 @@
 // this build carries the feature doc it opens.
 //
 // History stays as it was written, but a build can leave a doc out — the
-// achievements page in the phone and desktop apps (`./changelog.ts`) — and a
+// achievements page in the desktop app (`./changelog.ts`) — and a
 // link to it would be a "Learn more" that opens nothing. So the link, with the
 // space before it, is dropped and the bullet kept. Pure, so it is testable
 // against any doc set.

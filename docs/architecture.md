@@ -74,15 +74,15 @@ There is no server and no prerender, so every byte of the app is downloaded
 before anything appears. Boot therefore carries only what the first screen
 needs; the rest is behind `import()`. What is deferred today:
 
-| Chunk                                       | Loads when                        |
-| ------------------------------------------- | --------------------------------- |
-| `ChangelogPanel` (CHANGELOG + feature docs) | "What's new" is opened            |
-| `SettingsModal` + its tabs                  | Settings is opened                |
-| `CloudSetupModal`                           | a cloud backend is connected      |
-| `seedBackend` (+ `fakeData` / `demoData`)   | a Developer data toggle turns on  |
-| `demoPhotos`                                | demo mode turns on                |
-| `PrivacyPage` / `ShowcasePage`              | their own route is the one served |
-| the `sv` catalogue                          | Swedish is selected               |
+| Chunk                                       | Loads when                                      |
+| ------------------------------------------- | ----------------------------------------------- |
+| `ChangelogPanel` (CHANGELOG + feature docs) | "What's new" is opened (never in the phone app) |
+| `SettingsModal` + its tabs                  | Settings is opened                              |
+| `CloudSetupModal`                           | a cloud backend is connected                    |
+| `seedBackend` (+ `fakeData` / `demoData`)   | a Developer data toggle turns on                |
+| `demoPhotos`                                | demo mode turns on                              |
+| `PrivacyPage` / `ShowcasePage`              | their own route is the one served               |
+| the `sv` catalogue                          | Swedish is selected                             |
 
 `main.tsx` picks exactly one page per route, so the app bundle never reaches
 `/privacy/` or `/home/` and neither page reaches the app.

@@ -11,7 +11,6 @@ import { defineConfig, type Plugin } from "vite";
 
 import { appPwa } from "./pwa-plugin.ts";
 import { resolveAppName } from "./src/app/appName.ts";
-import { withoutDropbox } from "./src/app/withoutDropbox.ts";
 import { withoutSourceLinks } from "./src/app/withoutSourceLinks.ts";
 
 // The production origin — the alias pages point their Open Graph URLs here
@@ -257,9 +256,11 @@ const appBuild = nativeBuild || shellBuild;
 // behind it is the website's alone, see `src/main.tsx`), and `public/CNAME`,
 // which names the domain for GitHub Pages. The markdown What's new renders —
 // the CHANGELOG and the feature docs, each a `.md?raw` module — is loaded
-// without its source links (`src/app/withoutSourceLinks.ts`), and in the phone
-// build without a word about Dropbox, which it does not carry
-// (`src/app/dropboxBuilt.ts`, `src/app/withoutDropbox.ts`).
+// without its source links (`src/app/withoutSourceLinks.ts`). The phone build
+// has no What's new at all (`src/app/changelogBuilt.ts` — its version history
+// is the App Store's): what imports the markdown folds away before the bundler
+// builds its graph, so a `.md?raw` it still reaches is an import that escaped
+// the gate, and the build stops on it rather than ship the text.
 // `scripts/website-only.mjs` refuses an app webroot that still carries the
 // domain.
 function withoutWebsiteHead(): Plugin {
@@ -274,8 +275,13 @@ function withoutWebsiteHead(): Plugin {
     load(id) {
       const [file, query] = id.split("?");
       if (query !== "raw" || !file!.endsWith(".md")) return null;
-      const unlinked = withoutSourceLinks(readFileSync(file!, "utf8"));
-      const md = nativeBuild ? withoutDropbox(unlinked) : unlinked;
+      if (nativeBuild) {
+        this.error(
+          `${file} reached the phone build, which carries no What's new — ` +
+            `gate its import on __NATIVE_BUILD__ (src/app/changelogBuilt.ts).`,
+        );
+      }
+      const md = withoutSourceLinks(readFileSync(file!, "utf8"));
       return `export default ${JSON.stringify(md)};`;
     },
     transformIndexHtml(html) {

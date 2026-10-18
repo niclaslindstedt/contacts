@@ -55,10 +55,14 @@ build updates by being replaced. The phone wrapper's site build is the same
 shell edition — `VITE_SHELL_BUILD=on`, so no service worker and no update
 prompt, since a phone app updates through the App Store — and also sets
 `VITE_NATIVE_BUILD=on` (`__NATIVE_BUILD__`), which leaves out the Donate row,
-the achievements, the links back to the source and Dropbox, and nothing else:
-the phone app keeps the address book on the device or in iCloud Drive, with
-no Dropbox option or mention (`src/app/dropboxBuilt.ts`; `native.yml` passes
-no Dropbox key, and `src/app/withoutDropbox.ts` takes it out of What's new);
+the achievements, the links back to the source, Dropbox and What's new, and
+nothing else: the phone app keeps the address book on the device or in iCloud
+Drive, with no Dropbox option or mention (`src/app/dropboxBuilt.ts`;
+`native.yml` passes no Dropbox key); its version history is the App Store's
+What's New, so it has no What's new row, no About dropdown and neither the
+CHANGELOG nor a feature doc in its bundle (`src/app/changelogBuilt.ts` — the
+owner's decision; `vite.config.ts` fails a phone build that still reaches a
+`.md?raw`, and `tests/changelogBuilt_test.ts` builds both apps to check it);
 no build
 but the website may carry a payment link outside Apple's (App Store guideline
 3.1.1; `src/app/donate.ts`), no phone or
@@ -296,14 +300,14 @@ stale copy.
 
 ## Documentation sync points
 
-| When you change…                    | Update…                                                                                                   |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| the contact model or export formats | `docs/export.md`, `docs/features/export.md`, `tests/export_test.ts`, `README.md`                          |
-| sync backends / encryption          | `docs/sync.md`, `docs/features/cloud-sync.md`, `docs/configuration.md`                                    |
-| the native wrapper                  | `native/README.md`, `native/RELEASING.md`, `docs/features/native-app.md`                                  |
-| the desktop shell                   | `tauri/README.md`, `docs/features/desktop-app.md`, `tauri/shell/tests/`                                   |
-| settings surface                    | `docs/getting-started.md`                                                                                 |
-| user-visible features               | a `.changes/unreleased/` changeset fragment + `docs/features/*.md` (the in-app "What's new" renders both) |
+| When you change…                    | Update…                                                                                                                                                                |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| the contact model or export formats | `docs/export.md`, `docs/features/export.md`, `tests/export_test.ts`, `README.md`                                                                                       |
+| sync backends / encryption          | `docs/sync.md`, `docs/features/cloud-sync.md`, `docs/configuration.md`                                                                                                 |
+| the native wrapper                  | `native/README.md`, `native/RELEASING.md`, `docs/features/native-app.md`                                                                                               |
+| the desktop shell                   | `tauri/README.md`, `docs/features/desktop-app.md`, `tauri/shell/tests/`                                                                                                |
+| settings surface                    | `docs/getting-started.md`                                                                                                                                              |
+| user-visible features               | a `.changes/unreleased/` changeset fragment + `docs/features/*.md` (the in-app "What's new" renders both — on the website and the desktop app; the phone app has none) |
 
 ## Changelog and feature docs
 
@@ -342,7 +346,8 @@ introducing **one** feature (English-only, no implementation jargon). It is
 the bundle (`src/app/changelog.ts`), and a changelog bullet carrying
 `[Learn more](feature:<slug>)` opens the matching doc **in place** inside the
 "What's new" modal, with a back button. That is the only thing that reads a
-feature doc.
+feature doc — and so the phone app, which has no What's new
+(`src/app/changelogBuilt.ts`), carries none.
 
 **One doc per feature; one feature per doc.** Give each headline feature its own
 focused file (`favorites.md`, `attachments.md`, `import.md`, `cloud-sync.md`, …)

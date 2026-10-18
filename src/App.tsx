@@ -58,11 +58,18 @@ const CloudSetupModal = lazy(() =>
     default: m.CloudSetupModal,
   })),
 );
-const ChangelogModal = lazy(() =>
-  import("./app/ChangelogPanel.tsx").then((m) => ({
-    default: m.ChangelogPanel,
-  })),
-);
+// What's new is the website's and the desktop app's alone
+// (`./app/changelogBuilt.ts`): the phone app's version history is the App
+// Store's What's New. The test is the raw define, not `CHANGELOG_BUILT`, so the
+// import is gone before the bundler decides which chunks exist, and the dialog,
+// the CHANGELOG and the feature docs never reach the phone bundle.
+const ChangelogModal = __NATIVE_BUILD__
+  ? null
+  : lazy(() =>
+      import("./app/ChangelogPanel.tsx").then((m) => ({
+        default: m.ChangelogPanel,
+      })),
+    );
 const SettingsModal = lazy(() =>
   import("./app/SettingsModal.tsx").then((m) => ({ default: m.SettingsModal })),
 );
@@ -835,8 +842,8 @@ export function App() {
 
       {/* The "What's new" dialog — opened from the side menu's About
           dropdown. The app inlines the CHANGELOG and the feature docs at
-          build time (`./app/changelog.ts`). */}
-      {changelogOpen && (
+          build time (`./app/changelog.ts`); the phone app has none. */}
+      {ChangelogModal && changelogOpen && (
         <Suspense fallback={null}>
           <ChangelogModal
             open={changelogOpen}

@@ -45,7 +45,10 @@ and a new version arrives through the App Store. And it sets
 the website carries: the side menu's Donate row — a payment link outside
 Apple's is an App Store rejection (guideline 3.1.1) — and the achievements (the
 trophies, the tour, the unlock celebration and their setting;
-`src/app/achievementsGate.ts`). None of it is in the bundle at all, and the
+`src/app/achievementsGate.ts`) — and What's new: the phone app's version
+history is the App Store's What's New, so it has no What's new row or About
+dropdown, and neither the CHANGELOG nor a feature doc (`src/app/changelogBuilt.ts`;
+its version stays in Settings → Developer). None of it is in the bundle at all, and the
 script refuses to zip a `dist/` that carries `sw.js` or any of the rest (a
 website build re-zipped with `--skip-build`).
 

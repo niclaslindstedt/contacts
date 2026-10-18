@@ -18,9 +18,13 @@ import { SOURCE_LINKS_BUILT } from "./sourceLinks.ts";
 // Every `docs/features/*.md` becomes a slug-keyed feature doc; a changelog
 // bullet's `[Learn more](feature:<slug>)` opens the matching one in place.
 //
-// Except the achievements page in a build without achievements (the phone and
-// desktop apps; `./achievementsBuilt.ts`): it describes a feature those builds
-// don't have. Its glob is the one in the dropped branch, so the page's text is
+// The phone app never loads this module: it has no What's new
+// (`./changelogBuilt.ts`), so neither the CHANGELOG nor a feature doc is in its
+// bundle.
+//
+// Except the achievements page in a build without achievements (the desktop
+// app; `./achievementsBuilt.ts`): it describes a feature that build doesn't
+// have. Its glob is the one in the dropped branch, so the page's text is
 // not in those bundles at all. The released bullets that link it stay — they
 // are the record of what shipped — and lose their Learn more.
 //

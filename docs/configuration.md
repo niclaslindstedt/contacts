@@ -61,7 +61,7 @@ read it.
 
 The links back to the source are the website's alone as well — the owner's
 decision for every phone and desktop build. The apps carry no Source code row
-(the About dropdown holds What's new alone), no GitHub contact on the privacy
+(the desktop app's About dropdown holds What's new alone), no GitHub contact on the privacy
 page (it names the app rather than the website's origin and gives
 `support@agilator.se` instead), no `/home/` page, no desktop-app feature page
 (it is about the releases page), no releases or repository link in What's new,
@@ -80,15 +80,13 @@ in with: the deployed URL for the website, and `http://127.0.0.1:53682/`,
 
 The phone app keeps the address book on the device or in the reader's own
 iCloud Drive, and offers no Dropbox: no option in the storage picker, no
-connect button, no mention in Settings, the privacy page or What's new. The
-website and the desktop app keep Dropbox unchanged. `VITE_NATIVE_BUILD=on`
+connect button, no mention in Settings or the privacy page (and it has no
+What's new to mention it in). The website and the desktop app keep Dropbox
+unchanged. `VITE_NATIVE_BUILD=on`
 decides it at compile time (`src/app/dropboxBuilt.ts`), so the Dropbox UI is
 folded out of that bundle rather than hidden, `DROPBOX_APP_KEY` is empty there
 whatever the environment says, and the phone workflow (`native.yml`) passes
-neither Dropbox variable. `vite.config.ts` loads the CHANGELOG and the feature
-docs without the paragraphs, list items and sections that name Dropbox
-(`src/app/withoutDropbox.ts`), so a feature doc keeps Dropbox in blocks of its
-own. A phone install that still remembers Dropbox as its backend (an early
+neither Dropbox variable. A phone install that still remembers Dropbox as its backend (an early
 test build) opens on this device, where its working copy already is.
 
 The wrapper's in-app sign-in sheet (`native/src/authSessionBridge.ts`) stays:
@@ -96,6 +94,21 @@ it is a capability the page asks for, not a Dropbox feature, and a phone build
 that offered Dropbox again would sign in through it with
 `se.agilator.contacts://oauth` (the bundle id as the scheme) as its redirect
 URI — see [native/README.md](../native/README.md#signing-in-to-dropbox).
+
+## No What's new in the phone app
+
+The phone app's version history is the App Store's own What's New (the owner's
+decision), so the app has none of its own: no What's new row, and — with no
+Source code row either — no About dropdown at all. Neither the dialog, nor the
+CHANGELOG, nor any feature doc is in its bundle; a feature doc is only reachable
+through What's new. `VITE_NATIVE_BUILD=on` decides it at compile time
+(`src/app/changelogBuilt.ts`): the lazy import of the dialog in `src/App.tsx`
+tests the raw `__NATIVE_BUILD__`, so it is gone before the bundler decides
+which chunks exist, and `vite.config.ts` fails a phone build that still reaches
+a `.md?raw`. `tests/changelogBuilt_test.ts` builds the phone app and the
+website for real and checks the latest release's heading is in the one and not
+the other. The app's version stays visible in Settings → Developer → Build. The
+website and the desktop app keep What's new unchanged.
 
 ## Fake data / seeded dev server
 

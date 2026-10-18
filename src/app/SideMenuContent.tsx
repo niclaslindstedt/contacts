@@ -36,6 +36,7 @@ import {
   reorderIds,
   subtreeFolderIds,
 } from "./contactList.ts";
+import { CHANGELOG_BUILT } from "./changelogBuilt.ts";
 import { DONATE_URL } from "./donate.ts";
 import { SOURCE_URL } from "./sourceLinks.ts";
 import { FavoriteIcon, IceIcon } from "./icons.tsx";
@@ -80,7 +81,11 @@ const ABOUT_PLACEMENT: FloatingPlacement = {
 
 // The About dropdown's Source code row links the repository — on the website
 // only (`SOURCE_URL` in `./sourceLinks.ts`); the phone and desktop apps carry
-// no link back to the source, so their dropdown holds What's new alone.
+// no link back to the source, so the desktop app's dropdown holds What's new
+// alone. The phone app has no What's new either (`./changelogBuilt.ts` — its
+// version history is the App Store's), so it has no About row at all; its
+// version stays in Settings → Developer.
+const ABOUT_BUILT: boolean = CHANGELOG_BUILT || SOURCE_URL !== null;
 // The subtitle under the Source row — the build identifier, composed at build
 // time (`__BUILD_LABEL__`, see `vite.config.ts`): the version, the CI run
 // number, the deploy slot (`-pre` for preview, `-br` for a branch build), and
@@ -829,7 +834,7 @@ export function SideMenuContent({
       />
 
       {/* Footer — fixed. Donate (an external link, website only), the trophy, an About
-          dropdown, and Settings pinned last under the thumb (checking for an
+          dropdown (not in the phone app, `ABOUT_BUILT`), and Settings pinned last under the thumb (checking for an
           app update lives in Settings → Developer). Foldable away via the rail
           above. Now the
           PWA paints fullscreen (no bottom safe-area inset lifting the panel),
@@ -848,19 +853,21 @@ export function SideMenuContent({
             </FooterLink>
           )}
           {trophy}
-          <button
-            ref={aboutRef}
-            type="button"
-            aria-haspopup="menu"
-            aria-expanded={aboutOpen}
-            onClick={() => setAboutOpen((v) => !v)}
-            className="flex w-full cursor-pointer items-center gap-3 px-5 py-[var(--density-row-py)] text-left text-sm text-fg hover:bg-surface-2 hover:text-fg-bright"
-          >
-            <span className="text-muted">
-              <HelpCircleIcon className="h-5 w-5" />
-            </span>
-            <span className="flex-1">{t("menu.about")}</span>
-          </button>
+          {ABOUT_BUILT && (
+            <button
+              ref={aboutRef}
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={aboutOpen}
+              onClick={() => setAboutOpen((v) => !v)}
+              className="flex w-full cursor-pointer items-center gap-3 px-5 py-[var(--density-row-py)] text-left text-sm text-fg hover:bg-surface-2 hover:text-fg-bright"
+            >
+              <span className="text-muted">
+                <HelpCircleIcon className="h-5 w-5" />
+              </span>
+              <span className="flex-1">{t("menu.about")}</span>
+            </button>
+          )}
           <FooterRow
             icon={<CogIcon className="h-5 w-5" />}
             onClick={onOpenSettings}
@@ -871,37 +878,42 @@ export function SideMenuContent({
       )}
 
       {/* The About dropdown — portalled and positioned by the framework
-          `FloatingPanel`. "What's new" opens the changelog dialog; "Source
-          code" is an external link with the build label as its subtitle, on
-          the website only (`SOURCE_URL`). */}
-      <FloatingPanel
-        open={aboutOpen}
-        onClose={() => setAboutOpen(false)}
-        triggerRef={aboutRef}
-        placement={ABOUT_PLACEMENT}
-        className="py-1"
-      >
-        <FooterRow
-          icon={<SparklesIcon className="h-5 w-5" />}
-          onClick={() => {
-            setAboutOpen(false);
-            onOpenChangelog();
-          }}
+          `FloatingPanel`. "What's new" opens the changelog dialog, except in
+          the phone app (`CHANGELOG_BUILT`); "Source code" is an external link
+          with the build label as its subtitle, on the website only
+          (`SOURCE_URL`). The phone app has neither, so no dropdown. */}
+      {ABOUT_BUILT && (
+        <FloatingPanel
+          open={aboutOpen}
+          onClose={() => setAboutOpen(false)}
+          triggerRef={aboutRef}
+          placement={ABOUT_PLACEMENT}
+          className="py-1"
         >
-          {t("menu.whatsNew")}
-        </FooterRow>
-        {SOURCE_URL && (
-          <FooterLink
-            icon={<ExternalLinkIcon className="h-5 w-5" />}
-            href={SOURCE_URL}
-            sublabel={BUILD_LABEL}
-            external
-            onClick={() => setAboutOpen(false)}
-          >
-            {t("menu.source")}
-          </FooterLink>
-        )}
-      </FloatingPanel>
+          {CHANGELOG_BUILT && (
+            <FooterRow
+              icon={<SparklesIcon className="h-5 w-5" />}
+              onClick={() => {
+                setAboutOpen(false);
+                onOpenChangelog();
+              }}
+            >
+              {t("menu.whatsNew")}
+            </FooterRow>
+          )}
+          {SOURCE_URL && (
+            <FooterLink
+              icon={<ExternalLinkIcon className="h-5 w-5" />}
+              href={SOURCE_URL}
+              sublabel={BUILD_LABEL}
+              external
+              onClick={() => setAboutOpen(false)}
+            >
+              {t("menu.source")}
+            </FooterLink>
+          )}
+        </FloatingPanel>
+      )}
 
       {/* The cursor-following label of whatever's mid-drag — portalled to the
           body so it rides above the drawer. */}

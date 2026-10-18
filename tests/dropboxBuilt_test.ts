@@ -3,15 +3,10 @@
 // the desktop app keep it. The build flags are compile-time constants in a
 // real build; here they are globals the test sets before importing the
 // modules afresh, which is how Vitest resolves a bare `__NAME__` without a
-// `define`. The markdown What's new renders is checked through the same
-// `withoutDropbox` that `vite.config.ts` loads it with in the phone build.
-
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+// `define`. The phone app carries no What's new to name it in
+// (`changelogBuilt_test.ts`).
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-
-import { withoutDropbox } from "../src/app/withoutDropbox.ts";
 
 type Flags = { native: boolean; shell: boolean };
 
@@ -81,94 +76,5 @@ describe("readBackend", () => {
       { "contacts:sync:backend": "icloud" },
     );
     expect(m.readBackend()).toBe("icloud");
-  });
-});
-
-describe("withoutDropbox", () => {
-  it("drops a list item, a paragraph and a section that name Dropbox", () => {
-    const md = [
-      "# Sync",
-      "",
-      "Connect a backend:",
-      "",
-      "- **Dropbox** — OAuth, with",
-      "  a continuation line.",
-      "- **iCloud Drive** — on the phone.",
-      "",
-      "Dropbox works here too.",
-      "",
-      "Photos are filed out.",
-      "",
-      "## The atlas on Dropbox",
-      "",
-      "Packs of avatars.",
-      "",
-      "### Deeper",
-      "",
-      "Still the atlas.",
-      "",
-      "## Self-healing",
-      "",
-      "Names repair themselves.",
-    ].join("\n");
-    expect(withoutDropbox(md)).toBe(
-      [
-        "# Sync",
-        "",
-        "Connect a backend:",
-        "",
-        "- **iCloud Drive** — on the phone.",
-        "",
-        "",
-        "Photos are filed out.",
-        "",
-        "## Self-healing",
-        "",
-        "Names repair themselves.",
-      ].join("\n"),
-    );
-  });
-
-  it("drops a heading the cut emptied, and keeps one that was empty already", () => {
-    const md = [
-      "## [Unreleased]",
-      "",
-      "## [1.0.0]",
-      "",
-      "### Added",
-      "",
-      "- Dropbox in the desktop app.",
-      "",
-      "### Fixed",
-      "",
-      "- A crash on open.",
-    ].join("\n");
-    const out = withoutDropbox(md);
-    expect(out).toContain("## [Unreleased]");
-    expect(out).toContain("## [1.0.0]");
-    expect(out).not.toContain("### Added");
-    expect(out).toContain("### Fixed\n\n- A crash on open.");
-  });
-
-  it("leaves the phone's What's new without a word about Dropbox", () => {
-    const root = join(__dirname, "..");
-    const features = join(root, "docs", "features");
-    const unreleased = join(root, ".changes", "unreleased");
-    const texts = [
-      readFileSync(join(root, "CHANGELOG.md"), "utf8"),
-      ...readdirSync(features).map((f) =>
-        readFileSync(join(features, f), "utf8"),
-      ),
-      ...readdirSync(unreleased).map((f) =>
-        readFileSync(join(unreleased, f), "utf8"),
-      ),
-    ];
-    for (const text of texts) {
-      expect(withoutDropbox(text)).not.toMatch(/dropbox/i);
-    }
-    const cloudSync = withoutDropbox(
-      readFileSync(join(features, "cloud-sync.md"), "utf8"),
-    );
-    expect(cloudSync).toContain("**iCloud Drive**");
   });
 });
